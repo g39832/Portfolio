@@ -1,0 +1,5 @@
+cd my-react-app
+npm run dev
+
+
+run this command to run the project locally 
