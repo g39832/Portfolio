@@ -166,13 +166,8 @@ function App() {
 
               <div className="project-grid">
                 <article className="project-card">
-                  <div className="project-screenshot" aria-label="CRM Tool screenshot placeholder">
-                    <div className="project-screenshot-placeholder">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-                      </svg>
-                      <span>Add Screenshot</span>
-                    </div>
+                  <div className="project-screenshot" aria-label="CRM Tool screenshot">
+                    <img className="project-screenshot-img" src="/CRM.png" alt="CRM Tool screenshot" />
                   </div>
                   <h3>CRM Tool</h3>
                   <p>
@@ -195,17 +190,12 @@ function App() {
                   </a>
                 </article>
                 <article className="project-card">
-                  <div className="project-screenshot" aria-label="Raspberry Pi Portfolio Website screenshot placeholder">
-                    <div className="project-screenshot-placeholder">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-                      </svg>
-                      <span>Add Screenshot</span>
-                    </div>
+                  <div className="project-screenshot" aria-label="Self Hosted Raspberry Pi server photo">
+                    <img className="project-screenshot-img" src="/Server.jpeg" alt="Self Hosted Raspberry Pi server" />
                   </div>
-                  <h3>Raspberry Pi Portfolio Website</h3>
+                  <h3>Self Hosted</h3>
                   <p>
-                    Built and self-hosted a portfolio website on Raspberry Pi hardware, gaining hands-on experience with Linux administration, server deployment, networking configuration, DNS setup, and web hosting — bridging hardware and software skills.
+                    Self-hosting a full web server on a Raspberry Pi 4 — running Nginx, managing DNS, configuring firewalls, and deploying websites directly from bare-metal Linux. This hands-on setup taught me Linux system administration, network security, SSL/TLS certificate management, and the fundamentals of keeping production services alive on low-power hardware.
                   </p>
                   <div className="project-tags">
                     <span>Raspberry Pi</span>
@@ -224,13 +214,8 @@ function App() {
                   </a>
                 </article>
                 <article className="project-card">
-                  <div className="project-screenshot" aria-label="Joseph AI Assistant screenshot placeholder">
-                    <div className="project-screenshot-placeholder">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-                      </svg>
-                      <span>Add Screenshot</span>
-                    </div>
+                  <div className="project-screenshot" aria-label="Joseph AI Assistant screenshot">
+                    <img className="project-screenshot-img" src="/Joseph.png" alt="Joseph AI Assistant screenshot" />
                   </div>
                   <h3>Joseph — AI Assistant</h3>
                   <p>
