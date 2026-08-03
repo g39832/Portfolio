@@ -1,0 +1,46 @@
+/**
+ * =========================================================================
+ * RASPBERRY PI REACT DEPLOYMENT BLUEPRINT
+ * =========================================================================
+ * 
+ * Your portfolio website is built using React ("my-react-app"). Because 
+ * React uses a JSX compilation layer, updating the source files or running 
+ * a standard "git pull" alone will not show changes on your live site. 
+ * 
+ * Every time you push a frontend modification from your local computer, 
+ * you must compile the application into static production assets on the Pi 
+ * and move them into the Nginx/Apache web root directory (/var/www/html/).
+ * 
+ * -------------------------------------------------------------------------
+ * LIVE UPDATING PROCEDURE (Run these via your SSH terminal window)
+ * -------------------------------------------------------------------------
+ * 
+ * STEP 1: Log back into your Raspberry Pi via PowerShell or Terminal:
+ * ssh grayson@raspberrypi.local
+ * 
+ * STEP 2: Navigate directly into your repository source tracking workspace:
+ * cd ~/Portfolio
+ * 
+ * STEP 3: Grab your latest codebase modifications from GitHub:
+ * git pull
+ * 
+ * STEP 4: Navigate directly into your core React ecosystem folder:
+ * cd my-react-app
+ * 
+ * STEP 5: Compile your updated JSX layout & assets into production bundles:
+ * npm run build
+ * 
+ * STEP 6: Safely remove any stale, cached site files from your web hosting root:
+ * sudo rm -rf /var/www/html/*
+ * 
+ * STEP 7: Copy your newly compiled production build into the live server directory:
+ * sudo cp -r dist/* /var/www/html/
+ * 
+ * STEP 8: Reload your core web server daemon to instantly pipe out changes:
+ * sudo systemctl restart nginx || sudo systemctl restart apache2
+ * 
+ * STEP 9: Force your browser to drop stale history and render the new layout:
+ * Press "Ctrl + F5" (Windows) or "Cmd + Shift + R" (Mac) on the portfolio URL.
+ * 
+ * =========================================================================
+ */
