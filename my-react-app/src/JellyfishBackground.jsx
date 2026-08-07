@@ -52,9 +52,9 @@ class Jellyfish {
     this.height = height
     this.color = pick(PALETTE)
     this.depth = rand(0.2, 1)
-    this.size = rand(34, 72) * (0.8 + this.depth * 0.45)
-    this.opacity = 0.16 + this.depth * 0.24
-    this.speed = rand(12, 26) * (0.7 + this.depth * 0.7)
+    this.size = rand(30, 64) * (0.8 + this.depth * 0.45)
+    this.opacity = 0.09 + this.depth * 0.19
+    this.speed = rand(10, 22) * (0.7 + this.depth * 0.7)
     this.x = rand(this.size, width - this.size)
     this.y = initial ? rand(height * 0.08, height * 0.9) : height + this.size
     this.baseX = this.x
@@ -64,13 +64,17 @@ class Jellyfish {
     this.wanderFrequency = rand(0.0001, 0.00024)
     this.wanderPhase = rand(0, Math.PI * 2)
     this.pulsePhase = rand(0, Math.PI * 2)
-    this.pulseRate = rand(0.0028, 0.0052)
+    this.pulseRate = rand(0.0042, 0.007)
+    this.pulseAmount = rand(0.07, 0.14)
     this.bobAmount = rand(1.5, 6) * (0.5 + this.depth * 0.55)
-    this.tentacleCount = 3 + Math.floor(rand(0, 2))
-    this.tentaclePhases = Array.from({ length: this.tentacleCount }, () => rand(0, Math.PI * 2))
-    this.tentacleWaves = Array.from({ length: this.tentacleCount }, () => rand(0.8, 1.25))
-    this.oralArmPhase = rand(0, Math.PI * 2)
-    this.rotation = rand(-0.12, 0.12)
+    this.rotation = rand(-0.1, 0.1)
+    this.lobeCount = 8 + Math.floor(rand(0, 3))
+    this.lobeOffset = rand(0, Math.PI * 2)
+    this.fringeCount = 16 + Math.floor(rand(0, 5))
+    this.fringePhases = Array.from({ length: this.fringeCount }, () => rand(0, Math.PI * 2))
+    this.fringeWaves = Array.from({ length: this.fringeCount }, () => rand(0.6, 1.15))
+    this.armPhase = rand(0, Math.PI * 2)
+    this.armLengthRatio = rand(0.75, 1.05)
   }
 
   update(deltaTime, time) {
@@ -79,10 +83,13 @@ class Jellyfish {
     const sway = Math.sin(time * this.swayFrequency + this.swayPhase) * this.swayAmplitude
     const smallDrift = noise1D(this.seed + 23, time * 0.00016 + this.swayPhase * 0.4) * this.size * 0.08
 
-    this.y -= this.speed * dt
+    // Realistic swimming: each bell contraction gives a little burst of propulsion
+    const contract = Math.sin(time * this.pulseRate + this.pulsePhase)
+    const propulsion = Math.max(0, contract) * this.speed * 0.9
+    this.y -= (this.speed + propulsion) * dt
     this.baseX += drift * dt * 6
     this.x = this.baseX + sway + smallDrift
-    this.rotation = lerp(this.rotation, Math.sin(time * 0.00015 + this.seed) * 0.14, 0.04)
+    this.rotation = lerp(this.rotation, Math.sin(time * 0.00015 + this.seed) * 0.12, 0.04)
 
     const margin = this.size * 1.6
     if (this.x < -margin) {
@@ -96,133 +103,226 @@ class Jellyfish {
     }
   }
 
-  drawBell(ctx, bellWidth, bellHeight, pulse, alpha) {
-    const { r, g, b } = this.color
-    const roof = bellHeight * (1.12 + pulse * 0.04)
-    const lip = bellHeight * (0.14 + pulse * 0.03)
-
+  // Translucent dome with a scalloped (lobed) rim, like a moon jellyfish
+  drawBellPath(ctx, bellWidth, roof, lip) {
     ctx.beginPath()
-    ctx.moveTo(-bellWidth * 0.6, 0)
-    ctx.bezierCurveTo(-bellWidth * 0.76, -roof * 0.16, -bellWidth * 0.4, -roof * 1, 0, -roof * 1.04)
-    ctx.bezierCurveTo(bellWidth * 0.4, -roof * 1, bellWidth * 0.76, -roof * 0.16, bellWidth * 0.6, 0)
-    ctx.bezierCurveTo(bellWidth * 0.44, lip * 0.72, bellWidth * 0.14, lip, 0, lip * 0.76)
-    ctx.bezierCurveTo(-bellWidth * 0.14, lip, -bellWidth * 0.44, lip * 0.72, -bellWidth * 0.6, 0)
-    ctx.closePath()
+    ctx.moveTo(-bellWidth * 0.5, 0)
+    ctx.bezierCurveTo(-bellWidth * 0.7, -roof * 0.24, -bellWidth * 0.28, -roof, 0, -roof * 1.04)
+    ctx.bezierCurveTo(bellWidth * 0.28, -roof, bellWidth * 0.7, -roof * 0.24, bellWidth * 0.5, 0)
 
-    const shell = ctx.createRadialGradient(0, -roof * 0.55, 0, 0, -roof * 0.2, bellWidth * 1.05)
-    shell.addColorStop(0, `rgba(255, 255, 255, ${0.16 + alpha * 0.08})`)
-    shell.addColorStop(0.28, `rgba(${r}, ${g}, ${b}, ${0.28 + alpha * 0.18})`)
-    shell.addColorStop(1, 'rgba(0, 0, 0, 0)')
+    for (let index = 0; index < this.lobeCount; index += 1) {
+      const t0 = index / this.lobeCount
+      const t1 = (index + 1) / this.lobeCount
+      const x0 = lerp(bellWidth * 0.5, -bellWidth * 0.5, t0)
+      const x1 = lerp(bellWidth * 0.5, -bellWidth * 0.5, t1)
+      const y0 = lip * (1 + Math.sin(t0 * Math.PI * this.lobeCount + this.lobeOffset) * 0.4)
+      const y1 = lip * (1 + Math.sin(t1 * Math.PI * this.lobeCount + this.lobeOffset) * 0.4)
+      ctx.quadraticCurveTo((x0 + x1) / 2, Math.max(y0, y1) + lip * 0.3, x1, y1)
+    }
+    ctx.closePath()
+  }
+
+  drawBell(ctx, bellWidth, bellHeight, alpha, time) {
+    const { r, g, b } = this.color
+    const roof = bellHeight * 1.2
+    const lip = bellHeight * 0.2
+
+    ctx.save()
+    this.drawBellPath(ctx, bellWidth, roof, lip)
+
+    const shell = ctx.createRadialGradient(0, -roof * 0.45, 0, 0, -roof * 0.1, bellWidth * 0.9)
+    shell.addColorStop(0, `rgba(255, 255, 255, ${0.18 + alpha * 0.1})`)
+    shell.addColorStop(0.32, `rgba(${r}, ${g}, ${b}, ${0.2 + alpha * 0.16})`)
+    shell.addColorStop(0.72, `rgba(${r}, ${g}, ${b}, ${0.07 + alpha * 0.08})`)
+    shell.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.02)`)
     ctx.fillStyle = shell
     ctx.fill()
 
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.06 + alpha * 0.08})`
+    // Internal anatomy, clipped to the bell so it stays inside the dome
+    ctx.clip()
+    this.drawCanals(ctx, bellWidth, bellHeight, roof, alpha, time)
+    this.drawGonads(ctx, bellWidth, bellHeight, roof, alpha)
+    ctx.restore()
+
+    this.drawBellPath(ctx, bellWidth, roof, lip)
+    ctx.strokeStyle = `rgba(255, 255, 255, ${0.07 + alpha * 0.1})`
     ctx.lineWidth = 1
     ctx.stroke()
   }
 
-  drawTentacles(ctx, bellWidth, bellHeight, pulse, alpha, time) {
+  // Radial canals — the fine veins visible through a translucent bell
+  drawCanals(ctx, bellWidth, bellHeight, roof, alpha, time) {
     const { r, g, b } = this.color
-    const baseY = bellHeight * 0.18
-    const spread = bellWidth * 0.1
-    const length = bellHeight * (1 + this.depth * 0.85)
-
-    for (let index = 0; index < this.tentacleCount; index += 1) {
-      const offset = index - (this.tentacleCount - 1) / 2
-      const phase = this.tentaclePhases[index]
-      const waveStrength = this.tentacleWaves[index]
-    const segmentCount = 3
-      let prevX = offset * spread
-      let prevY = baseY
-
-      for (let segment = 1; segment <= segmentCount; segment += 1) {
-        const t = segment / segmentCount
-        const falloff = 1 - t
-        const swing =
-          Math.sin(time * 0.001 + phase + t * 2.2) * bellWidth * 0.05 * falloff * waveStrength +
-          Math.cos(time * 0.00075 + phase * 0.7 + t * 1.6) * bellWidth * 0.015 * falloff
-        const curveY = baseY + t * length + Math.sin(time * 0.0012 + phase + t * 4) * 3 * falloff
-        const x = offset * spread + swing * (1 - pulse * 0.08)
-        const y = curveY + this.bobAmount * falloff
-
-        ctx.strokeStyle = `rgba(${Math.min(r + 24, 255)}, ${Math.min(g + 34, 255)}, ${Math.min(b + 42, 255)}, ${alpha * (0.14 + falloff * 0.26)})`
-        ctx.lineWidth = (index % 2 === 0 ? 2.1 : 1.7) * falloff + 0.12
-        ctx.lineCap = 'round'
-        ctx.beginPath()
-        ctx.moveTo(prevX, prevY)
-        ctx.lineTo(x, y)
-        ctx.stroke()
-        prevX = x
-        prevY = y
-      }
-    }
-  }
-
-  drawOralArms(ctx, bellWidth, bellHeight, alpha, time) {
-    const { r, g, b } = this.color
-    const armCount = 3
-    const armBase = bellHeight * 0.12
-    const armLength = bellHeight * (0.48 + this.depth * 0.24)
-
-    for (let index = 0; index < armCount; index += 1) {
-      const offset = index - (armCount - 1) / 2
-      const phase = this.oralArmPhase + index * 0.6
-      const startX = offset * bellWidth * 0.08
-      const midX = startX + Math.sin(time * 0.0012 + phase) * bellWidth * 0.045
-      const endX = startX + Math.cos(time * 0.0008 + phase) * bellWidth * 0.03
-
-      ctx.strokeStyle = `rgba(${Math.min(r + 28, 255)}, ${Math.min(g + 30, 255)}, ${Math.min(b + 42, 255)}, ${0.16 + alpha * 0.2})`
-      ctx.lineWidth = 1.6 - Math.abs(offset) * 0.16
-      ctx.lineCap = 'round'
+    const count = 14
+    ctx.lineWidth = 0.7
+    ctx.lineCap = 'round'
+    for (let index = 0; index < count; index += 1) {
+      const angle = (index / count) * Math.PI * 2
+      const inner = bellHeight * 0.16
+      const outer = bellWidth * 0.48
+      const wobble = Math.sin(time * 0.0007 + index * 1.9 + this.seed) * 0.05
+      ctx.strokeStyle = `rgba(${Math.min(r + 34, 255)}, ${Math.min(g + 34, 255)}, ${Math.min(b + 48, 255)}, ${0.08 + alpha * 0.1})`
       ctx.beginPath()
-      ctx.moveTo(startX, armBase)
-      ctx.bezierCurveTo(midX, armBase + armLength * 0.32, endX, armBase + armLength * 0.72, endX * 0.76, armBase + armLength)
+      ctx.moveTo(Math.cos(angle) * inner, -roof * 0.3 + Math.sin(angle) * inner * 0.5)
+      ctx.quadraticCurveTo(
+        Math.cos(angle + wobble) * outer * 0.6,
+        -roof * 0.1 + Math.sin(angle + wobble) * outer * 0.6,
+        Math.cos(angle) * outer,
+        -roof * 0.05 + Math.sin(angle) * outer * 0.9
+      )
       ctx.stroke()
     }
   }
 
-  draw(ctx, time) {
-    const pulse = 1 + Math.sin(time * this.pulseRate + this.pulsePhase) * 0.04
+  // Four horseshoe-shaped gonads near the centre of the bell
+  drawGonads(ctx, bellWidth, bellHeight, roof, alpha) {
+    const { r, g, b } = this.color
+    const radius = bellHeight * 0.14
+    ctx.lineWidth = 1.3
+    ctx.lineCap = 'round'
+    for (let index = 0; index < 4; index += 1) {
+      const angle = (index / 4) * Math.PI * 2 + Math.PI / 4
+      const cx = Math.cos(angle) * bellHeight * 0.3
+      const cy = -roof * 0.34 + Math.sin(angle) * bellHeight * 0.24
+      ctx.strokeStyle = `rgba(${Math.min(r + 52, 255)}, ${Math.min(g + 44, 255)}, ${Math.min(b + 62, 255)}, ${0.12 + alpha * 0.12})`
+      ctx.beginPath()
+      ctx.arc(cx, cy, radius, angle + 0.5, angle + Math.PI * 2 - 0.5)
+      ctx.stroke()
+    }
+  }
+
+  // Fine fringe of tentacles hanging all around the rim
+  drawRimTentacles(ctx, bellWidth, bellHeight, pulse, alpha, time) {
+    const { r, g, b } = this.color
+    const count = this.fringeCount
+    const lip = bellHeight * 0.2
+
+    for (let index = 0; index < count; index += 1) {
+      const t = (index + 0.5) / count
+      const x = lerp(-bellWidth * 0.5, bellWidth * 0.5, t)
+      const rimY = lip * (1 + Math.sin(t * Math.PI * this.lobeCount + this.lobeOffset) * 0.4)
+      const phase = this.fringePhases[index]
+      const wave = this.fringeWaves[index]
+      const length = bellHeight * (0.3 + this.depth * 0.35) * (1 + pulse * 0.08)
+      const segments = 4
+      let prevX = x
+      let prevY = rimY
+
+      for (let segment = 1; segment <= segments; segment += 1) {
+        const progress = segment / segments
+        const falloff = 1 - progress
+        const swing = Math.sin(time * 0.0011 + phase + progress * 2.6) * bellWidth * 0.02 * wave * falloff
+        const nextX = x + swing
+        const nextY = rimY + progress * length + Math.sin(time * 0.0013 + phase + progress * 5) * 2.4 * falloff
+
+        ctx.strokeStyle = `rgba(${Math.min(r + 26, 255)}, ${Math.min(g + 32, 255)}, ${Math.min(b + 44, 255)}, ${alpha * (0.2 + falloff * 0.3)})`
+        ctx.lineWidth = Math.max(0.3, 1.1 * falloff)
+        ctx.lineCap = 'round'
+        ctx.beginPath()
+        ctx.moveTo(prevX, prevY)
+        ctx.lineTo(nextX, nextY)
+        ctx.stroke()
+        prevX = nextX
+        prevY = nextY
+      }
+    }
+  }
+
+  // Four long, frilly oral arms hanging from the centre underside
+  drawOralArms(ctx, bellWidth, bellHeight, pulse, alpha, time) {
+    const { r, g, b } = this.color
+    const armCount = 4
+    const armBase = bellHeight * 0.16
+    const armLength = bellHeight * this.armLengthRatio * (1 + pulse * 0.06)
+    const segmentCount = 8
+    const ruffles = 2.2
+
+    for (let index = 0; index < armCount; index += 1) {
+      const offset = (index - (armCount - 1) / 2) / (armCount - 1)
+      const phase = this.armPhase + index * 0.9
+      const startX = offset * bellWidth * 0.34
+      const sway =
+        Math.sin(time * 0.001 + phase) * bellWidth * 0.05 +
+        Math.cos(time * 0.0006 + phase * 0.6) * bellWidth * 0.02
+
+      const pointAt = (step) => {
+        const t = step / segmentCount
+        const ruffleX = Math.sin(t * Math.PI * ruffles + phase + time * 0.0016) * bellHeight * 0.07 * t
+        return [startX + sway * t + ruffleX, armBase + t * armLength]
+      }
+
+      const points = Array.from({ length: segmentCount + 1 }, (_, step) => pointAt(step))
+      const widthAt = (step) =>
+        (0.5 + Math.sin(step * 2.3 + phase) * 0.4) * bellHeight * 0.09 * (1 - (step / segmentCount) * 0.55)
+
+      // Frilly ribbon: edges wiggle in and out along the arm
+      ctx.beginPath()
+      points.forEach(([x, y], step) => {
+        const width = widthAt(step)
+        if (step === 0) ctx.moveTo(x, y - width)
+        else ctx.lineTo(x, y - width)
+      })
+      for (let step = points.length - 1; step >= 0; step -= 1) {
+        const [x, y] = points[step]
+        ctx.lineTo(x, y + widthAt(step))
+      }
+      ctx.closePath()
+      ctx.fillStyle = `rgba(${Math.min(r + 30, 255)}, ${Math.min(g + 30, 255)}, ${Math.min(b + 44, 255)}, ${0.12 + alpha * 0.12})`
+      ctx.fill()
+
+      ctx.strokeStyle = `rgba(${Math.min(r + 44, 255)}, ${Math.min(g + 44, 255)}, ${Math.min(b + 58, 255)}, ${0.16 + alpha * 0.14})`
+      ctx.lineWidth = 0.9
+      ctx.beginPath()
+      points.forEach(([x, y], step) => {
+        if (step === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
+      })
+      ctx.stroke()
+    }
+  }
+
+  draw(ctx, time, light) {
+    const contract = Math.sin(time * this.pulseRate + this.pulsePhase)
     const scale = this.size * (0.92 + this.depth * 0.35)
-    const bellWidth = scale * 0.88 * pulse
-    const bellHeight = scale * 0.76 * pulse
-    const alpha = this.opacity
+    // The bell flattens and widens as it contracts, then relaxes — the swimming pulse
+    const bellWidth = scale * 0.96 * (1 + contract * this.pulseAmount * 0.5)
+    const bellHeight = scale * 0.74 * (1 - contract * this.pulseAmount * 0.75)
+    const alpha = this.opacity * (light ? 2 : 1)
     const { r, g, b } = this.color
 
     ctx.save()
     ctx.translate(this.x, this.y)
     ctx.rotate(this.rotation + Math.sin(time * 0.0002 + this.seed) * 0.03)
     ctx.scale(1 + this.depth * 0.04, 1 - this.depth * 0.015)
-    ctx.globalCompositeOperation = 'lighter'
-    ctx.shadowBlur = scale * 0.28
-    ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${0.16 + alpha * 0.12})`
+    // Additive glow on dark; soft translucent shapes on light
+    ctx.globalCompositeOperation = light ? 'source-over' : 'lighter'
 
-    const halo = ctx.createRadialGradient(0, -bellHeight * 0.05, 0, 0, 0, bellWidth * 1.18)
-    halo.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.24})`)
+    const halo = ctx.createRadialGradient(0, -bellHeight * 0.05, 0, 0, 0, bellWidth * 1.2)
+    halo.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * (light ? 0.1 : 0.22)})`)
     halo.addColorStop(1, 'rgba(0, 0, 0, 0)')
     ctx.fillStyle = halo
     ctx.beginPath()
-    ctx.ellipse(0, 0, bellWidth * 1.05, bellHeight * 1.08, 0, 0, Math.PI * 2)
+    ctx.ellipse(0, 0, bellWidth * 1.06, bellHeight * 1.1, 0, 0, Math.PI * 2)
     ctx.fill()
 
-    const bloom = ctx.createRadialGradient(0, -bellHeight * 0.12, 0, 0, 0, bellWidth * 0.8)
-    bloom.addColorStop(0, `rgba(255, 255, 255, ${0.16 + alpha * 0.08})`)
-    bloom.addColorStop(0.38, `rgba(${r}, ${g}, ${b}, ${0.16 + alpha * 0.12})`)
+    const bloom = ctx.createRadialGradient(0, -bellHeight * 0.12, 0, 0, 0, bellWidth * 0.82)
+    bloom.addColorStop(0, `rgba(255, 255, 255, ${light ? 0.5 : 0.14 + alpha * 0.08})`)
+    bloom.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, ${light ? 0.2 + alpha * 0.05 : 0.14 + alpha * 0.1})`)
     bloom.addColorStop(1, 'rgba(0, 0, 0, 0)')
     ctx.fillStyle = bloom
     ctx.beginPath()
     ctx.ellipse(0, 0, bellWidth, bellHeight, 0, 0, Math.PI * 2)
     ctx.fill()
 
-    this.drawBell(ctx, bellWidth, bellHeight, pulse, alpha)
-    this.drawOralArms(ctx, bellWidth, bellHeight, alpha, time)
-    this.drawTentacles(ctx, bellWidth, bellHeight, pulse, alpha, time)
+    this.drawRimTentacles(ctx, bellWidth, bellHeight, contract, alpha, time)
+    this.drawOralArms(ctx, bellWidth, bellHeight, contract, alpha, time)
+    this.drawBell(ctx, bellWidth, bellHeight, alpha, time)
 
     ctx.restore()
   }
 }
 
-const JellyfishBackground = () => {
+const JellyfishBackground = ({ theme = 'dark', paused = false }) => {
   const canvasRef = useRef(null)
   const animationRef = useRef(0)
   const lastTimeRef = useRef(0)
@@ -230,6 +330,20 @@ const JellyfishBackground = () => {
   const profileRef = useRef(null)
   const jellyfishRef = useRef([])
   const backgroundCanvasRef = useRef(null)
+  const lightRef = useRef(theme === 'light')
+  const pausedRef = useRef(paused)
+  const frozenTimeRef = useRef(0)
+  const redrawBackgroundRef = useRef(null)
+
+  useEffect(() => {
+    lightRef.current = theme === 'light'
+    redrawBackgroundRef.current?.()
+  }, [theme])
+
+  useEffect(() => {
+    pausedRef.current = paused
+    if (paused) frozenTimeRef.current = performance.now()
+  }, [paused])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -253,31 +367,52 @@ const JellyfishBackground = () => {
       return backgroundCanvasRef.current
     }
 
-    const drawBackground = (backgroundCtx, width, height, reducedMotion) => {
+    const drawBackground = (backgroundCtx, width, height, reducedMotion, light) => {
       backgroundCtx.clearRect(0, 0, width, height)
 
-      const sky = backgroundCtx.createLinearGradient(0, 0, 0, height)
-      sky.addColorStop(0, '#02050f')
-      sky.addColorStop(0.48, '#040a18')
-      sky.addColorStop(1, '#01020a')
-      backgroundCtx.fillStyle = sky
-      backgroundCtx.fillRect(0, 0, width, height)
+      if (light) {
+        const sky = backgroundCtx.createLinearGradient(0, 0, 0, height)
+        sky.addColorStop(0, '#f6faff')
+        sky.addColorStop(0.5, '#eaf2fc')
+        sky.addColorStop(1, '#e3ecf9')
+        backgroundCtx.fillStyle = sky
+        backgroundCtx.fillRect(0, 0, width, height)
 
-      const topGlow = backgroundCtx.createRadialGradient(width * 0.22, height * 0.16, 0, width * 0.22, height * 0.16, width * 0.72)
-      topGlow.addColorStop(0, 'rgba(92, 197, 255, 0.09)')
-      topGlow.addColorStop(0.35, 'rgba(92, 197, 255, 0.03)')
-      topGlow.addColorStop(1, 'rgba(92, 197, 255, 0)')
-      backgroundCtx.fillStyle = topGlow
-      backgroundCtx.fillRect(0, 0, width, height)
+        const topGlow = backgroundCtx.createRadialGradient(width * 0.22, height * 0.16, 0, width * 0.22, height * 0.16, width * 0.72)
+        topGlow.addColorStop(0, 'rgba(84, 180, 255, 0.16)')
+        topGlow.addColorStop(0.35, 'rgba(84, 180, 255, 0.05)')
+        topGlow.addColorStop(1, 'rgba(84, 180, 255, 0)')
+        backgroundCtx.fillStyle = topGlow
+        backgroundCtx.fillRect(0, 0, width, height)
 
-      const sideGlow = backgroundCtx.createRadialGradient(width * 0.84, height * 0.3, 0, width * 0.84, height * 0.3, width * 0.56)
-      sideGlow.addColorStop(0, 'rgba(172, 125, 255, 0.05)')
-      sideGlow.addColorStop(0.45, 'rgba(172, 125, 255, 0.018)')
-      sideGlow.addColorStop(1, 'rgba(172, 125, 255, 0)')
-      backgroundCtx.fillStyle = sideGlow
-      backgroundCtx.fillRect(0, 0, width, height)
+        const sideGlow = backgroundCtx.createRadialGradient(width * 0.84, height * 0.3, 0, width * 0.84, height * 0.3, width * 0.56)
+        sideGlow.addColorStop(0, 'rgba(150, 110, 255, 0.12)')
+        sideGlow.addColorStop(0.45, 'rgba(150, 110, 255, 0.04)')
+        sideGlow.addColorStop(1, 'rgba(150, 110, 255, 0)')
+        backgroundCtx.fillStyle = sideGlow
+        backgroundCtx.fillRect(0, 0, width, height)
+      } else {
+        const sky = backgroundCtx.createLinearGradient(0, 0, 0, height)
+        sky.addColorStop(0, '#02050f')
+        sky.addColorStop(0.48, '#040a18')
+        sky.addColorStop(1, '#01020a')
+        backgroundCtx.fillStyle = sky
+        backgroundCtx.fillRect(0, 0, width, height)
 
-      if (!reducedMotion) {
+        const topGlow = backgroundCtx.createRadialGradient(width * 0.22, height * 0.16, 0, width * 0.22, height * 0.16, width * 0.72)
+        topGlow.addColorStop(0, 'rgba(92, 197, 255, 0.09)')
+        topGlow.addColorStop(0.35, 'rgba(92, 197, 255, 0.03)')
+        topGlow.addColorStop(1, 'rgba(92, 197, 255, 0)')
+        backgroundCtx.fillStyle = topGlow
+        backgroundCtx.fillRect(0, 0, width, height)
+
+        const sideGlow = backgroundCtx.createRadialGradient(width * 0.84, height * 0.3, 0, width * 0.84, height * 0.3, width * 0.56)
+        sideGlow.addColorStop(0, 'rgba(172, 125, 255, 0.05)')
+        sideGlow.addColorStop(0.45, 'rgba(172, 125, 255, 0.018)')
+        sideGlow.addColorStop(1, 'rgba(172, 125, 255, 0)')
+        backgroundCtx.fillStyle = sideGlow
+        backgroundCtx.fillRect(0, 0, width, height)
+
         for (let index = 0; index < 2; index += 1) {
           const position = 0.2 + index * 0.32
           const beamX = width * position
@@ -311,9 +446,11 @@ const JellyfishBackground = () => {
       const backgroundCtx = backgroundCanvas.getContext('2d', { alpha: true, desynchronized: true })
       if (backgroundCtx) {
         backgroundCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
-        drawBackground(backgroundCtx, width, height, reducedMotionRef.current)
+        drawBackground(backgroundCtx, width, height, reducedMotionRef.current, lightRef.current)
       }
     }
+
+    redrawBackgroundRef.current = resizeCanvas
 
     const createJellyfish = () => {
       const width = window.innerWidth
@@ -329,15 +466,18 @@ const JellyfishBackground = () => {
       const width = window.innerWidth
       const height = window.innerHeight
       const backgroundCanvas = backgroundCanvasRef.current
+      const frozen = pausedRef.current
 
       ctx.clearRect(0, 0, width, height)
       if (backgroundCanvas) {
         ctx.drawImage(backgroundCanvas, 0, 0, width, height)
       }
 
+      const drawTime = frozen ? frozenTimeRef.current : time
+
       jellyfishRef.current.forEach((jellyfish) => {
-        jellyfish.update(deltaTime, time)
-        jellyfish.draw(ctx, time)
+        if (!frozen) jellyfish.update(deltaTime, time)
+        jellyfish.draw(ctx, drawTime, lightRef.current)
       })
     }
 

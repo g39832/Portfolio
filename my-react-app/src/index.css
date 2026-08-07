@@ -1,9 +1,26 @@
 :root {
-  color: #eef7ff;
+  --bg-deep: #02050f;
+  --bg-top: #01020a;
+  --page-bg: #010309;
+  --text: #eef7ff;
+  --text-strong: #f6fbff;
+  --text-heading: #dffaff;
+  --text-soft: rgba(224, 241, 255, 0.82);
+  --text-faint: rgba(224, 241, 255, 0.7);
+  --accent: #8fe4ff;
+  --accent-2: #93e4ff;
+  --accent-3: #a5f3ff;
+  --purple: #927dff;
+  --purple-soft: #c9a7ff;
+  --gradient: linear-gradient(90deg, #8fe4ff, #927dff);
+  --gradient-text: linear-gradient(120deg, #8fe4ff 0%, #a5f3ff 32%, #927dff 68%, #c9a7ff 100%);
+
+  color: var(--text);
   background:
     radial-gradient(circle at top, rgba(95, 196, 255, 0.12), transparent 38%),
-    linear-gradient(180deg, #02050f, #010209);
+    linear-gradient(180deg, var(--bg-deep), var(--bg-top));
   font-family:
+    'Inter',
     'Segoe UI',
     'Trebuchet MS',
     'Avenir Next',
@@ -15,6 +32,28 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme='light'] {
+  --bg-deep: #f6faff;
+  --bg-top: #e3ecf9;
+  --page-bg: #eef4fb;
+  --text: #0b1526;
+  --text-strong: #0a1220;
+  --text-heading: #0d1b30;
+  --text-soft: rgba(11, 21, 38, 0.82);
+  --text-faint: rgba(11, 21, 38, 0.7);
+  --accent: #0b87c9;
+  --accent-2: #0a7dbb;
+  --accent-3: #06a2d8;
+  --purple: #6d5ae0;
+  --purple-soft: #7b64e8;
+  --gradient: linear-gradient(90deg, #0b87c9, #6d5ae0);
+  --gradient-text: linear-gradient(120deg, #0b87c9 0%, #06a2d8 32%, #6d5ae0 68%, #9a86ff 100%);
+
+  background:
+    radial-gradient(circle at top, rgba(95, 196, 255, 0.18), transparent 38%),
+    linear-gradient(180deg, var(--bg-deep), var(--bg-top));
 }
 
 * {
@@ -29,7 +68,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: #010309;
+  background: var(--page-bg);
+  color: var(--text);
 }
 
 body,
@@ -49,7 +89,25 @@ textarea {
   outline-color: rgba(143, 228, 255, 0.75);
 }
 
+h1,
+h2,
+h3 {
+  font-family:
+    'Space Grotesk',
+    'Segoe UI',
+    system-ui,
+    sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
 #root {
   min-height: 100vh;
   width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
