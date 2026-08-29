@@ -724,6 +724,11 @@ button.featured-project-screenshot {
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+button.featured-project-screenshot:hover .featured-project-screenshot-img {
+  transform: scale(1.05);
 }
 
 .featured-project-content {
@@ -846,6 +851,12 @@ button.project-screenshot:hover {
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+button.project-screenshot:hover .project-screenshot-img,
+button.project-screenshot:focus-visible .project-screenshot-img {
+  transform: scale(1.07);
 }
 
 .project-card h3 {
@@ -900,12 +911,21 @@ button.project-screenshot:hover {
   border-color: var(--accent);
 }
 
-.project-link {
+.project-links {
+  display: flex;
+  gap: 1rem;
   margin-top: 0.5rem;
+}
+
+.project-link {
   font-size: 0.88rem;
   color: var(--accent);
   text-decoration: none;
   transition: color 0.2s ease, letter-spacing 0.2s ease;
+}
+
+.project-link-live {
+  color: var(--accent-2);
 }
 
 .project-link:hover {
@@ -1420,6 +1440,8 @@ button.project-screenshot:hover {
 
   .btn,
   .project-card,
+  .project-screenshot-img,
+  .featured-project-screenshot-img,
   .achievement-card,
   .working-on-card,
   .skill-category,

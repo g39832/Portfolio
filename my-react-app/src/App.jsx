@@ -337,7 +337,7 @@ function App() {
                     <span>IT Experience</span>
                   </div>
                   <div className="hero-stat">
-                    <strong>2</strong>
+                    <strong>3</strong>
                     <span>Apps Shipped</span>
                   </div>
                 </div>
@@ -415,7 +415,7 @@ function App() {
                 </Reveal>
                 <Reveal delay={140}>
                   <div className="achievement-card">
-                    <span className="achievement-number achievement-number-numeric">2</span>
+                    <span className="achievement-number achievement-number-numeric">3</span>
                     <span className="achievement-label">Major Software Projects Built</span>
                   </div>
                 </Reveal>
@@ -482,6 +482,19 @@ function App() {
                       >
                         View Case Study
                       </button>
+                      {featured.live && (
+                        <a
+                          className="btn btn-outline"
+                          href={featured.live}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M13 11L9 15M6 13 L4 15a7.07 7.07 0 0 0 10 0l2-2a7.07 7.07 0 0 0 0-10A7.07 7.07 0 0 0 8 8M18 11l2-2a7.07 7.07 0 0 0-10 0l-2 2a7.07 7.07 0 0 0 0 10" />
+                          </svg>
+                          Live Demo
+                        </a>
+                      )}
                       <a
                         className="btn btn-outline"
                         href={featured.github}
@@ -536,14 +549,26 @@ function App() {
                       >
                         View Case Study <span aria-hidden="true">→</span>
                       </button>
-                      <a
-                        className="project-link"
-                        href={project.github}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        GitHub →
-                      </a>
+                      <div className="project-links">
+                        {project.live && (
+                          <a
+                            className="project-link project-link-live"
+                            href={project.live}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Live Demo →
+                          </a>
+                        )}
+                        <a
+                          className="project-link"
+                          href={project.github}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          GitHub →
+                        </a>
+                      </div>
                     </article>
                   </Reveal>
                 ))}
@@ -759,8 +784,21 @@ function App() {
                 </div>
               </div>
               <div className="modal-actions">
+                {selectedProject.live && (
+                  <a
+                    className="btn btn-primary"
+                    href={selectedProject.live}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M13 11L9 15M6 13 L4 15a7.07 7.07 0 0 0 10 0l2-2a7.07 7.07 0 0 0 0-10A7.07 7.07 0 0 0 8 8M18 11l2-2a7.07 7.07 0 0 0-10 0l-2 2a7.07 7.07 0 0 0 0 10" />
+                    </svg>
+                    Live Demo
+                  </a>
+                )}
                 <a
-                  className="btn btn-primary"
+                  className={`btn ${selectedProject.live ? 'btn-outline' : 'btn-primary'}`}
                   href={selectedProject.github}
                   target="_blank"
                   rel="noopener noreferrer"

@@ -2,7 +2,7 @@ export const projects = [
   {
     id: 'pink-sheet',
     title: 'Pink Sheet Inventory System',
-    featured: true,
+    featured: false,
     screenshot: '/PInksheet.png',
     alt: 'Pink Sheet Inventory System screenshot',
     tags: ['PHP', 'MySQL', 'Database Design', 'Business Software'],
@@ -17,6 +17,25 @@ export const projects = [
     impact:
       'Streamlined equipment tracking and asset management for daily business use.',
     github: 'https://github.com/g39832',
+  },
+  {
+    id: 'ventage',
+    title: 'Regroove — Vintage Reseller Platform',
+    featured: true,
+    screenshot: '/Ventage.png',
+    alt: 'Regroove inventory, accounting and listing management dashboard for vintage resellers',
+    tags: ['React', 'TypeScript', 'Supabase', 'Node.js', 'Express', 'Tailwind CSS', 'eBay API', 'OpenAI'],
+    summary:
+      'A full-stack inventory, accounting, and listing platform for vintage resellers — with real eBay integration, buy-research with sold comps, and an AI assistant. Previously named Ventage.',
+    writeup:
+      'Designed and built a multi-user web app that gives a reselling shop one source of truth for inventory, sales, expenses, and marketplaces. Every piece lives in one place — add pieces with brand, category, size, era, and condition; drag-and-drop photos; log sales with fees and shipping to get real payout and profit; and track expenses. A dashboard plus downloadable CSV/PDF reports (P&L, tax summary, inventory valuation, top sellers) powers the business side.',
+    problem:
+      'Vintage resellers juggled stock, sales, and marketplaces across spreadsheets and notes — with no live view of true profit or market value.',
+    solution:
+      'Built a React/TypeScript front end on Supabase (Postgres with Row-Level Security, auth, storage) with an Express server handling the eBay integration and AI assistant — secrets stay server-side.',
+    impact:
+      'Real eBay API integration for live listings and orders, a research tool that estimates resale value from sold comps before purchase, and 6 downloadable reports — with multi-tenant data isolation out of the box.',
+    github: 'https://github.com/g39832/Ventage-Inventory',
   },
   {
     id: 'crm',
@@ -36,6 +55,7 @@ export const projects = [
     impact:
       'A production-ready tool used daily by real customers for client tracking, job management, invoicing, and analytics.',
     github: 'https://github.com/g39832/Full_Devries',
+    live: 'https://full-devries.vercel.app',
   },
   {
     id: 'self-hosted',
