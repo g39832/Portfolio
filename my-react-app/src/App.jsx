@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import JellyfishBackground from './JellyfishBackground'
 import Reveal from './Reveal'
-import { projects } from './projects'
+import { projects, miniProjects } from './projects'
 
 const navLinks = [
   { href: '#hero', label: 'Home' },
   { href: '#about', label: 'About' },
   { href: '#achievements', label: 'Achievements' },
   { href: '#projects', label: 'Projects' },
+  { href: '#mini-projects', label: 'Mini Projects' },
   { href: '#skills', label: 'Skills' },
   { href: '#working-on', label: 'Working On' },
   { href: '#contact', label: 'Contact' },
@@ -85,7 +86,7 @@ const pillars = [
       </svg>
     ),
     title: 'Fix',
-    copy: '200+ devices repaired with 1.5 years of professional IT experience.',
+    copy: '500+ devices repaired with 1.5 years of professional IT experience.',
   },
   {
     icon: (
@@ -238,6 +239,19 @@ function App() {
     }
   }, [selectedProject])
 
+  useEffect(() => {
+    const scroller = document.querySelector('.mini-scroller')
+    if (!scroller) return undefined
+    const onWheel = (event) => {
+      if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+        event.preventDefault()
+        scroller.scrollLeft += event.deltaY
+      }
+    }
+    scroller.addEventListener('wheel', onWheel, { passive: false })
+    return () => scroller.removeEventListener('wheel', onWheel)
+  }, [])
+
   const featured = projects.find((project) => project.featured)
   const rest = projects.filter((project) => !project.featured)
 
@@ -329,7 +343,7 @@ function App() {
               <Reveal delay={250}>
                 <div className="hero-stats">
                   <div className="hero-stat">
-                    <strong>200+</strong>
+                    <strong>500+</strong>
                     <span>Devices Repaired</span>
                   </div>
                   <div className="hero-stat">
@@ -350,7 +364,7 @@ function App() {
                     </svg>
                     See My Work
                   </a>
-                  <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+                  <a href="/resume.pdf?v=2" target="_blank" rel="noopener noreferrer" className="btn btn-outline">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/>
                     </svg>
@@ -373,7 +387,7 @@ function App() {
               </Reveal>
               <Reveal delay={160}>
                 <p className="section-copy">
-                  I have 1.5 years of professional IT experience repairing and troubleshooting computers, Linux systems, and hardware. I&apos;ve repaired more than 200 devices, built internal business software, hosted projects on Raspberry Pi systems, and enjoy working on embedded systems, robotics, full-stack development, and hardware projects.
+                  I have 1.5 years of professional IT experience repairing and troubleshooting computers, Linux systems, and hardware. I&apos;ve repaired more than 500 devices, built internal business software, hosted projects on Raspberry Pi systems, and enjoy working on embedded systems, robotics, full-stack development, and hardware projects.
                 </p>
               </Reveal>
               <Reveal delay={240}>
@@ -403,7 +417,7 @@ function App() {
               <div className="achievements-grid">
                 <Reveal delay={0}>
                   <div className="achievement-card">
-                    <span className="achievement-number achievement-number-numeric">200+</span>
+                    <span className="achievement-number achievement-number-numeric">500+</span>
                     <span className="achievement-label">Devices Repaired &amp; Troubleshot</span>
                   </div>
                 </Reveal>
@@ -576,6 +590,46 @@ function App() {
             </div>
           </section>
 
+          <section id="mini-projects" className="mini-projects">
+            <div className="container">
+              <Reveal>
+                <h2>Mini Projects</h2>
+              </Reveal>
+              <Reveal delay={80}>
+                <p className="section-copy">Smaller builds, experiments, and weekend hacks — scroll through them.</p>
+              </Reveal>
+              <Reveal delay={140}>
+                <div className="mini-scroller" tabIndex={0} role="region" aria-label="Mini projects, scroll horizontally">
+                  {miniProjects.map((project) => (
+                    <article key={project.id} className="mini-card">
+                      <span className="mini-card-icon">{project.icon}</span>
+                      <h3>{project.title}</h3>
+                      <p>{project.summary}</p>
+                      <div className="mini-card-foot">
+                        <div className="project-tags">
+                          {project.tags.map((tag) => (
+                            <span key={tag}>{tag}</span>
+                          ))}
+                        </div>
+                        {project.github && (
+                          <a
+                            className="mini-card-link"
+                            href={project.github}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`${project.title} on GitHub`}
+                          >
+                            GitHub →
+                          </a>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </Reveal>
+            </div>
+          </section>
+
           <section id="skills" className="skills">
             <div className="container">
               <Reveal>
@@ -717,7 +771,7 @@ function App() {
                 </Reveal>
                 <Reveal delay={240}>
                   <a
-                    href="/resume.pdf"
+                    href="/resume.pdf?v=2"
                     download
                     className="contact-link"
                   >

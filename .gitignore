@@ -1,0 +1,10 @@
+# Dependencies & build output
+node_modules/
+dist/
+
+# Local tooling state
+.freebuff/
+__pycache__/
+
+# Environment & secrets
+.env

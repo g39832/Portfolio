@@ -1057,9 +1057,127 @@ button.project-screenshot:focus-visible .project-screenshot-img {
   }
 }
 
+/* ---- Mini Projects scroller ---- */
+.mini-projects {
+  background: var(--section-bg-2);
+}
+
+.mini-scroller {
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+  padding: 0.75rem 0.25rem 1.25rem;
+  margin-inline: calc(-1 * clamp(1rem, 2vw, 1.5rem));
+  padding-inline: clamp(1rem, 2vw, 1.5rem);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+  cursor: grab;
+}
+
+.mini-scroller:active {
+  cursor: grabbing;
+}
+
+.mini-scroller > .reveal {
+  min-width: 100%;
+}
+
+.mini-card {
+  flex: 0 0 300px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1.4rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--card-gradient-3);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22);
+  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.mini-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.3);
+}
+
+.mini-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--accent);
+  background: linear-gradient(135deg, rgba(143, 228, 255, 0.14), rgba(146, 125, 255, 0.14));
+  border: 1px solid var(--border);
+}
+
+.mini-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text-heading);
+}
+
+.mini-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-soft);
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.mini-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.mini-card-foot .project-tags span {
+  font-size: 0.68rem;
+  padding: 0.2rem 0.55rem;
+  margin: 0;
+}
+
+.mini-card-link {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.mini-card-link:hover {
+  text-decoration: underline;
+}
+
+.mini-card-link:focus-visible,
+.mini-scroller:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.mini-scroller::-webkit-scrollbar {
+  height: 8px;
+}
+
+.mini-scroller::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+}
+
+.mini-scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* ---- Skills ---- */
 .skills {
-  background: var(--section-bg-2);
+  background: var(--section-bg-3);
 }
 
 .skills-categories {
@@ -1347,6 +1465,17 @@ button.project-screenshot:focus-visible .project-screenshot-img {
 
   .hero {
     padding-top: 8rem;
+  }
+
+  .mini-scroller {
+    margin-inline: 0;
+    padding-inline: 0.25rem 0.25rem;
+    cursor: default;
+  }
+
+  .mini-card {
+    flex-basis: 250px;
+    padding: 1.2rem;
   }
 
   .featured-project {

@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build --configLoader native",
+    "deploy": "npm run build && python ../deploy.py",
+    "deploy:prune": "npm run build && python ../deploy.py --prune",
+    "deploy:only": "python ../deploy.py",
     "lint": "eslint .",
     "preview": "vite preview"
   },
