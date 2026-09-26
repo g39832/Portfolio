@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import JellyfishBackground from './JellyfishBackground'
 import Reveal from './Reveal'
+import { ChevronIcon, MoonIcon, PauseIcon, PlayIcon, SunIcon } from './icons'
 import { projects, miniProjects } from './projects'
 
 const navLinks = [
@@ -10,6 +11,7 @@ const navLinks = [
   { href: '#achievements', label: 'Achievements' },
   { href: '#projects', label: 'Projects' },
   { href: '#mini-projects', label: 'Mini Projects' },
+  { href: '#hardware', label: 'Hardware' },
   { href: '#skills', label: 'Skills' },
   { href: '#working-on', label: 'Working On' },
   { href: '#contact', label: 'Contact' },
@@ -34,7 +36,6 @@ const workingOn = [
     ),
     label: 'MERN Stack Development',
     note: 'Building a full-stack inventory API with React, Node, and MongoDB',
-    progress: 60,
   },
   {
     icon: (
@@ -44,7 +45,6 @@ const workingOn = [
     ),
     label: 'Arduino & Robotics Projects',
     note: 'Designing an obstacle-avoiding rover',
-    progress: 40,
   },
   {
     icon: (
@@ -54,7 +54,6 @@ const workingOn = [
     ),
     label: 'Embedded Systems',
     note: 'Learning C and microcontroller fundamentals',
-    progress: 30,
   },
   {
     icon: (
@@ -64,19 +63,9 @@ const workingOn = [
     ),
     label: 'Linux Projects',
     note: 'Hardening and scaling my Raspberry Pi server',
-    progress: 70,
-  },
-  {
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M22 9V7h-2V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2v-2h-2V9h2zm-4 10H4V5h14v14zM6 13h5v4H6v-4zm6-6h4v3h-4V7zM6 7h5v5H6V7zm6 4h4v6h-4v-6z"/>
-      </svg>
-    ),
-    label: 'Personal Engineering Projects',
-    note: 'Prototyping the next build',
-    progress: 35,
   },
 ]
+
 
 const pillars = [
   {
@@ -86,7 +75,7 @@ const pillars = [
       </svg>
     ),
     title: 'Fix',
-    copy: '500+ devices repaired with 1.5 years of professional IT experience.',
+    copy: 'Hands-on diagnostics and repair of laptops, desktops and Linux machines for real customers.',
   },
   {
     icon: (
@@ -104,34 +93,31 @@ const pillars = [
       </svg>
     ),
     title: 'Learn',
-    copy: 'A CS & CE student diving into embedded systems, robotics, and Linux.',
+    copy: 'A CIT student at SKYCTC diving into embedded systems, robotics, and Linux.',
   },
 ]
 
-const SunIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4 1.4-1.4" />
-  </svg>
-)
+const hardware = [
+  {
+    title: 'Self-hosted web server',
+    copy: 'This site runs on my own Raspberry Pi with Nginx, DNS and firewall rules.',
+  },
+  {
+    title: 'Home network lab',
+    copy: 'VLANs, DNS filtering and firewall rules across my home network gear.',
+  },
+  {
+    title: 'Repair bench',
+    copy: 'Diagnosing and repairing laptops, desktops and components as an IT technician at Dispo Tech.',
+  },
+]
 
-const MoonIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
-  </svg>
-)
-
-const PauseIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-    <path d="M9 5v14M15 5v14" />
-  </svg>
-)
-
-const PlayIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M8 5v14l11-7z" />
-  </svg>
-)
+const achievements = [
+  { value: '1,400+', label: 'Items tracked every day in Dispodex' },
+  { value: '190+', label: 'Automated tests keeping it reliable' },
+  { value: 'STLP', label: 'Engineer & Ambassador' },
+  { value: 'CIT', label: 'Computer & Information Technology student at SKYCTC' },
+]
 
 function App() {
   const year = new Date().getFullYear()
@@ -144,6 +130,8 @@ function App() {
   const progressRef = useRef(null)
   const modalCloseRef = useRef(null)
   const lastFocusedRef = useRef(null)
+  const miniRef = useRef(null)
+  const [miniEdge, setMiniEdge] = useState({ atStart: true, atEnd: false })
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -185,7 +173,7 @@ function App() {
 
   useEffect(() => {
     const onResize = () => {
-      if (window.innerWidth > 900) setMenuOpen(false)
+      if (window.innerWidth > 1100) setMenuOpen(false)
     }
     const onKeyDown = (event) => {
       if (event.key === 'Escape') setMenuOpen(false)
@@ -239,8 +227,30 @@ function App() {
     }
   }, [selectedProject])
 
+  const updateMiniEdge = () => {
+    const scroller = miniRef.current
+    if (!scroller) return
+    const atStart = scroller.scrollLeft <= 8
+    const atEnd = scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - 8
+    setMiniEdge((current) =>
+      current.atStart === atStart && current.atEnd === atEnd ? current : { atStart, atEnd }
+    )
+  }
+
+  const scrollMini = (direction) => {
+    const scroller = miniRef.current
+    if (!scroller) return
+    scroller.scrollBy({ left: direction * scroller.clientWidth * 0.8, behavior: 'smooth' })
+  }
+
   useEffect(() => {
-    const scroller = document.querySelector('.mini-scroller')
+    updateMiniEdge()
+    window.addEventListener('resize', updateMiniEdge)
+    return () => window.removeEventListener('resize', updateMiniEdge)
+  }, [])
+
+  useEffect(() => {
+    const scroller = miniRef.current
     if (!scroller) return undefined
     const onWheel = (event) => {
       if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
@@ -261,28 +271,6 @@ function App() {
       <JellyfishBackground theme={theme} paused={paused} />
       <div className="scroll-progress" ref={progressRef} aria-hidden="true" />
 
-      <div className="controls">
-        <button
-          type="button"
-          className="control-btn"
-          onClick={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-        </button>
-        <button
-          type="button"
-          className="control-btn"
-          onClick={() => setPaused((current) => !current)}
-          aria-pressed={paused}
-          aria-label={paused ? 'Play jellyfish animation' : 'Pause jellyfish animation'}
-          title={paused ? 'Play jellyfish animation' : 'Pause jellyfish animation'}
-        >
-          {paused ? <PlayIcon /> : <PauseIcon />}
-        </button>
-      </div>
-
       <div className="site-content">
         <header className={`header${scrolled ? ' scrolled' : ''}`}>
           <nav className={`nav${menuOpen ? ' nav-open' : ''}`} aria-label="Primary">
@@ -293,6 +281,28 @@ function App() {
               </span>
               <span>Grayson Cox</span>
             </span>
+
+            <div className="controls">
+              <button
+                type="button"
+                className="control-btn"
+                onClick={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
+                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+              </button>
+              <button
+                type="button"
+                className="control-btn"
+                onClick={() => setPaused((current) => !current)}
+                aria-pressed={paused}
+                aria-label={paused ? 'Play ocean animation' : 'Pause ocean animation'}
+                title={paused ? 'Play ocean animation' : 'Pause ocean animation'}
+              >
+                {paused ? <PlayIcon /> : <PauseIcon />}
+              </button>
+            </div>
 
             <button
               type="button"
@@ -336,7 +346,7 @@ function App() {
               </Reveal>
               <Reveal delay={180}>
                 <p className="hero-copy">
-                  Tech repair professional, CS &amp; CE student, and self-driven developer with a passion
+                  Tech repair professional, CIT student at SKYCTC, and self-driven developer with a passion
                   for building things — from fixing hardware to shipping software.
                 </p>
               </Reveal>
@@ -364,7 +374,7 @@ function App() {
                     </svg>
                     See My Work
                   </a>
-                  <a href="/resume.pdf?v=2" target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+                  <a href="/resume.pdf?v=5" target="_blank" rel="noopener noreferrer" className="btn btn-outline">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/>
                     </svg>
@@ -373,6 +383,9 @@ function App() {
                 </div>
               </Reveal>
             </div>
+            <a href="#about" className="scroll-cue" aria-label="Scroll to About">
+              <span />
+            </a>
           </section>
 
           <section id="about" className="about">
@@ -382,7 +395,7 @@ function App() {
               </Reveal>
               <Reveal delay={80}>
                 <p className="section-copy">
-                  I&apos;m a Computer Science and Computer Engineering student with a passion for building systems from the hardware up.
+                  I&apos;m a Computer &amp; Information Technology (CIT) student at SKYCTC with a passion for building systems from the hardware up.
                 </p>
               </Reveal>
               <Reveal delay={160}>
@@ -415,36 +428,14 @@ function App() {
                 <h2>Achievements</h2>
               </Reveal>
               <div className="achievements-grid">
-                <Reveal delay={0}>
-                  <div className="achievement-card">
-                    <span className="achievement-number achievement-number-numeric">500+</span>
-                    <span className="achievement-label">Devices Repaired &amp; Troubleshot</span>
-                  </div>
-                </Reveal>
-                <Reveal delay={70}>
-                  <div className="achievement-card">
-                    <span className="achievement-number achievement-number-numeric">1.5 Years</span>
-                    <span className="achievement-label">Professional IT Experience</span>
-                  </div>
-                </Reveal>
-                <Reveal delay={140}>
-                  <div className="achievement-card">
-                    <span className="achievement-number achievement-number-numeric">3</span>
-                    <span className="achievement-label">Major Software Projects Built</span>
-                  </div>
-                </Reveal>
-                <Reveal delay={210}>
-                  <div className="achievement-card">
-                    <span className="achievement-number achievement-number-text">CS &amp; CE</span>
-                    <span className="achievement-label">Engineering Student</span>
-                  </div>
-                </Reveal>
-                <Reveal delay={280}>
-                  <div className="achievement-card">
-                    <span className="achievement-number achievement-number-text">STLP</span>
-                    <span className="achievement-label">Engineer &amp; Ambassador</span>
-                  </div>
-                </Reveal>
+                {achievements.map((item, index) => (
+                  <Reveal key={item.label} delay={index * 70}>
+                    <div className="achievement-card">
+                      <span className="achievement-number">{item.value}</span>
+                      <span className="achievement-label">{item.label}</span>
+                    </div>
+                  </Reveal>
+                ))}
               </div>
             </div>
           </section>
@@ -479,6 +470,7 @@ function App() {
                   <div className="featured-project-content">
                     <div className="featured-project-badge">Featured Project</div>
                     <h3>{featured.title}</h3>
+                    {featured.stat && <p className="project-stat">{featured.stat}</p>}
                     <p>{featured.summary}</p>
                     <div className="project-tags">
                       {featured.tags.map((tag) => (
@@ -486,16 +478,22 @@ function App() {
                       ))}
                     </div>
                     <div className="featured-project-links">
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={(event) => {
-                          lastFocusedRef.current = event.currentTarget
-                          setSelectedProject(featured)
-                        }}
-                      >
-                        View Case Study
-                      </button>
+                      {featured.caseStudy ? (
+                        <a className="btn btn-primary" href={featured.caseStudy}>
+                          Read the Case Study
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={(event) => {
+                            lastFocusedRef.current = event.currentTarget
+                            setSelectedProject(featured)
+                          }}
+                        >
+                          View Case Study
+                        </button>
+                      )}
                       {featured.live && (
                         <a
                           className="btn btn-outline"
@@ -547,6 +545,7 @@ function App() {
                         />
                       </button>
                       <h3>{project.title}</h3>
+                      {project.stat && <p className="project-stat">{project.stat}</p>}
                       <p>{project.summary}</p>
                       <div className="project-tags">
                         {project.tags.map((tag) => (
@@ -599,7 +598,17 @@ function App() {
                 <p className="section-copy">Smaller builds, experiments, and weekend hacks — scroll through them.</p>
               </Reveal>
               <Reveal delay={140}>
-                <div className="mini-scroller" tabIndex={0} role="region" aria-label="Mini projects, scroll horizontally">
+                <div className="mini-scroller-wrap">
+                  <button
+                    type="button"
+                    className="mini-arrow mini-arrow-left"
+                    onClick={() => scrollMini(-1)}
+                    disabled={miniEdge.atStart}
+                    aria-label="Previous mini projects"
+                  >
+                    <ChevronIcon direction="left" />
+                  </button>
+                <div className="mini-scroller" ref={miniRef} onScroll={updateMiniEdge} tabIndex={0} role="region" aria-label="Mini projects, scroll horizontally">
                   {miniProjects.map((project) => (
                     <article key={project.id} className="mini-card">
                       <span className="mini-card-icon">{project.icon}</span>
@@ -626,7 +635,53 @@ function App() {
                     </article>
                   ))}
                 </div>
+                  <button
+                    type="button"
+                    className="mini-arrow mini-arrow-right"
+                    onClick={() => scrollMini(1)}
+                    disabled={miniEdge.atEnd}
+                    aria-label="More mini projects"
+                  >
+                    <ChevronIcon direction="right" />
+                  </button>
+                </div>
               </Reveal>
+            </div>
+          </section>
+
+          <section id="hardware" className="hardware">
+            <div className="container">
+              <Reveal>
+                <h2>Hardware</h2>
+              </Reveal>
+              <Reveal delay={80}>
+                <p className="section-copy">I build with my hands as well as with code.</p>
+              </Reveal>
+              <div className="hardware-layout">
+                <Reveal variant="left">
+                  <figure className="hardware-photo">
+                    <img
+                      src="/pi-handheld.jpg"
+                      alt="A handheld Raspberry Pi computer in a black 3D-printed case, with a touchscreen showing this portfolio above a small wireless keyboard"
+                      loading="lazy"
+                      decoding="async"
+                      width="1400"
+                      height="1193"
+                    />
+                    <figcaption>My Raspberry Pi handheld: a touchscreen and mini keyboard in a 3D-printed case, showing this site.</figcaption>
+                  </figure>
+                </Reveal>
+                <div className="hardware-list">
+                  {hardware.map((item, index) => (
+                    <Reveal key={item.title} variant="right" delay={index * 90}>
+                      <div className="hardware-item">
+                        <h3>{item.title}</h3>
+                        <p>{item.copy}</p>
+                      </div>
+                    </Reveal>
+                  ))}
+                </div>
+              </div>
             </div>
           </section>
 
@@ -644,6 +699,7 @@ function App() {
                     <h3>Software Development</h3>
                     <ul className="skills-list">
                       <li>Python <span className="cert-badge">Certified</span></li>
+                      <li>Django</li>
                       <li>PHP</li>
                       <li>HTML / CSS <span className="cert-badge">Certified</span></li>
                       <li>JavaScript</li>
@@ -694,15 +750,12 @@ function App() {
                       <div className="working-on-card-head">
                         {item.icon}
                         <strong>{item.label}</strong>
-                        <span className="pct">{item.progress}%</span>
                       </div>
                       <p className="working-on-note">{item.note}</p>
-                      <div className="working-on-progress" aria-hidden="true">
-                        <span
-                          className="working-on-progress-fill"
-                          style={{ '--pct': `${item.progress}%` }}
-                        />
-                      </div>
+                      <span className="working-on-status">
+                        <span className="working-on-dot" aria-hidden="true" />
+                        In progress
+                      </span>
                     </div>
                   </Reveal>
                 ))}
@@ -771,7 +824,7 @@ function App() {
                 </Reveal>
                 <Reveal delay={240}>
                   <a
-                    href="/resume.pdf?v=2"
+                    href="/resume.pdf?v=5"
                     download
                     className="contact-link"
                   >
@@ -790,7 +843,7 @@ function App() {
           <div className="container">
             <Reveal>
               <p>&copy; {year} Grayson Cox</p>
-              <p className="footer-subtitle">Computer Engineering &amp; Computer Science Student</p>
+              <p className="footer-subtitle">Computer &amp; Information Technology Student · SKYCTC</p>
             </Reveal>
           </div>
         </footer>
@@ -838,6 +891,11 @@ function App() {
                 </div>
               </div>
               <div className="modal-actions">
+                {selectedProject.caseStudy && (
+                  <a className="btn btn-primary" href={selectedProject.caseStudy}>
+                    Read the full case study
+                  </a>
+                )}
                 {selectedProject.live && (
                   <a
                     className="btn btn-primary"
@@ -852,7 +910,7 @@ function App() {
                   </a>
                 )}
                 <a
-                  className={`btn ${selectedProject.live ? 'btn-outline' : 'btn-primary'}`}
+                  className={`btn ${selectedProject.live || selectedProject.caseStudy ? 'btn-outline' : 'btn-primary'}`}
                   href={selectedProject.github}
                   target="_blank"
                   rel="noopener noreferrer"

@@ -1,0 +1,282 @@
+/* Case study pages reuse App.css tokens, header and buttons; only page-specific layout lives here. */
+
+.cs-logo {
+  text-decoration: none;
+}
+
+.cs-back {
+  order: 2;
+  margin-left: auto;
+  color: var(--text-soft);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.cs-back:hover {
+  color: var(--accent);
+}
+
+.cs-main {
+  padding: 8rem 0 4rem;
+}
+
+.cs-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 3vw, 1.5rem);
+}
+
+.cs-title {
+  margin: 0.25rem 0 1rem;
+  font-size: clamp(2rem, 4.5vw, 3.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--text-strong);
+  text-wrap: balance;
+}
+
+.cs-lede {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 1.1rem;
+  line-height: 1.65;
+  color: var(--text-soft);
+}
+
+.cs-actions,
+.cs-footer-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 1.75rem;
+}
+
+.cs-facts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin: 2.5rem 0;
+}
+
+.cs-facts div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.2rem;
+  padding: 1.1rem 1.2rem;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.cs-facts dt {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+.cs-facts dd {
+  margin: 0;
+  font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.cs-video {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-strong);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
+  scroll-margin-top: 96px;
+}
+
+.cs-video video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: #0d1117;
+}
+
+.cs-video figcaption {
+  padding: 0.8rem 1.1rem;
+  font-size: 0.85rem;
+  color: var(--text-faint);
+}
+
+/* `section.` beats the main site's generic section rules (centred headings, dividers) */
+section.cs-section {
+  margin-top: 4rem;
+  padding: 0;
+  border-top: 0;
+  background: none;
+  content-visibility: visible;
+}
+
+section.cs-section h2 {
+  margin: 0 0 1rem;
+  padding-bottom: 0;
+  text-align: left;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  color: var(--accent);
+}
+
+section.cs-section h2::after {
+  display: none;
+}
+
+.cs-section p {
+  margin: 0 0 1rem;
+  max-width: 68ch;
+  line-height: 1.7;
+  color: var(--text-soft);
+}
+
+.cs-compare,
+.cs-problems {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.1rem;
+}
+
+.cs-problems > .reveal {
+  height: 100%;
+}
+
+.cs-card {
+  height: 100%;
+  padding: 1.4rem 1.5rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--card-gradient-3);
+}
+
+.cs-card h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1.1rem;
+  color: var(--text-heading);
+}
+
+.cs-card p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.cs-card ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--text-soft);
+  line-height: 1.7;
+}
+
+.cs-card-after {
+  border-color: var(--border-strong);
+}
+
+.cs-card-after h3 {
+  color: var(--accent);
+}
+
+.cs-tag {
+  display: inline-block;
+  margin-bottom: 0.7rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--fill);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+
+.cs-stack {
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+}
+
+.cs-stack li {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--fill);
+  color: var(--accent-2);
+  font-size: 0.8rem;
+}
+
+/* Architecture diagram: colours come from the theme tokens */
+.cs-diagram {
+  width: 100%;
+  height: auto;
+  margin-top: 0.5rem;
+  padding: 1rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+.cs-diagram-node rect {
+  fill: var(--fill);
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+
+.cs-diagram-main rect {
+  fill: var(--fill-hover);
+  stroke: var(--accent);
+}
+
+.cs-diagram-node text {
+  fill: var(--text-heading);
+  font-size: 16px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.cs-diagram-node .cs-diagram-sub {
+  fill: var(--text-faint);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.cs-diagram-edge path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  opacity: 0.75;
+}
+
+.cs-diagram-arrowhead {
+  fill: var(--accent);
+}
+
+.cs-diagram-label {
+  fill: var(--text-faint);
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .cs-main {
+    padding-top: 6.5rem;
+  }
+
+  .cs-facts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cs-compare,
+  .cs-problems {
+    grid-template-columns: 1fr;
+  }
+
+  .cs-back {
+    display: none;
+  }
+
+  .cs-diagram {
+    padding: 0.4rem;
+  }
+}

@@ -1,27 +1,30 @@
 export const projects = [
   {
-    id: 'pink-sheet',
-    title: 'Pink Sheet Inventory System',
-    featured: false,
-    screenshot: '/PInksheet.png',
-    alt: 'Pink Sheet Inventory System screenshot',
-    tags: ['PHP', 'MySQL', 'Database Design', 'Business Software'],
+    id: 'dispodex',
+    title: 'Dispodex — Refurb Shop Inventory',
+    featured: true,
+    stat: 'In daily use · 1,400+ items tracked',
+    screenshot: '/Dispodex.jpg',
+    alt: 'Dispodex status board with inventory cards grouped by stage, from Intake to Sold',
+    tags: ['Python', 'Django', 'SQLite', 'JavaScript', 'Square API', 'Business Software'],
     summary:
-      'An internal PHP inventory system that replaced paper-based tracking with a full digital workflow — designed and built entirely by me.',
+      'A Django inventory app used daily by a computer refurbishing shop — intake, photos, a drag-and-drop status board, eBay listing tools, and Square sync. A full rewrite of my original PHP Pink Sheet.',
     writeup:
-      'Developed a PHP-based inventory management system used for internal business operations. The application streamlined inventory tracking and provided a centralized workflow for managing equipment and assets, replacing manual paper-based processes with a digital solution designed and implemented entirely by me.',
+      'Rebuilt the shop\'s PHP + SQLite Pink Sheet as a Python/Django app that runs on the local network for the whole team. Items move from intake through eBay draft, review, listing, and the in-store shelf to sold on a drag-and-drop status board. Intake sheets autosave and catch two people editing the same SKU, photos are resized on upload, and every change is recorded in each item\'s history with who made it. Lookup searches every field and exports to CSV, ZIP, and Excel with embedded photos, and Zebra labels print straight from the browser.',
     problem:
-      'Manual paper-based inventory tracking was inefficient and error-prone for business operations.',
+      'The original PHP tool had outgrown itself — thousands of items, several people editing at once, and no history, backups, or link to the shop\'s Square point of sale.',
     solution:
-      'Built a full CRUD application with database-driven workflows, search, and reporting.',
+      'Rewrote it in Django with a background worker, a retrying Square sync queue with signed webhooks, nightly verified backups, and an importer that moved every old record and photo over and checked each one.',
     impact:
-      'Streamlined equipment tracking and asset management for daily business use.',
-    github: 'https://github.com/g39832',
+      'Tracks 1,400+ items across six stages for the shop team, keeps old QR codes and bookmarks working, and is covered by 190+ automated tests.',
+    github: 'https://github.com/g39832/Dispodex',
+    caseStudy: '/case-studies/dispodex/',
   },
   {
     id: 'ventage',
     title: 'Regroove — Vintage Reseller Platform',
-    featured: true,
+    featured: false,
+    stat: 'Live eBay integration + AI assistant',
     screenshot: '/Ventage.png',
     alt: 'Regroove inventory, accounting and listing management dashboard for vintage resellers',
     tags: ['React', 'TypeScript', 'Supabase', 'Node.js', 'Express', 'Tailwind CSS', 'eBay API', 'OpenAI'],
@@ -41,6 +44,7 @@ export const projects = [
     id: 'crm',
     title: 'CRM Tool',
     featured: false,
+    stat: 'Shipped to local businesses',
     screenshot: '/CRM.png',
     alt: 'CRM Tool screenshot',
     tags: ['Supabase', 'PostgreSQL', 'JavaScript', 'Node.js', 'REST API'],
@@ -55,7 +59,6 @@ export const projects = [
     impact:
       'A production-ready tool used daily by real customers for client tracking, job management, invoicing, and analytics.',
     github: 'https://github.com/g39832/Full_Devries',
-    live: 'https://full-devries.vercel.app',
   },
 ]
 
@@ -70,7 +73,18 @@ export const miniProjects = [
     ),
     summary: 'A full web server on bare-metal Linux — Raspberry Pi 4 with Nginx, DNS, firewalls, and SSL.',
     tags: ['Raspberry Pi', 'Nginx'],
-    github: 'https://github.com/g39832/Pi-App',
+  },
+  {
+    id: 'mp-pi-diagnostics',
+    title: 'Pi Diagnostic Station',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M3 12h4l3-8 4 16 3-8h4" />
+      </svg>
+    ),
+    summary: 'A Raspberry Pi-powered diagnostic station for computer repair shops, built as a TypeScript monorepo.',
+    tags: ['Raspberry Pi', 'TypeScript'],
+    github: 'https://github.com/g39832/PI-tester',
   },
   {
     id: 'mp-joseph',
@@ -94,7 +108,6 @@ export const miniProjects = [
     ),
     summary: 'VLANs, DNS filtering, and firewall rules across my home network gear.',
     tags: ['Networking', 'Firewall'],
-    github: 'https://github.com/g39832',
   },
   {
     id: 'mp-cancer-sim',
@@ -106,7 +119,6 @@ export const miniProjects = [
     ),
     summary: 'An interactive simulation of cancer cell growth and spread — watch how tumors develop in real time.',
     tags: ['Simulation', 'Biology'],
-    github: 'https://github.com/g39832',
   },
   {
     id: 'mp-jellyfish-timer',
@@ -118,6 +130,5 @@ export const miniProjects = [
     ),
     summary: 'A jellyfish-themed Pomodoro timer for focused study and work sessions.',
     tags: ['JavaScript', 'Productivity'],
-    github: 'https://github.com/g39832',
   },
 ]
