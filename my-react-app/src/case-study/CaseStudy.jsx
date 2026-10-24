@@ -158,10 +158,10 @@ function CaseStudy() {
                 and photo across, with each one checked on the way in.
               </p>
               <div className="cs-actions">
-                <a className="btn btn-primary" href="https://github.com/g39832/Dispodex" target="_blank" rel="noopener noreferrer">
-                  View the code on GitHub
-                </a>
-                <a className="btn btn-outline" href="#demo">Watch it in action</a>
+                <a className="btn btn-primary" href="#demo">Watch it in action</a>
+                <span className="btn btn-outline repo-private" title="This is client work, so the source code is kept private">
+                  Code is private (client work)
+                </span>
               </div>
             </Reveal>
 
@@ -278,8 +278,8 @@ function CaseStudy() {
             <Reveal>
               <div className="cs-footer-cta">
                 <a className="btn btn-primary" href="/#projects">← Back to all projects</a>
-                <a className="btn btn-outline" href="https://github.com/g39832/Dispodex" target="_blank" rel="noopener noreferrer">
-                  Read the source
+                <a className="btn btn-outline" href="/#contact">
+                  Ask me about it
                 </a>
               </div>
             </Reveal>

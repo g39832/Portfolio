@@ -17,8 +17,28 @@ export const projects = [
       'Rewrote it in Django with a background worker, a retrying Square sync queue with signed webhooks, nightly verified backups, and an importer that moved every old record and photo over and checked each one.',
     impact:
       'Tracks 1,400+ items across six stages for the shop team, keeps old QR codes and bookmarks working, and is covered by 190+ automated tests.',
-    github: 'https://github.com/g39832/Dispodex',
+    repoPrivate: true,
     caseStudy: '/case-studies/dispodex/',
+  },
+  {
+    id: 'campaign-ledger',
+    title: 'Campaign Ledger — D&D Campaign Tracker',
+    featured: false,
+    stat: '113 automated tests · players join from their own devices',
+    screenshot: '/CampaignLedger.jpg',
+    alt: 'Campaign Ledger battle map with fog of war, character tokens and the 3D dice tray showing a damage roll',
+    tags: ['Python', 'Flask', 'SQLite', 'JavaScript', 'Canvas 3D', 'Pillow'],
+    summary:
+      'A self-hosted Dungeons & Dragons companion: character sheets, combat tracker, battle map with fog of war, 3D dice, and a join code so friends can play from their own phones.',
+    writeup:
+      'A web app I run on my own machine for D&D nights. It covers full 5e character sheets with derived stats, a morality and alignment tracker, an initiative and HP combat tracker with undo, a campaign journal, and a creature library. Dice are real 3D polyhedra drawn on a canvas that tumble across the table and land on the result the server rolled. Friends join with a code and get a player screen with the shared battle map, the turn order, their own character, and live dice.',
+    problem:
+      'Running a game meant juggling paper sheets, a separate dice app, and a map, and nothing kept HP, turns, and what players were allowed to see in sync.',
+    solution:
+      'Built it with Flask and SQLite, with every edit autosaved through a conflict-safe save queue. The server is the source of truth for rolls, HP, and visibility. Fog of war is burned into the map image server-side, so players never receive anything the DM has hidden.',
+    impact:
+      'One app runs the whole session: 113 automated tests, verified backups and restores, DM-only rolls and hidden enemies enforced on the server, and it works on phones, tablets, and desktops.',
+    github: 'https://github.com/g39832/campaign-ledger',
   },
   {
     id: 'ventage',

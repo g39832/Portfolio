@@ -1817,3 +1817,21 @@ p.project-stat::before {
     animation: none;
   }
 }
+
+/* Projects whose code lives in a private repository */
+.repo-private {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-soft);
+  opacity: 0.75;
+  cursor: default;
+}
+
+.btn.repo-private:hover {
+  transform: none;
+  box-shadow: none;
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-soft);
+}
