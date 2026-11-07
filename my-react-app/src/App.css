@@ -932,6 +932,35 @@ button.project-screenshot:focus-visible .project-screenshot-img {
   color: var(--text-heading);
 }
 
+/* Company logo beside a project title (white tile keeps the navy logo
+   readable on the dark theme). */
+.project-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.project-title-row h2 {
+  margin: 0;
+}
+
+.project-logo {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 3px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  object-fit: contain;
+}
+
+.project-logo-lg {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+}
+
 .project-card p {
   margin: 0;
   flex: 1;

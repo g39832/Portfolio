@@ -561,7 +561,14 @@ function App() {
                           decoding="async"
                         />
                       </button>
-                      <h3>{project.title}</h3>
+                      {project.logo ? (
+                        <div className="project-title-row">
+                          <img className="project-logo" src={project.logo} alt={project.logoAlt} width="44" height="44" />
+                          <h3>{project.title}</h3>
+                        </div>
+                      ) : (
+                        <h3>{project.title}</h3>
+                      )}
                       {project.stat && <p className="project-stat">{project.stat}</p>}
                       <p>{project.summary}</p>
                       <div className="project-tags">
@@ -895,7 +902,14 @@ function App() {
                   <span key={tag}>{tag}</span>
                 ))}
               </div>
-              <h2 id="modal-title">{selectedProject.title}</h2>
+              {selectedProject.logo ? (
+                <div className="project-title-row">
+                  <img className="project-logo project-logo-lg" src={selectedProject.logo} alt={selectedProject.logoAlt} width="56" height="56" />
+                  <h2 id="modal-title">{selectedProject.title}</h2>
+                </div>
+              ) : (
+                <h2 id="modal-title">{selectedProject.title}</h2>
+              )}
               <p>{selectedProject.writeup}</p>
               <div className="modal-details">
                 <div className="modal-detail">

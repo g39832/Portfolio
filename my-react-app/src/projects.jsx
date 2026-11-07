@@ -62,11 +62,13 @@ export const projects = [
   },
   {
     id: 'crm',
-    title: 'CRM Tool',
+    title: 'Bluegrass CRM',
     featured: false,
+    logo: '/bluegrass-logo.webp',
+    logoAlt: 'Bluegrass Software logo',
     stat: 'Shipped to local businesses',
     screenshot: '/CRM.png',
-    alt: 'CRM Tool screenshot',
+    alt: 'Bluegrass CRM screenshot',
     tags: ['Supabase', 'PostgreSQL', 'JavaScript', 'Node.js', 'REST API'],
     summary:
       'A production CRM shipped to local businesses for client tracking, job management, invoicing, and analytics.',
