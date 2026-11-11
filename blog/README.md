@@ -290,6 +290,29 @@ cd ~/Portfolio/my-react-app && npm run build && sudo cp -r dist/* /var/www/html/
 
 (If your nginx site file has a different name, `ls /etc/nginx/sites-enabled/` shows it.)
 
+### On graysoncodes.org's Pi: the portfolio runs in Docker
+
+On the actual Pi, the Cloudflare Tunnel (the `cloudflared` system service) points at the **`portfolio`
+Docker container** (nginx:alpine on port 8080, serving `~/Portfolio/my-react-app/dist`), not at the
+system nginx. So instead of steps 7–8 above:
+
+```bash
+cd ~/Portfolio && git pull
+cd ~/Portfolio/my-react-app
+cp docker-compose.yml ~/docker-compose.portfolio.backup-$(date +%F-%H%M).yml
+cp ../blog/deploy/docker-compose.portfolio.yml docker-compose.yml
+npm run build
+docker compose up -d
+```
+
+`deploy/docker-compose.portfolio.yml` keeps the same container name and port 8080, but runs it on the
+Pi's network (`network_mode: host`) so nginx can reach the blog on `127.0.0.1:5080`. It also mounts
+`deploy/nginx-portfolio-docker.conf` (the stock nginx:alpine behaviour plus the blog locations) and the
+media folder (read-only). Portfolio updates are now just `git pull && npm run build` in
+`my-react-app`, because the container serves `dist/` directly.
+
+To undo: copy the backup over `docker-compose.yml` again and run `docker compose up -d`.
+
 **The Cloudflare Tunnel needs no changes.** It already sends graysoncodes.org to nginx, and nginx now
 routes the blog paths. Check from any device: `https://graysoncodes.org/blog`, then
 `https://graysoncodes.org/admin/blog`.

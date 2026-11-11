@@ -1,0 +1,16 @@
+# Replacement for ~/Portfolio/my-react-app/docker-compose.yml on the Pi.
+# Same container and port (8080) as before, plus the blog:
+#   * network_mode: host so nginx can forward /blog and /admin/blog to 127.0.0.1:5080
+#   * the blog's nginx settings and uploaded images mounted read-only
+services:
+  portfolio:
+    image: nginx:alpine
+    container_name: portfolio
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./dist:/usr/share/nginx/html:ro
+      - ../blog/deploy/nginx-portfolio-docker.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../blog/deploy/nginx-blog.conf:/etc/nginx/snippets/graysoncodes-blog.conf:ro
+      - ../blog/deploy/nginx-blog-proxy.conf:/etc/nginx/snippets/graysoncodes-blog-proxy.conf:ro
+      - /var/lib/graysoncodes-blog/data/media:/var/lib/graysoncodes-blog/data/media:ro
