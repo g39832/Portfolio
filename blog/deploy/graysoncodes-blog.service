@@ -1,0 +1,34 @@
+# /etc/systemd/system/graysoncodes-blog.service
+# The blog service: Flask app served by Waitress on 127.0.0.1:5080 (only nginx can reach it).
+[Unit]
+Description=graysoncodes.org blog (Flask + SQLite)
+After=network.target
+
+[Service]
+Type=simple
+User=grayson
+Group=grayson
+WorkingDirectory=/home/grayson/Portfolio/blog
+EnvironmentFile=/etc/graysoncodes-blog.env
+ExecStart=/home/grayson/Portfolio/blog/.venv/bin/python -m blogapp serve
+Restart=on-failure
+RestartSec=3
+# Keep the blog from ever crowding out the rest of the Pi.
+MemoryMax=200M
+CPUQuota=150%
+Nice=5
+UMask=0022
+# Sandboxing: read-only system, writable data + backup folders only.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/graysoncodes-blog /home/grayson/blog-backups
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

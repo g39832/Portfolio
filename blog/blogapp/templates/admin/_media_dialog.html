@@ -1,0 +1,37 @@
+<dialog class="media-dialog" id="media-dialog" aria-labelledby="media-dialog-title">
+  <div class="dialog-head">
+    <h2 id="media-dialog-title">Images</h2>
+    <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+  </div>
+  <div class="dialog-body">
+    <div class="dialog-library">
+      <div class="upload-zone" id="picker-drop">
+        <label class="btn btn-sm" for="picker-file">Upload from computer</label>
+        <input id="picker-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple class="visually-hidden">
+        <span class="muted small">or drop images here · JPEG, PNG, WebP, GIF · up to {{ config.MAX_UPLOAD_MB }} MB</span>
+      </div>
+      <p class="field-error" id="picker-error" role="alert" hidden></p>
+      <p class="muted small" id="picker-progress" role="status" aria-live="polite"></p>
+      <label class="visually-hidden" for="picker-search">Search images</label>
+      <input type="search" id="picker-search" placeholder="Search by file name, alt text or caption">
+      <ul class="media-grid" id="picker-grid" aria-label="Uploaded images"></ul>
+      <button type="button" class="btn btn-sm btn-quiet" id="picker-more" hidden>Load more</button>
+    </div>
+    <div class="dialog-detail" id="picker-detail" hidden>
+      <img id="picker-preview" alt="">
+      <p class="muted small" id="picker-meta"></p>
+      <div class="field">
+        <label for="picker-alt">Alt text</label>
+        <input id="picker-alt" type="text" maxlength="300" placeholder="What the image shows">
+      </div>
+      <div class="field">
+        <label for="picker-caption">Caption <span class="muted small">(optional, shown under the image)</span></label>
+        <input id="picker-caption" type="text" maxlength="300">
+      </div>
+      <div class="button-row">
+        <button type="button" class="btn" id="picker-insert">Insert into article</button>
+        <button type="button" class="btn btn-quiet" id="picker-featured">Use as featured image</button>
+      </div>
+    </div>
+  </div>
+</dialog>

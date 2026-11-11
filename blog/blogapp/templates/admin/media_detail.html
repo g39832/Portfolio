@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% block title %}Image · {{ item.original_name }}{% endblock %}
+{% block main %}
+<p class="eyebrow"><a href="{{ url_for('admin.media_library') }}">← Media</a></p>
+<h1>{{ item.original_name or 'Image' }}</h1>
+<div class="media-detail">
+  <figure class="media-detail-image">
+    <img src="{{ item.medium_url }}" alt="{{ item.alt_text }}">
+  </figure>
+  <div>
+    <dl class="facts">
+      <dt>Size</dt><dd>{{ item.width }} × {{ item.height }} px · {{ item.size_bytes | filesize }} (all copies)</dd>
+      <dt>Type</dt><dd>{{ item.mime_type }}</dd>
+      <dt>Uploaded</dt><dd>{{ item.created_at | datetime }}</dd>
+      <dt>Address</dt><dd><code class="copyable">{{ item.url }}</code></dd>
+      <dt>Markdown</dt><dd><code class="copyable">![{{ item.alt_text }}]({{ item.url }}{% if item.caption %} "{{ item.caption }}"{% endif %})</code></dd>
+    </dl>
+    <form method="post" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="alt_text">Alt text</label>
+        <input id="alt_text" name="alt_text" type="text" maxlength="300" value="{{ item.alt_text }}">
+        <p class="help">Describe what the image shows for people using screen readers.</p>
+      </div>
+      <div class="field">
+        <label for="caption">Caption</label>
+        <input id="caption" name="caption" type="text" maxlength="300" value="{{ item.caption }}">
+      </div>
+      <button type="submit" class="btn">Save details</button>
+    </form>
+
+    <section class="danger-zone" aria-labelledby="del-h">
+      <h2 id="del-h">Delete</h2>
+      {% if usage %}
+      <p>This image is used by:</p>
+      <ul>{% for a in usage %}<li><a href="{{ url_for('admin.edit', article_id=a.id) }}">{{ a.title or 'Untitled' }}</a> <span class="muted small">({{ a.status }})</span></li>{% endfor %}</ul>
+      <p class="warn">Deleting it will leave a broken image in those articles.</p>
+      {% else %}
+      <p class="muted">No article uses this image.</p>
+      {% endif %}
+      <form method="post" action="{{ url_for('admin.media_delete', media_id=item.id) }}" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% if usage %}<label class="check"><input type="checkbox" name="confirm_in_use" value="yes" required> Delete it anyway</label>{% endif %}
+        <label class="check"><input type="checkbox" required> Yes, delete this image permanently</label>
+        <button type="submit" class="btn btn-danger">Delete image</button>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}

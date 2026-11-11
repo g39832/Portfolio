@@ -1,0 +1,7 @@
+{% extends "admin/base.html" %}
+{% block title %}Problem{% endblock %}
+{% block main %}
+<h1>{% if error %}{{ error.name }}{% else %}That didn't work{% endif %}</h1>
+<p class="alert" role="alert">{% if message %}{{ message }}{% elif error %}{{ error.description }}{% endif %}</p>
+<p><a class="btn" href="{{ back or url_for('admin.dashboard') }}">Go back</a></p>
+{% endblock %}

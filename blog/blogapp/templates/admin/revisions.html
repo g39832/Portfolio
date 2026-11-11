@@ -1,0 +1,32 @@
+{% extends "admin/base.html" %}
+{% block title %}History · {{ article.title }}{% endblock %}
+{% block main %}
+<p class="eyebrow"><a href="{{ url_for('admin.edit', article_id=article.id) }}">← Back to the editor</a></p>
+<h1>Version history</h1>
+<p class="muted">“{{ article.title or 'Untitled' }}” — a version is kept on every manual save, publish and restore (newest 50).</p>
+<div class="revisions-layout">
+  <ol class="revision-list">
+    {% for r in revisions %}
+    <li {% if selected and selected.id == r.id %}aria-current="true"{% endif %}>
+      <a href="?rev={{ r.id }}">#{{ r.id }} · {{ r.reason }}</a>
+      <span class="muted small">{{ r.created_at | datetime }} · {{ r.size }} characters</span>
+    </li>
+    {% else %}
+    <li class="muted">No saved versions yet.</li>
+    {% endfor %}
+  </ol>
+  {% if selected %}
+  <section class="revision-view" aria-labelledby="rev-h">
+    <h2 id="rev-h">Version #{{ selected.id }}: {{ selected.title or 'Untitled' }}</h2>
+    <p class="muted small">{{ selected.reason }} · {{ selected.created_at | datetime }}</p>
+    {% if selected.excerpt %}<p><strong>Excerpt:</strong> {{ selected.excerpt }}</p>{% endif %}
+    <pre class="revision-body">{{ selected.body_md }}</pre>
+    <form method="post" action="{{ url_for('admin.restore_revision', article_id=article.id, revision_id=selected.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn" type="submit">Restore this version</button>
+      <span class="muted small">The current text is kept in the history{% if article.effective_status == 'published' %}; the live article updates immediately{% endif %}.</span>
+    </form>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

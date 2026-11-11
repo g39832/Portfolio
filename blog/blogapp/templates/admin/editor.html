@@ -1,0 +1,220 @@
+{% extends "admin/base.html" %}
+{% block title %}{% if article %}Edit · {{ article.title or 'Untitled' }}{% else %}New article{% endif %}{% endblock %}
+{% block body_class %}editor-page{% endblock %}
+{% block main_class %}editor-wrap{% endblock %}
+{% block main %}
+<script type="application/json" id="editor-data">{{ editor_json | safe }}</script>
+<form id="editor-form" class="editor" autocomplete="off" novalidate>
+  <div class="editor-main">
+    <div class="editor-topbar">
+      <p class="eyebrow"><a href="{{ url_for('admin.dashboard') }}">← Articles</a></p>
+      <p class="save-status" id="save-status" role="status" aria-live="polite" data-state="{{ 'saved' if article else 'new' }}">
+        {% if article %}Saved{% else %}Not saved yet{% endif %}
+      </p>
+    </div>
+
+    <label class="visually-hidden" for="title">Title</label>
+    <input id="title" name="title" class="title-input" type="text" maxlength="200" placeholder="Article title"
+           value="{{ article.title if article else '' }}" required>
+
+    <div class="field slug-field">
+      <label for="slug">URL</label>
+      <div class="slug-row">
+        <span class="slug-prefix" aria-hidden="true">/blog/</span>
+        <input id="slug" name="slug" type="text" maxlength="120" pattern="[a-z0-9]+(-[a-z0-9]+)*" spellcheck="false"
+               value="{{ article.slug if article else '' }}" aria-describedby="slug-help"
+               data-auto="{{ '0' if article and (article.published_at or article.status != 'draft' or article.title) else '1' }}">
+        <button type="button" class="btn btn-sm btn-quiet" id="slug-regen">From title</button>
+      </div>
+      <p class="help" id="slug-help">
+        {% if article and article.effective_status == 'published' %}This article is live. Changing the URL keeps the old one working as a redirect.
+        {% else %}Filled in from the title until you edit it. Lowercase letters, numbers and hyphens.{% endif %}
+      </p>
+      <p class="field-error" id="slug-error" hidden></p>
+    </div>
+
+    <div class="editor-tabs" role="tablist" aria-label="Editor view">
+      <button type="button" role="tab" id="tab-write" aria-selected="true" aria-controls="pane-write">Write</button>
+      <button type="button" role="tab" id="tab-preview" aria-selected="false" aria-controls="pane-preview">Preview</button>
+      <button type="button" role="tab" id="tab-split" aria-selected="false" aria-controls="pane-write" class="split-only">Side by side</button>
+    </div>
+
+    <div class="toolbar" role="toolbar" aria-label="Formatting" aria-controls="body">
+      <div class="tool-group">
+        <button type="button" data-md="h1" title="Heading 1 (the title is already the page's H1; prefer H2)">H1</button>
+        <button type="button" data-md="h2" title="Heading 2">H2</button>
+        <button type="button" data-md="h3" title="Heading 3">H3</button>
+        <button type="button" data-md="h4" title="Heading 4">H4</button>
+      </div>
+      <div class="tool-group">
+        <button type="button" data-md="bold" title="Bold (Ctrl+B)" aria-label="Bold"><strong>B</strong></button>
+        <button type="button" data-md="italic" title="Italic (Ctrl+I)" aria-label="Italic"><em>I</em></button>
+        <button type="button" data-md="strike" title="Strikethrough" aria-label="Strikethrough"><s>S</s></button>
+        <button type="button" data-md="code" title="Inline code" aria-label="Inline code">&lt;/&gt;</button>
+        <button type="button" data-md="link" title="Link (Ctrl+K)" aria-label="Link">Link</button>
+      </div>
+      <div class="tool-group">
+        <button type="button" data-md="ul" title="Bulleted list" aria-label="Bulleted list">• List</button>
+        <button type="button" data-md="ol" title="Numbered list" aria-label="Numbered list">1. List</button>
+        <button type="button" data-md="quote" title="Quote" aria-label="Quote">“ ”</button>
+        <button type="button" data-md="codeblock" title="Code block" aria-label="Code block">{ }</button>
+        <button type="button" data-md="table" title="Table" aria-label="Table">Table</button>
+        <button type="button" data-md="hr" title="Horizontal line" aria-label="Horizontal line">―</button>
+        <button type="button" data-md="image" title="Insert an image" aria-label="Insert image">Image</button>
+      </div>
+    </div>
+
+    <div class="panes" id="panes" data-view="write">
+      <div class="pane pane-write" id="pane-write" role="tabpanel" aria-labelledby="tab-write">
+        <label class="visually-hidden" for="body">Article text (Markdown)</label>
+        <textarea id="body" name="body_md" class="body-input" spellcheck="true"
+                  placeholder="Write in Markdown. Drag images here or paste them to upload.">{{ article.body_md if article else '' }}</textarea>
+        <p class="drop-hint" id="drop-hint" hidden>Drop images to upload them</p>
+      </div>
+      <div class="pane pane-preview" id="pane-preview" role="tabpanel" aria-labelledby="tab-preview" hidden>
+        <div class="prose" id="preview" aria-live="off"></div>
+      </div>
+    </div>
+    <p class="editor-stats" id="editor-stats">
+      <span id="word-count">{{ article.word_count if article else 0 }} words</span> ·
+      <span id="read-time">{{ article.reading_minutes if article else 1 }} min read</span>
+      <span id="h1-warning" class="warn" hidden> · The title is already the page's main heading; start sections at H2.</span>
+    </p>
+    <details class="md-help">
+      <summary>Markdown cheat sheet</summary>
+      <pre>## Section heading       **bold**   *italic*   ~~strike~~   `code`
+[link text](https://example.com)
+![Alt text](/media/2026/11/image.jpg "Caption shown under the image")
+- bullet          1. numbered        > quote        ---  (line)
+```bash
+code block with highlighting (bash, python, js, sql, yaml, …)
+```
+| Column | Column |
+|--------|-------:|
+| cell   |  right |</pre>
+      <p class="help">Keyboard: Ctrl+S save · Ctrl+B bold · Ctrl+I italic · Ctrl+K link.</p>
+    </details>
+  </div>
+
+  <aside class="editor-side" aria-label="Article settings">
+    <section class="side-card" aria-labelledby="publish-h">
+      <h2 id="publish-h">Publishing</h2>
+      <p class="status-line">Status: <span class="badge badge-{{ article.effective_status if article else 'draft' }}" id="status-badge">{{ (article.effective_status if article else 'draft') | capitalize }}</span></p>
+      {% if article and article.effective_status == 'scheduled' %}
+      <p class="help">Goes live {{ article.published_at | datetime }} ({{ config.TIMEZONE }}).</p>
+      {% elif article and article.effective_status == 'published' %}
+      <p class="help">Live since {{ article.published_at | datetime }}. <a href="/blog/{{ article.slug }}" target="_blank" rel="noopener">View ↗</a></p>
+      {% endif %}
+      <p class="help" id="autosave-note">
+        {% if article and article.effective_status == 'published' %}Live articles aren't autosaved, so half-finished edits never go public. Click <strong>Update</strong> when ready; your typing is kept in this browser meanwhile.
+        {% else %}Drafts autosave a few seconds after you stop typing.{% endif %}
+      </p>
+      <div class="button-row">
+        <button type="button" class="btn" id="save-btn">{% if article and article.effective_status == 'published' %}Update{% else %}Save draft{% endif %}</button>
+        <button type="button" class="btn btn-quiet" id="preview-btn">Preview</button>
+      </div>
+      <div class="button-row">
+        {% if not article or article.status in ('draft', 'archived') or article.effective_status == 'scheduled' %}
+        <button type="button" class="btn btn-primary" data-action="publish">Publish now</button>
+        {% endif %}
+        {% if article and article.effective_status in ('published', 'scheduled') %}
+        <button type="button" class="btn btn-quiet" data-action="unpublish">Unpublish</button>
+        {% endif %}
+      </div>
+      {% if not article or article.effective_status != 'published' %}
+      <div class="field schedule-field">
+        <label for="publish-at">Schedule for later <span class="muted small">({{ config.TIMEZONE }})</span></label>
+        <div class="slug-row">
+          <input id="publish-at" type="datetime-local" value="{{ article.published_at | local_input if article and article.status == 'scheduled' else '' }}">
+          <button type="button" class="btn btn-quiet btn-sm" data-action="schedule">Schedule</button>
+        </div>
+      </div>
+      {% endif %}
+      <p class="field-error" id="action-error" role="alert" hidden></p>
+    </section>
+
+    <section class="side-card" aria-labelledby="details-h">
+      <h2 id="details-h">Details</h2>
+      <div class="field">
+        <label for="excerpt">Excerpt / subtitle</label>
+        <textarea id="excerpt" name="excerpt" rows="3" maxlength="500" aria-describedby="excerpt-help">{{ article.excerpt if article else '' }}</textarea>
+        <p class="help" id="excerpt-help">Shown under the title and on article cards. Left empty, the first lines of the article are used.</p>
+      </div>
+      <div class="field">
+        <label for="seo">Search engine description</label>
+        <textarea id="seo" name="seo_description" rows="3" maxlength="300" aria-describedby="seo-help">{{ article.seo_description if article else '' }}</textarea>
+        <p class="help" id="seo-help"><span id="seo-count">0</span>/160 recommended. Falls back to the excerpt.</p>
+      </div>
+      <div class="field">
+        <label for="category">Category</label>
+        <select id="category" name="category_id">
+          <option value="">No category</option>
+          {% for c in categories %}<option value="{{ c.id }}" {% if article and article.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select>
+        <p class="help"><a href="{{ url_for('admin.categories') }}" target="_blank" rel="noopener">Manage categories ↗</a></p>
+      </div>
+      <div class="field">
+        <label for="tags">Tags</label>
+        <input id="tags" name="tags" type="text" list="tag-suggestions" aria-describedby="tags-help"
+               value="{{ article.tags | map(attribute='name') | join(', ') if article else '' }}">
+        <datalist id="tag-suggestions">{% for t in tag_names %}<option value="{{ t }}">{% endfor %}</datalist>
+        <p class="help" id="tags-help">Separate with commas, e.g. <em>raspberry pi, nginx, docker</em>.</p>
+      </div>
+      <label class="check"><input type="checkbox" id="featured" name="featured" {% if article and article.featured %}checked{% endif %}> Feature at the top of the blog</label>
+    </section>
+
+    <section class="side-card" aria-labelledby="image-h">
+      <h2 id="image-h">Featured image</h2>
+      <input type="hidden" id="featured-image-id" name="featured_image_id" value="{{ featured_media.id if featured_media else '' }}">
+      <div class="featured-preview" id="featured-preview" {% if not featured_media %}hidden{% endif %}>
+        <img id="featured-img" src="{{ featured_media.thumb_url if featured_media else '' }}" alt="">
+      </div>
+      <div class="button-row">
+        <button type="button" class="btn btn-sm btn-quiet" id="featured-choose">{% if featured_media %}Change{% else %}Choose image{% endif %}</button>
+        <button type="button" class="btn btn-sm btn-quiet" id="featured-remove" {% if not featured_media %}hidden{% endif %}>Remove</button>
+      </div>
+      <div class="field">
+        <label for="featured-alt">Alt text for the featured image</label>
+        <input id="featured-alt" name="featured_image_alt" type="text" maxlength="300"
+               value="{{ article.featured_image_alt if article else '' }}" placeholder="Describe the image for screen readers">
+      </div>
+    </section>
+
+    {% if article %}
+    <section class="side-card" aria-labelledby="more-h">
+      <h2 id="more-h">More</h2>
+      <ul class="link-list">
+        <li><a href="{{ url_for('admin.revisions', article_id=article.id) }}">Version history</a></li>
+        <li><button type="button" class="link-btn" data-action="duplicate">Duplicate this article</button></li>
+        {% if article.status == 'archived' %}
+        <li><button type="button" class="link-btn" data-action="restore">Restore from archive</button></li>
+        {% else %}
+        <li><button type="button" class="link-btn" data-action="archive">Archive</button></li>
+        {% endif %}
+        <li><a class="danger" href="{{ url_for('admin.delete', article_id=article.id) }}">Delete permanently…</a></li>
+      </ul>
+      <p class="help">Created {{ article.created_at | datetime }} · last saved {{ article.updated_at | datetime }}</p>
+    </section>
+    {% endif %}
+  </aside>
+</form>
+
+<div class="conflict-box alert" id="conflict-box" role="alert" hidden>
+  <p id="conflict-text"></p>
+  <div class="button-row">
+    <button type="button" class="btn btn-sm" id="conflict-reload">Load the newer version (copy mine first)</button>
+    <button type="button" class="btn btn-sm btn-danger" id="conflict-overwrite">Keep mine and overwrite</button>
+  </div>
+</div>
+
+<div class="restore-box alert" id="restore-box" role="alert" hidden>
+  <p>This browser has unsaved text for this article from <span id="restore-time"></span>.</p>
+  <div class="button-row">
+    <button type="button" class="btn btn-sm" id="restore-yes">Restore it</button>
+    <button type="button" class="btn btn-sm btn-quiet" id="restore-no">Discard</button>
+  </div>
+</div>
+
+{% include "admin/_media_dialog.html" %}
+{% endblock %}
+{% block scripts %}<script src="{{ asset('media-picker.js') }}" defer></script><script src="{{ asset('editor.js') }}" defer></script>{% endblock %}

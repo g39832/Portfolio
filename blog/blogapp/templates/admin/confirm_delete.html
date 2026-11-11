@@ -1,0 +1,20 @@
+{% extends "admin/base.html" %}
+{% block title %}Delete article{% endblock %}
+{% block main %}
+<h1>Delete “{{ article.title or 'Untitled' }}”?</h1>
+<div class="alert">
+  <p>This permanently deletes the article, its tag links and its whole version history. It can't be undone
+     (except by restoring a backup).</p>
+  {% if article.effective_status == 'published' %}<p><strong>This article is live.</strong> Its address /blog/{{ article.slug }} will stop working.
+    If you only want to hide it, <strong>Unpublish</strong> or <strong>Archive</strong> it instead.</p>{% endif %}
+  <p>Uploaded images are not deleted; manage them in Media.</p>
+</div>
+<form method="post" class="stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label class="check"><input type="checkbox" name="confirm" value="yes" required> Yes, delete this article permanently</label>
+  <div class="button-row">
+    <button type="submit" class="btn btn-danger">Delete permanently</button>
+    <a class="btn btn-quiet" href="{{ url_for('admin.edit', article_id=article.id) }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

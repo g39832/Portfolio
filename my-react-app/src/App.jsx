@@ -14,6 +14,7 @@ const navLinks = [
   { href: '#hardware', label: 'Hardware' },
   { href: '#skills', label: 'Skills' },
   { href: '#working-on', label: 'Working On' },
+  { href: '/blog', label: 'Blog' },
   { href: '#contact', label: 'Contact' },
 ]
 

@@ -1,0 +1,34 @@
+{# Quick action buttons for one article row. #}
+{% macro row_actions(a, status_filter) -%}
+<div class="row-actions">
+  <a class="btn btn-sm" href="{{ url_for('admin.edit', article_id=a.id) }}">Edit<span class="visually-hidden"> {{ a.title }}</span></a>
+  {% if a.effective_status == 'published' %}
+  <a class="btn btn-sm btn-quiet" href="/blog/{{ a.slug }}" target="_blank" rel="noopener">View</a>
+  {% else %}
+  <a class="btn btn-sm btn-quiet" href="{{ url_for('admin.preview', article_id=a.id) }}" target="_blank" rel="noopener">Preview</a>
+  {% endif %}
+  <details class="more-actions">
+    <summary class="btn btn-sm btn-quiet">More<span class="visually-hidden"> actions for {{ a.title }}</span></summary>
+    <div class="menu">
+      {% if a.status == 'draft' %}{{ action_form(a, 'publish', 'Publish now', status_filter) }}{% endif %}
+      {% if a.effective_status in ('published', 'scheduled') %}{{ action_form(a, 'unpublish', 'Unpublish (back to draft)', status_filter) }}{% endif %}
+      {% if a.status != 'archived' %}{{ action_form(a, 'archive', 'Archive', status_filter) }}{% else %}{{ action_form(a, 'restore', 'Restore as draft', status_filter) }}{% endif %}
+      {{ action_form(a, 'duplicate', 'Duplicate', status_filter) }}
+      <a class="menu-item danger" href="{{ url_for('admin.delete', article_id=a.id) }}">Delete…</a>
+    </div>
+  </details>
+</div>
+{%- endmacro %}
+
+{% macro action_form(a, name, label, status_filter) -%}
+<form method="post" action="{{ url_for('admin.article_action', article_id=a.id, action=name) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="back" value="dashboard">
+  <input type="hidden" name="status" value="{{ status_filter or '' }}">
+  <button type="submit" class="menu-item">{{ label }}</button>
+</form>
+{%- endmacro %}
+
+{% macro status_badge(a) -%}
+<span class="badge badge-{{ a.effective_status }}">{{ a.effective_status | capitalize }}</span>
+{%- endmacro %}

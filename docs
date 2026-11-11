@@ -44,3 +44,16 @@
  * 
  * =========================================================================
  */
+
+/**
+ * =========================================================================
+ * BLOG (graysoncodes.org/blog + /admin/blog)
+ * =========================================================================
+ * The blog is a small separate service in ./blog that runs next to this
+ * portfolio (nginx forwards /blog, /admin/blog, /media and /sitemap.xml to it).
+ * Install, backups, restore, updates and troubleshooting: blog/README.md
+ *
+ * The steps above still apply to the portfolio. "sudo rm -rf /var/www/html/*"
+ * is safe: blog data lives in /var/lib/graysoncodes-blog/data, not the web root.
+ * =========================================================================
+ */

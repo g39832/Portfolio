@@ -1,0 +1,93 @@
+{% extends "public/base.html" %}
+{% from "public/_macros.html" import card, meta_line, tag_list %}
+{% block title %}{% if category or tag %}{{ page_title }} · Blog{% elif result.page > 1 %}Blog · Page {{ result.page }}{% else %}Blog{% endif %}{% endblock %}
+{% block description %}{{ description }}{% endblock %}
+{% block canonical %}{{ canonical }}{% endblock %}
+{% block robots %}{% if noindex %}<meta name="robots" content="noindex, follow">{% endif %}{% endblock %}
+
+{% block main %}
+<div class="wrap">
+  <header class="blog-intro">
+    {% if category or tag %}
+    <p class="eyebrow"><a href="/blog">Blog</a> / {% if category %}Category{% else %}Tag{% endif %}</p>
+    <h1>{{ page_title }}</h1>
+    {% if category and category.description %}<p class="lede">{{ category.description }}</p>{% endif %}
+    {% else %}
+    <p class="eyebrow">Writing</p>
+    <h1>Blog</h1>
+    <p class="lede">Technical articles, projects, experiments and engineering notes — mostly Linux, self-hosting,
+      homelab infrastructure, databases and the software I build and run myself.</p>
+    {% endif %}
+  </header>
+
+  <form class="blog-search" role="search" action="{{ base_path }}" method="get">
+    <label class="visually-hidden" for="blog-q">Search articles</label>
+    <input id="blog-q" type="search" name="q" value="{{ query }}" placeholder="Search titles, content and tags" maxlength="200">
+    <button type="submit" class="btn">Search</button>
+    {% if query %}<a class="btn btn-quiet" href="{{ base_path }}">Clear</a>{% endif %}
+  </form>
+
+  {% if categories %}
+  <nav class="category-nav" aria-label="Categories">
+    <ul>
+      <li><a href="/blog" {% if not category and not tag %}aria-current="page"{% endif %}>All</a></li>
+      {% for c in categories %}
+      <li><a href="/blog/category/{{ c.slug }}" {% if category and category.slug == c.slug %}aria-current="page"{% endif %}>{{ c.name }} <span class="count">{{ c.article_count }}</span></a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  {% if featured %}
+  <section class="featured" aria-labelledby="featured-heading">
+    <h2 id="featured-heading" class="section-label">Featured</h2>
+    <article class="featured-post{% if featured.image_medium_url %} has-image{% endif %}">
+      {% if featured.image_medium_url %}
+      <a class="featured-image" href="/blog/{{ featured.slug }}" tabindex="-1" aria-hidden="true">
+        <img src="{{ featured.image_medium_url }}" alt="" decoding="async"
+             {% if featured.image_width %}width="1200" height="{{ (1200 * featured.image_height / featured.image_width) | round | int }}"{% endif %}>
+      </a>
+      {% endif %}
+      <div class="featured-body">
+        <h3 class="featured-title"><a href="/blog/{{ featured.slug }}">{{ featured.title }}</a></h3>
+        {{ meta_line(featured) }}
+        {% if featured.summary %}<p class="featured-excerpt">{{ featured.summary }}</p>{% endif %}
+        {{ tag_list(featured.tags) }}
+        <a class="read-more" href="/blog/{{ featured.slug }}">Read the article<span class="visually-hidden">: {{ featured.title }}</span> →</a>
+      </div>
+    </article>
+  </section>
+  {% endif %}
+
+  {% if result.items %}
+  <section aria-labelledby="list-heading">
+    <h2 id="list-heading" class="section-label">
+      {% if query %}{{ result.total }} result{{ '' if result.total == 1 else 's' }} for “{{ query }}”{% elif featured %}More articles{% else %}Articles{% endif %}
+    </h2>
+    <div class="post-grid">
+      {% for a in result.items %}{{ card(a) }}{% endfor %}
+    </div>
+  </section>
+  {% elif query or category or tag %}
+  <p class="empty-note">No articles match{% if query %} “{{ query }}”{% endif %}. <a href="/blog">See all articles</a>.</p>
+  {% elif not featured %}
+  <p class="empty-note">No articles have been published yet.</p>
+  {% endif %}
+
+  {% if result.pages > 1 %}
+  <nav class="pagination" aria-label="Pages">
+    {% set q = ('&q=' ~ (query | urlencode)) if query else '' %}
+    {% if result.has_prev %}<a class="btn" rel="prev" href="{{ base_path }}?page={{ result.page - 1 }}{{ q }}">← Newer</a>{% else %}<span></span>{% endif %}
+    <span class="page-count">Page {{ result.page }} of {{ result.pages }}</span>
+    {% if result.has_next %}<a class="btn" rel="next" href="{{ base_path }}?page={{ result.page + 1 }}{{ q }}">Older →</a>{% else %}<span></span>{% endif %}
+  </nav>
+  {% endif %}
+
+  {% if tags and not tag and not query %}
+  <section class="tag-cloud" aria-labelledby="tags-heading">
+    <h2 id="tags-heading" class="section-label">Topics</h2>
+    {{ tag_list(tags, "Topics") }}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

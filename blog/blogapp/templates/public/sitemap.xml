@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  {% for path in static_pages %}
+  <url><loc>{{ site_url }}{{ path }}</loc></url>
+  {% endfor %}
+  <url><loc>{{ site_url }}/blog</loc>{% if updated %}<lastmod>{{ updated }}</lastmod>{% endif %}</url>
+  {% for c in categories %}
+  <url><loc>{{ site_url }}/blog/category/{{ c.slug }}</loc></url>
+  {% endfor %}
+  {% for a in items %}
+  <url><loc>{{ site_url }}/blog/{{ a.slug }}</loc><lastmod>{{ a.content_updated_at or a.published_at }}</lastmod></url>
+  {% endfor %}
+</urlset>

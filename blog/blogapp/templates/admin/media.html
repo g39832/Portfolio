@@ -1,0 +1,56 @@
+{% extends "admin/base.html" %}
+{% block title %}Media{% endblock %}
+{% block main %}
+<div class="page-head">
+  <h1>Media</h1>
+  <p class="muted">{{ result.total }} image{{ '' if result.total == 1 else 's' }}</p>
+</div>
+
+<form class="upload-zone upload-form" method="post" action="{{ url_for('admin.media_upload') }}" enctype="multipart/form-data" id="upload-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label for="files">Upload images</label>
+  <input id="files" name="files" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple required>
+  <button type="submit" class="btn">Upload</button>
+  <p class="help">JPEG, PNG, WebP or GIF, up to {{ max_mb }} MB each. Photos are resized for the web and their
+    location data (EXIF) is removed. Transparency and GIF animation are kept.</p>
+</form>
+
+{% if errors %}
+<div class="alert" role="alert">
+  {% if uploaded %}<p>{{ uploaded }} image{{ '' if uploaded == 1 else 's' }} uploaded. These failed:</p>{% endif %}
+  <ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<form class="blog-search" role="search" method="get">
+  <label class="visually-hidden" for="media-q">Search images</label>
+  <input id="media-q" type="search" name="q" value="{{ query }}" placeholder="Search file name, alt text, caption">
+  <button class="btn" type="submit">Search</button>
+</form>
+
+{% if result.items %}
+<ul class="media-grid media-library">
+  {% for m in result.items %}
+  <li>
+    <a href="{{ url_for('admin.media_detail', media_id=m.id) }}" class="media-tile">
+      <img src="{{ m.thumb_url }}" alt="{{ m.alt_text }}" loading="lazy" decoding="async">
+      <span class="media-tile-meta">
+        <span class="name">{{ m.original_name or 'image' }}</span>
+        <span class="muted small">{{ m.width }}×{{ m.height }} · {{ m.size_bytes | filesize }}</span>
+        {% if not m.alt_text %}<span class="warn small">No alt text</span>{% endif %}
+      </span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% if result.pages > 1 %}
+<nav class="pagination" aria-label="Pages">
+  {% if result.has_prev %}<a class="btn" href="?page={{ result.page - 1 }}&q={{ query | urlencode }}">← Newer</a>{% else %}<span></span>{% endif %}
+  <span class="page-count">Page {{ result.page }} of {{ result.pages }}</span>
+  {% if result.has_next %}<a class="btn" href="?page={{ result.page + 1 }}&q={{ query | urlencode }}">Older →</a>{% else %}<span></span>{% endif %}
+</nav>
+{% endif %}
+{% else %}
+<p class="empty-note">{% if query %}No images match “{{ query }}”.{% else %}No images uploaded yet.{% endif %}</p>
+{% endif %}
+{% endblock %}

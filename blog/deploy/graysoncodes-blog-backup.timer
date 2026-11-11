@@ -1,0 +1,11 @@
+# /etc/systemd/system/graysoncodes-blog-backup.timer — nightly backup at 03:30, keeps the newest 14.
+[Unit]
+Description=Nightly blog backup
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target

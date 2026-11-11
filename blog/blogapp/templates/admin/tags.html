@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% block title %}Tags{% endblock %}
+{% block main %}
+<h1>Tags</h1>
+<p class="muted">Tags are created when you type them on an article. Renaming a tag to an existing tag's name merges the two.</p>
+{% if error %}<p class="alert" role="alert">{{ error }}</p>{% endif %}
+{% if tags %}
+<div class="table-scroll">
+<table class="admin-table">
+  <thead><tr><th scope="col">Tag</th><th scope="col">Articles</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+  <tbody>
+  {% for t in tags %}
+  <tr>
+    <td>
+      <form method="post" class="inline-edit">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="id" value="{{ t.id }}">
+        <label class="visually-hidden" for="tag-{{ t.id }}">Name</label>
+        <input id="tag-{{ t.id }}" name="name" value="{{ t.name }}" required maxlength="40">
+        <label class="visually-hidden" for="tag-slug-{{ t.id }}">Slug</label>
+        <input id="tag-slug-{{ t.id }}" name="slug" value="{{ t.slug }}" maxlength="40">
+        <button type="submit" class="btn btn-sm">Save<span class="visually-hidden"> {{ t.name }}</span></button>
+      </form>
+    </td>
+    <td>{{ t.article_count }}</td>
+    <td>
+      <form method="post" action="{{ url_for('admin.tag_delete', tag_id=t.id) }}" data-confirm="Remove the tag “{{ t.name }}” from {{ t.article_count }} article(s)?">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm btn-quiet danger">Delete<span class="visually-hidden"> {{ t.name }}</span></button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="empty-note">No tags yet. Add some in the article editor.</p>
+{% endif %}
+{% endblock %}

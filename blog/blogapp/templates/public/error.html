@@ -1,0 +1,19 @@
+{% extends "public/base.html" %}
+{% block title %}{% if error and error.code == 404 %}Page not found{% else %}Something went wrong{% endif %}{% endblock %}
+{% block description %}{% endblock %}
+{% block robots %}<meta name="robots" content="noindex">{% endblock %}
+{% block main %}
+<div class="wrap-narrow error-page">
+  {% if error and error.code == 404 %}
+  <h1>Page not found</h1>
+  <p>That article doesn't exist or isn't published.</p>
+  {% elif error %}
+  <h1>{{ error.name }}</h1>
+  <p>{{ error.description }}</p>
+  {% else %}
+  <h1>Something went wrong</h1>
+  <p>The blog hit an unexpected error. Please try again in a moment.</p>
+  {% endif %}
+  <p><a class="btn" href="/blog">Go to the blog</a> <a class="btn btn-quiet" href="/">Portfolio home</a></p>
+</div>
+{% endblock %}

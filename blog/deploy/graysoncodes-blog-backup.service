@@ -1,0 +1,15 @@
+# /etc/systemd/system/graysoncodes-blog-backup.service
+# One backup archive (database + media). Run by the timer below, or by hand:
+#   sudo systemctl start graysoncodes-blog-backup
+[Unit]
+Description=Back up the graysoncodes.org blog
+
+[Service]
+Type=oneshot
+User=grayson
+Group=grayson
+WorkingDirectory=/home/grayson/Portfolio/blog
+EnvironmentFile=/etc/graysoncodes-blog.env
+ExecStart=/home/grayson/Portfolio/blog/.venv/bin/python -m blogapp backup --keep 14
+Nice=15
+IOSchedulingClass=idle

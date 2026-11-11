@@ -1,0 +1,87 @@
+{% extends "admin/base.html" %}
+{% from "admin/_actions.html" import row_actions, status_badge with context %}
+{% block title %}Articles{% endblock %}
+{% block main %}
+<div class="page-head">
+  <h1>Articles</h1>
+  <div class="quick-actions">
+    <a class="btn" href="{{ url_for('admin.new') }}">+ New article</a>
+    <a class="btn btn-quiet" href="{{ url_for('admin.media_library') }}">Upload images</a>
+    <a class="btn btn-quiet" href="{{ url_for('admin.categories') }}">Categories</a>
+  </div>
+</div>
+
+<nav class="status-tabs" aria-label="Filter by status">
+  {% set tabs = [(None, 'All', counts.all), ('draft', 'Drafts', counts.draft), ('published', 'Published', counts.published),
+                 ('scheduled', 'Scheduled', counts.scheduled), ('archived', 'Archived', counts.archived)] %}
+  <ul>
+  {% for key, label, n in tabs %}
+    <li><a href="{{ url_for('admin.dashboard', status=key) }}" {% if status == key %}aria-current="page"{% endif %}>{{ label }} <span class="count">{{ n }}</span></a></li>
+  {% endfor %}
+  </ul>
+</nav>
+
+<form class="blog-search" role="search" method="get">
+  {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+  <label class="visually-hidden" for="admin-q">Search articles</label>
+  <input id="admin-q" type="search" name="q" value="{{ query }}" placeholder="Search title, text or slug">
+  <button class="btn" type="submit">Search</button>
+  {% if query %}<a class="btn btn-quiet" href="{{ url_for('admin.dashboard', status=status) }}">Clear</a>{% endif %}
+</form>
+
+{% if recent %}
+<section class="recent" aria-labelledby="recent-h">
+  <h2 id="recent-h" class="section-label">Recently edited</h2>
+  <ul class="recent-list">
+    {% for a in recent %}
+    <li><a href="{{ url_for('admin.edit', article_id=a.id) }}">{{ a.title or 'Untitled' }}</a> {{ status_badge(a) }}
+      <span class="muted small">edited {{ a.updated_at | datetime }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if result.items %}
+<div class="table-scroll">
+<table class="admin-table">
+  <caption class="visually-hidden">{{ result.total }} articles</caption>
+  <thead><tr><th scope="col">Title</th><th scope="col">Status</th><th scope="col">Category</th><th scope="col">Date</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+  <tbody>
+  {% for a in result.items %}
+    <tr>
+      <td class="title-cell">
+        <a href="{{ url_for('admin.edit', article_id=a.id) }}" class="row-title">{{ a.title or 'Untitled' }}</a>
+        {% if a.featured %}<span class="badge badge-featured">Featured</span>{% endif %}
+        <div class="muted small">/blog/{{ a.slug }} · {{ a.word_count }} words</div>
+      </td>
+      <td>{{ status_badge(a) }}</td>
+      <td>{{ a.category_name or '—' }}</td>
+      <td class="small">
+        {% if a.effective_status == 'scheduled' %}Goes live {{ a.published_at | datetime }}
+        {% elif a.effective_status == 'published' %}Published {{ a.published_at | date }}
+        {% else %}Edited {{ a.updated_at | datetime }}{% endif %}
+      </td>
+      <td>{{ row_actions(a, status) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if result.pages > 1 %}
+<nav class="pagination" aria-label="Pages">
+  {% if result.has_prev %}<a class="btn" href="{{ url_for('admin.dashboard', status=status, q=query or None, page=result.page - 1) }}">← Previous</a>{% else %}<span></span>{% endif %}
+  <span class="page-count">Page {{ result.page }} of {{ result.pages }}</span>
+  {% if result.has_next %}<a class="btn" href="{{ url_for('admin.dashboard', status=status, q=query or None, page=result.page + 1) }}">Next →</a>{% else %}<span></span>{% endif %}
+</nav>
+{% endif %}
+{% elif query %}
+<p class="empty-note">No articles match “{{ query }}”.</p>
+{% elif status %}
+<p class="empty-note">No {{ status }} articles.</p>
+{% else %}
+<div class="empty-note">
+  <p>You haven't written anything yet.</p>
+  <p><a class="btn" href="{{ url_for('admin.new') }}">Write your first article</a></p>
+</div>
+{% endif %}
+{% endblock %}

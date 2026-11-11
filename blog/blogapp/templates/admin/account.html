@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% block title %}Account{% endblock %}
+{% block main %}
+<h1>Account</h1>
+{% if error %}<p class="alert" role="alert">{{ error }}</p>{% endif %}
+<div class="account-grid">
+  <section class="side-card" aria-labelledby="profile-h">
+    <h2 id="profile-h">Profile</h2>
+    <form method="post" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="form" value="profile">
+      <p class="muted small">Signed in as <strong>{{ current_user.username }}</strong>.</p>
+      <div class="field">
+        <label for="display_name">Name shown on articles</label>
+        <input id="display_name" name="display_name" value="{{ current_user.display_name }}" maxlength="100" required>
+      </div>
+      <button class="btn" type="submit">Save</button>
+    </form>
+  </section>
+
+  <section class="side-card" aria-labelledby="pw-h">
+    <h2 id="pw-h">Change password</h2>
+    <form method="post" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="form" value="password">
+      <input type="text" name="username" value="{{ current_user.username }}" autocomplete="username" hidden>
+      <div class="field"><label for="current_password">Current password</label>
+        <input id="current_password" name="current_password" type="password" autocomplete="current-password" required></div>
+      <div class="field"><label for="new_password">New password</label>
+        <input id="new_password" name="new_password" type="password" autocomplete="new-password" minlength="{{ min_length }}" required aria-describedby="pw-help">
+        <p class="help" id="pw-help">At least {{ min_length }} characters. A passphrase from a password manager is best.</p></div>
+      <div class="field"><label for="confirm_password">Repeat new password</label>
+        <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" required></div>
+      <button class="btn" type="submit">Change password</button>
+    </form>
+  </section>
+
+  <section class="side-card" aria-labelledby="sessions-h">
+    <h2 id="sessions-h">Signed-in sessions</h2>
+    <ul class="link-list">
+      {% for s in sessions %}<li class="small">Started {{ s.created_at | datetime }} · last active {{ s.last_seen_at | datetime }}</li>{% endfor %}
+    </ul>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="form" value="sessions">
+      <button class="btn btn-quiet" type="submit">Sign out everywhere else</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

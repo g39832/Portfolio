@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+{% block title %}Categories{% endblock %}
+{% block main %}
+<h1>Categories</h1>
+<p class="muted">Each article can have one category. Categories with no published articles are hidden on the blog.</p>
+{% if error %}<p class="alert" role="alert">{{ error }}</p>{% endif %}
+
+<div class="table-scroll">
+<table class="admin-table">
+  <thead><tr><th scope="col">Name</th><th scope="col">Slug</th><th scope="col">Description</th><th scope="col">Order</th><th scope="col">Articles</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+  <tbody>
+  {% for c in categories %}
+  <tr>
+    <td colspan="4">
+      <form method="post" class="inline-edit" id="cat-{{ c.id }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="id" value="{{ c.id }}">
+        <label class="visually-hidden" for="cat-name-{{ c.id }}">Name</label>
+        <input id="cat-name-{{ c.id }}" name="name" value="{{ c.name }}" required maxlength="80">
+        <label class="visually-hidden" for="cat-slug-{{ c.id }}">Slug</label>
+        <input id="cat-slug-{{ c.id }}" name="slug" value="{{ c.slug }}" maxlength="60">
+        <label class="visually-hidden" for="cat-desc-{{ c.id }}">Description</label>
+        <input id="cat-desc-{{ c.id }}" name="description" value="{{ c.description }}" maxlength="300" placeholder="Optional description">
+        <label class="visually-hidden" for="cat-order-{{ c.id }}">Order</label>
+        <input id="cat-order-{{ c.id }}" name="sort_order" type="number" value="{{ c.sort_order }}" class="narrow">
+        <button type="submit" class="btn btn-sm">Save<span class="visually-hidden"> {{ c.name }}</span></button>
+      </form>
+    </td>
+    <td>{{ c.article_count }}</td>
+    <td>
+      <form method="post" action="{{ url_for('admin.category_delete', category_id=c.id) }}" data-confirm="Delete the category “{{ c.name }}”? {{ c.article_count }} article(s) will become uncategorised.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm btn-quiet danger">Delete<span class="visually-hidden"> {{ c.name }}</span></button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<section class="side-card add-card" aria-labelledby="add-h">
+  <h2 id="add-h">Add a category</h2>
+  <form method="post" class="inline-edit">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field"><label for="new-name">Name</label><input id="new-name" name="name" required maxlength="80"></div>
+    <div class="field"><label for="new-slug">Slug <span class="muted small">(optional)</span></label><input id="new-slug" name="slug" maxlength="60"></div>
+    <div class="field"><label for="new-desc">Description <span class="muted small">(optional)</span></label><input id="new-desc" name="description" maxlength="300"></div>
+    <div class="field"><label for="new-order">Order</label><input id="new-order" name="sort_order" type="number" value="100" class="narrow"></div>
+    <button type="submit" class="btn">Add category</button>
+  </form>
+</section>
+{% endblock %}
