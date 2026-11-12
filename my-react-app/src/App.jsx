@@ -371,7 +371,7 @@ function App() {
                     <span>Devices Repaired</span>
                   </div>
                   <div className="hero-stat">
-                    <strong>1.5 yrs</strong>
+                    <strong>3.5 yrs</strong>
                     <span>IT Experience</span>
                   </div>
                   <div className="hero-stat">
@@ -388,7 +388,7 @@ function App() {
                     </svg>
                     See My Work
                   </a>
-                  <a href="/resume.pdf?v=5" target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+                  <a href="/resume.pdf?v=6" target="_blank" rel="noopener noreferrer" className="btn btn-outline">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/>
                     </svg>
@@ -414,7 +414,7 @@ function App() {
               </Reveal>
               <Reveal delay={160}>
                 <p className="section-copy">
-                  I have 1.5 years of professional IT experience repairing and troubleshooting computers, Linux systems, and hardware. I&apos;ve repaired more than 500 devices, built internal business software, hosted projects on Raspberry Pi systems, and enjoy working on embedded systems, robotics, full-stack development, and hardware projects.
+                  I have 3.5 years of IT experience repairing and troubleshooting computers, Linux systems, and hardware. I&apos;ve repaired more than 500 devices, built internal business software, hosted projects on Raspberry Pi systems, and enjoy working on embedded systems, robotics, full-stack development, and hardware projects.
                 </p>
               </Reveal>
               <Reveal delay={240}>
@@ -853,7 +853,7 @@ function App() {
                 </Reveal>
                 <Reveal delay={240}>
                   <a
-                    href="/resume.pdf?v=5"
+                    href="/resume.pdf?v=6"
                     download
                     className="contact-link"
                   >
