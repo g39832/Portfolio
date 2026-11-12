@@ -168,6 +168,36 @@ _ALIGN = re.compile(r'style="text-align:(left|right|center)"')
 _MEDIA_SRC = re.compile(r"\]\((/media/[^\s)\"']+)")
 
 
+_FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+# "##Heading" (2+ #s, no space) or "# Heading" / "##  Heading" (non-breaking space).
+_LOOSE_HEADING = re.compile(r"^( {0,3})(#{2,6})(?=[^\s#])|^( {0,3})(#{1,6})[ \t]* [ \t ]*")
+
+
+def _loosen_headings(markdown_text):
+    """Turn "##Heading" (no space) and headings typed with a non-breaking space
+    into proper headings. Strict CommonMark needs a plain space after the #s,
+    otherwise the line silently stays a paragraph. A single "#word" is left
+    alone (it reads like a hashtag), and fenced code is never touched.
+    """
+    out = []
+    fence = None
+    for line in markdown_text.split("\n"):
+        m = _FENCE.match(line)
+        if fence:
+            if m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence):
+                fence = None
+        elif m:
+            fence = m.group(1)
+        else:
+            h = _LOOSE_HEADING.match(line)
+            if h:
+                indent = h.group(1) if h.group(2) else h.group(3)
+                hashes = h.group(2) or h.group(4)
+                line = f"{indent}{hashes} {line[h.end():]}"
+        out.append(line)
+    return "\n".join(out)
+
+
 def media_urls(markdown_text):
     return set(_MEDIA_SRC.findall(markdown_text or ""))
 
@@ -181,7 +211,7 @@ def render_markdown(markdown_text, media_lookup=None):
     """
     markdown_text = markdown_text or ""
     env = {"media": media_lookup(media_urls(markdown_text)) if media_lookup else {}}
-    html = _md.render(markdown_text, env)
+    html = _md.render(_loosen_headings(markdown_text), env)
     # Table alignment as classes, so the strict Content-Security-Policy needs no inline styles.
     html = _ALIGN.sub(lambda m: f'class="align-{m.group(1)}"', html)
     words = count_words(markdown_text)

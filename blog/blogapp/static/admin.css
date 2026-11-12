@@ -4,6 +4,10 @@
 @media (min-width: 640px) { .admin main.wrap { padding-left: 1.5rem; padding-right: 1.5rem; } }
 .admin h1 { margin: 0 0 1rem; font-size: clamp(1.6rem, 4vw, 2.1rem); color: var(--text-strong); }
 .admin h2 { font-size: 1.05rem; margin: 0 0 0.75rem; }
+/* The editor preview shows article headings at their real size (the two rules above would shrink them). */
+.admin .prose h1 { font-size: 1.9rem; margin: 2.6rem 0 1rem; color: var(--text-heading); }
+.admin .prose h2 { font-size: 1.6rem; margin: 2.6rem 0 0.9rem; }
+.admin .prose > :first-child { margin-top: 0; }
 .admin-nav .nav-list { margin-left: 0; }
 .inline-form { margin: 0; }
 .btn-sm { min-height: 32px; padding: 0.3rem 0.7rem; font-size: 0.85rem; border-radius: 8px; }

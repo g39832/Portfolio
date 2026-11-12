@@ -300,7 +300,7 @@
     var end = endIdx === -1 ? value.length : endIdx;
     var lines = value.slice(start, end).split('\n');
     var out = lines.map(function (line, i) {
-      var clean = line.replace(/^(#{1,6}\s+|>\s?|[-*+]\s+|\d+\.\s+)/, '');
+      var clean = line.replace(/^(#{1,6}\s*|>\s?|[-*+]\s+|\d+\.\s+)/, '');
       return (numbered ? (i + 1) + '. ' : prefix) + clean;
     }).join('\n');
     body.setRangeText(out, start, end, 'end');
