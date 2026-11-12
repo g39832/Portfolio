@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TumorSim — Interactive Cell Evolution Simulator</title>
+    <meta
+      name="description"
+      content="TumorSim is an educational computational model of cell populations, mutation, immune response and treatment selection. Not a medical tool."
+    />
+    <meta name="theme-color" content="#4cc9f0" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <script type="module" crossorigin src="./assets/index-B1DJa-pt.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BBLwcV-P.css">
+  </head>
+  <body>
+    <!-- Animated ambient background layer -->
+    <div class="aurora" aria-hidden="true">
+      <span class="aurora-blob b1"></span>
+      <span class="aurora-blob b2"></span>
+      <span class="aurora-blob b3"></span>
+    </div>
+
+    <header id="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">◈</span>
+        <div class="brand-text">
+          <span class="brand-name">Tumor<span class="brand-accent">Sim</span></span>
+          <span class="brand-sub">educational cell evolution model</span>
+        </div>
+      </div>
+
+      <div class="simclock">
+        <div class="clock-day" id="clock-day">Day 0</div>
+        <div class="clock-tick" id="clock-tick">tick 0 · 0 cells</div>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="btn-menu" class="btn btn-icon btn-menu" title="Open controls panel">☰</button>
+        <label class="mode-toggle" title="Simple mode hides the advanced sliders — great for getting started">
+          <input type="checkbox" id="mode-simple" checked />
+          <span>Simple</span>
+        </label>
+        <button id="btn-play" class="btn btn-primary" title="Start / Pause (Space)">▶ Run</button>
+        <button id="btn-step" class="btn" title="Step one tick">⏭ Step</button>
+        <button id="btn-reset" class="btn" title="Reset simulation">↺ Reset</button>
+        <span class="divider"></span>
+        <button id="btn-zoom-out" class="btn btn-icon" title="Zoom out">−</button>
+        <button id="btn-zoom-in" class="btn btn-icon" title="Zoom in">+</button>
+        <button id="btn-fit" class="btn btn-icon" title="Reset view">⤢</button>
+        <span class="divider"></span>
+        <button id="btn-record" class="btn" title="Record the tissue view to a video">⏺</button>
+        <button id="btn-predict" class="btn" title="Predict what happens next — a mini quiz">🎯 Predict</button>
+        <button id="btn-bookmark" class="btn" title="Save a lab-notebook bookmark">📌</button>
+        <button id="btn-palette" class="btn btn-icon" title="Command palette (Ctrl+K)">⌘</button>
+        <button id="btn-theme" class="btn btn-icon" title="Switch accent theme">🎨</button>
+        <label class="mode-toggle" title="Subtle sounds for phase changes and treatments (off by default)">
+          <input type="checkbox" id="mode-sound" />
+          <span>Sound</span>
+        </label>
+        <button id="btn-help" class="btn btn-help" title="Tutorial, how it works, and help">? Help</button>
+      </div>
+    </header>
+
+    <main id="layout">
+      <!-- Left: scenario + controls -->
+      <aside id="left-panel">
+        <section class="howbox" id="howbox" aria-labelledby="howbox-title">
+          <div class="howbox-head">
+            <h2 class="howbox-title" id="howbox-title">💡 How it works</h2>
+            <button id="howbox-hide" class="howbox-hide" title="Hide this box (Help brings it back)" aria-label="Hide this box">✕</button>
+          </div>
+          <ol class="howbox-list">
+            <li>Every dot is a <b>cell</b>. Each one eats, ages and sometimes divides in two.</li>
+            <li>When a cell divides, the copy can pick up a random <b>mutation</b>.</li>
+            <li>Enough mutations turn a cell <b class="c-pink">pink</b>: a tumour cell that never stops dividing.</li>
+            <li><b class="c-blue">Immune cells</b> and treatments fight back, but cells that resist them survive and take over.</li>
+            <li>Cells that learn to <b>move</b> can travel and start new tumours in other organs (see the body map).</li>
+          </ol>
+          <button class="howbox-more" id="howbox-more">Full tutorial &amp; guide →</button>
+        </section>
+        <label class="mode-toggle drawer-simple" title="Simple mode hides the advanced controls">
+          <input type="checkbox" id="mode-simple-drawer" checked />
+          <span>Simple mode (untick for treatments &amp; more)</span>
+        </label>
+        <section class="panel">
+          <h2 class="panel-title">Scenario</h2>
+          <select id="scenario-select" class="select"></select>
+          <p id="scenario-desc" class="scenario-desc"></p>
+        </section>
+
+        <section class="panel" id="controls-panel">
+          <h2 class="panel-title">Simulation</h2>
+          <div id="controls-simulation"></div>
+          <h2 class="panel-title">Tumour Biology <span class="panel-note">(advanced)</span></h2>
+          <div id="controls-biology"></div>
+          <h2 class="panel-title">Immune System</h2>
+          <div id="controls-immune"></div>
+          <h2 class="panel-title">Treatments <span class="panel-note">(simplified models)</span></h2>
+          <div id="controls-treatment"></div>
+          <h2 class="panel-title">Compare</h2>
+          <div id="comparison-panel"></div>
+          <h2 class="panel-title">Batch Run <span class="panel-note">(stochasticity)</span></h2>
+          <div id="batch-panel"></div>
+          <h2 class="panel-title">Sandbox</h2>
+          <div id="sandbox-panel"></div>
+          <h2 class="panel-title">Mission</h2>
+          <div id="mission-panel"></div>
+          <h2 class="panel-title">Time Travel <span class="panel-note">(what-if)</span></h2>
+          <div id="diff-panel"></div>
+          <h2 class="panel-title">Data</h2>
+          <div id="controls-data"></div>
+        </section>
+      </aside>
+
+      <!-- Center: simulation stage -->
+      <section id="stage">
+        <div id="canvas-wrap">
+          <canvas id="sim-canvas"></canvas>
+          <!-- Viewfinder corner brackets -->
+          <i class="corner tl"></i><i class="corner tr"></i>
+          <i class="corner bl"></i><i class="corner br"></i>
+          <!-- Top-left live HUD -->
+          <div class="hud" id="hud">
+            <span class="hud-pill" id="hud-phase">—</span>
+            <span class="hud-pill hud-faint" id="hud-tick">tick 0</span>
+            <span class="hud-pill hud-faint" id="hud-alive">0 alive</span>
+            <span class="hud-pill hud-speed" id="hud-speed" title="Actual simulation speed (engine ticks per real second)">—</span>
+          </div>
+          <div id="narrator" class="narrator" hidden></div>
+          <div id="legend" class="overlay-card"></div>
+          <div id="tooltip" class="tooltip" hidden></div>
+          <div id="treatment-banner" class="treatment-banner" hidden></div>
+          <div id="timeline" class="timeline" hidden></div>
+          <div id="resume-banner" class="resume-banner" hidden></div>
+          <div id="body-map" class="body-map" aria-label="Body map"></div>
+          <div id="spread-toast" class="spread-toast" role="status" hidden></div>
+        </div>
+        <div id="stage-hint">drag to pan · scroll to zoom · click to inspect</div>
+      </section>
+
+      <!-- Right: stats + evolution tree -->
+      <aside id="right-panel">
+        <div class="tabs">
+          <button class="tab active" data-tab="stats">Statistics</button>
+          <button class="tab" data-tab="growth">Growth</button>
+          <button class="tab" data-tab="tree">Evolution Tree</button>
+          <button class="tab" data-tab="body">🧍 Body</button>
+          <button class="tab" data-tab="learn">🎓 Learn</button>
+        </div>
+        <div id="tab-stats" class="tab-body">
+          <div id="stat-grid" class="stat-grid"></div>
+          <div id="charts"></div>
+        </div>
+        <div id="tab-growth" class="tab-body" hidden>
+          <div id="growth-panel"></div>
+        </div>
+        <div id="tab-tree" class="tab-body" hidden>
+          <div id="tree-panel"></div>
+        </div>
+        <div id="tab-body" class="tab-body" hidden>
+          <div id="body-panel" class="body-panel"></div>
+        </div>
+        <div id="tab-learn" class="tab-body" hidden>
+          <div id="learn-panel"></div>
+        </div>
+      </aside>
+    </main>
+
+    <footer id="footer">
+      <span class="disclaimer-icon">⚠</span>
+      <span>
+        <strong>TumorSim is an educational computational model.</strong> It is not a medical diagnostic
+        tool and does not predict cancer progression or treatment outcomes. All biology is an abstract,
+        simplified simulation.
+      </span>
+      <span class="footer-pwa" id="pwa-hint" hidden>· installable app</span>
+    </footer>
+
+    <div id="modal-root"></div>
+  </body>
+</html>

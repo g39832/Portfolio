@@ -41,6 +41,33 @@ export const projects = [
     github: 'https://github.com/g39832/campaign-ledger',
   },
   {
+    id: 'tumorsim',
+    title: 'TumorSim — Cancer Cell Evolution Simulator',
+    featured: false,
+    stat: 'Thousands of cells · 6 organs · runs in your browser',
+    screenshot: '/TumorSim.jpg',
+    alt: 'TumorSim: a tumour spreading through healthy tissue, with a body map showing which organs it has reached',
+    tags: ['TypeScript', 'Web Workers', 'Canvas', 'Simulation', 'Vitest'],
+    summary:
+      'An interactive simulation of cancer: thousands of cells grow, mutate and compete, tumours spread to other organs, and you can try treatments and watch resistance evolve. Click any organ to zoom in.',
+    writeup:
+      'Every dot is a cell with its own age, health and mutations. Nothing is scripted: tumour growth, clonal evolution, immune attack and drug resistance all emerge from simple per-cell rules. Cells that gain the motility mutation can break away and seed new tumours in the lymph nodes, lungs, liver, bones or brain, and each organ runs as its own full simulation with different "soil" (food, immune cells, drug access). A body map shows the spread, and you can zoom into any organ. Runs end with a summary when the tumour is cleared, overwhelms a vital organ, or a year passes. A welcome screen, guided tour and plain-English help make it usable by anyone.',
+    problem:
+      'Ideas like clonal evolution, metastasis and treatment resistance are hard to picture from a textbook diagram, and most simulations are either too simple to be interesting or too technical to use.',
+    solution:
+      'Built an agent-based engine in TypeScript that runs each tissue in its own Web Worker, so six simulations tick in parallel on one clock while the page stays smooth. A dependency-free canvas renderer, charts and an evolution tree sit on top, with a guided first-run flow for beginners.',
+    impact:
+      'Handles 10,000+ cells per tissue at interactive speed, works on phones (pinch to zoom), and the simulation core is covered by 56 automated tests, including deterministic replays.',
+    live: '/tumorsim/',
+    gallery: [
+      { src: '/TumorSim.jpg', alt: 'A tumour spreading through healthy tissue, with the body map lit up', caption: 'The starting tumour spreads, and the body map lights up as it reaches other organs.' },
+      { src: '/TumorSim-organ.jpg', alt: 'Zoomed into the liver, with the Body tab listing every organ', caption: 'Zoomed into the liver. The Body tab shows each organ and why it behaves differently.' },
+      { src: '/TumorSim-end.jpg', alt: 'End-of-run summary showing where the tumour spread and which mutations won', caption: 'Every run ends with a summary: where it spread, which mutations won, and what to try next.' },
+      { src: '/TumorSim-tree.jpg', alt: 'Evolution tree showing which tumour clones dominate', caption: 'The evolution tree traces every clone and shows which mutations took over.' },
+      { src: '/TumorSim-phone.jpg', alt: 'TumorSim on a phone', caption: 'Works on phones too, with pinch-to-zoom.', fit: 'contain' },
+    ],
+  },
+  {
     id: 'ventage',
     title: 'Regroove — Vintage Reseller Platform',
     featured: false,
@@ -130,17 +157,6 @@ export const miniProjects = [
     ),
     summary: 'VLANs, DNS filtering, and firewall rules across my home network gear.',
     tags: ['Networking', 'Firewall'],
-  },
-  {
-    id: 'mp-cancer-sim',
-    title: 'Cancer Cell Sim',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M19.8 18.4 14 10.67V6.5l1.35-1.69c.26-.33.03-.81-.39-.81H9.04c-.42 0-.65.48-.39.81L10 6.5v4.17L4.2 18.4c-.49.66-.02 1.6.8 1.6h14c.82 0 1.29-.94.8-1.6z"/>
-      </svg>
-    ),
-    summary: 'An interactive simulation of cancer cell growth and spread — watch how tumors develop in real time.',
-    tags: ['Simulation', 'Biology'],
   },
   {
     id: 'mp-jellyfish-timer',

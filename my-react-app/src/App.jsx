@@ -123,6 +123,43 @@ const achievements = [
 ]
 
 // Shown instead of a GitHub link when a project's code is in a private repository.
+/** Case-study image, with clickable thumbnails when a project has a gallery. */
+function ModalGallery({ project }) {
+  const images = project.gallery?.length
+    ? project.gallery
+    : [{ src: project.screenshot, alt: project.alt }]
+  const [index, setIndex] = useState(0)
+  const current = images[Math.min(index, images.length - 1)]
+  return (
+    <>
+      <img
+        className={`modal-img${current.fit === 'contain' ? ' modal-img-contain' : ''}`}
+        src={current.src}
+        alt={current.alt}
+      />
+      {images.length > 1 && (
+        <div className="modal-gallery">
+          <div className="modal-thumbs" role="group" aria-label="Screenshots">
+            {images.map((img, i) => (
+              <button
+                key={img.src}
+                type="button"
+                className={`modal-thumb${i === index ? ' is-active' : ''}`}
+                onClick={() => setIndex(i)}
+                aria-label={`Screenshot ${i + 1} of ${images.length}: ${img.alt}`}
+                aria-pressed={i === index}
+              >
+                <img src={img.src} alt="" loading="lazy" decoding="async" />
+              </button>
+            ))}
+          </div>
+          {current.caption && <p className="modal-caption">{current.caption}</p>}
+        </div>
+      )}
+    </>
+  )
+}
+
 function PrivateRepo({ className }) {
   return (
     <span className={className} title="This is client work, so the source code is kept private">
@@ -648,6 +685,15 @@ function App() {
                             <span key={tag}>{tag}</span>
                           ))}
                         </div>
+                        {project.live && (
+                          <a
+                            className="mini-card-link"
+                            href={project.live}
+                            aria-label={`Try ${project.title} live`}
+                          >
+                            Try it live →
+                          </a>
+                        )}
                         {project.github && (
                           <a
                             className="mini-card-link"
@@ -897,7 +943,7 @@ function App() {
             >
               ×
             </button>
-            <img className="modal-img" src={selectedProject.screenshot} alt={selectedProject.alt} />
+            <ModalGallery key={selectedProject.id} project={selectedProject} />
             <div className="modal-body">
               <div className="project-tags">
                 {selectedProject.tags.map((tag) => (

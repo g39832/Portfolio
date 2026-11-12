@@ -1984,3 +1984,68 @@ p.project-stat::before {
     transition: none;
   }
 }
+
+/* Case-study photo gallery (projects with several screenshots). */
+.modal-img-contain {
+  object-fit: contain;
+  background: #05080f;
+}
+
+.modal-gallery {
+  padding: 0.85rem clamp(1.25rem, 3vw, 2rem) 0;
+}
+
+.modal-thumbs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.modal-thumb {
+  flex: 0 0 auto;
+  width: 88px;
+  height: 56px;
+  padding: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  background: #05080f;
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.2s, border-color 0.2s;
+}
+
+.modal-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.modal-thumb:hover,
+.modal-thumb.is-active {
+  opacity: 1;
+}
+
+.modal-thumb.is-active {
+  border-color: var(--accent);
+}
+
+.modal-thumb:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.modal-caption {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+}
+
+/* Four main projects: two per row on wide screens instead of 3 + 1. */
+@media (min-width: 901px) {
+  .project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
