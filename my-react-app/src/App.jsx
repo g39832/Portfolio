@@ -290,10 +290,7 @@ function App() {
         <header className={`header${scrolled ? ' scrolled' : ''}`}>
           <nav className={`nav${menuOpen ? ' nav-open' : ''}`} aria-label="Primary">
             <span className="logo">
-              <span className="logo-jellyfish" aria-hidden="true">
-                <span className="logo-jellyfish-bell" />
-                <span className="logo-jellyfish-tentacles" />
-              </span>
+              <img className="logo-coder" src="/jellyfish-coder.svg" alt="" width="44" height="44" />
               <span>Grayson Cox</span>
             </span>
 

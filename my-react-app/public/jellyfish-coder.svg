@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 0 92 92">
+  <style>
+    .char { animation: bob 3.2s ease-in-out infinite; }
+    .eyes { transform-box: fill-box; transform-origin: center; animation: blink 4.6s infinite; }
+    .arm-l { animation: type 0.5s ease-in-out infinite; }
+    .arm-r { animation: type 0.5s ease-in-out infinite 0.25s; }
+    .cursor { animation: cursor 1s steps(1) infinite; }
+    .code { stroke-dasharray: 30; stroke-dashoffset: 30; animation: code 3.6s linear infinite; }
+    .code2 { animation-delay: 0.9s; }
+    .code3 { animation-delay: 1.8s; }
+    .tent { transform-box: fill-box; transform-origin: 50% 0; animation: sway 2.8s ease-in-out infinite; }
+    .tent2 { animation-delay: -0.7s; } .tent3 { animation-delay: -1.4s; } .tent4 { animation-delay: -2.1s; }
+    .bubble { animation: bubble 3.6s ease-in infinite; opacity: 0; }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+    @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+    @keyframes type { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+    @keyframes cursor { 0% { opacity: 1; } 50% { opacity: 0; } }
+    @keyframes code { 0% { stroke-dashoffset: 30; } 35%, 85% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+    @keyframes sway { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+    @keyframes bubble { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-14px); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      .char, .eyes, .tent, .arm-l, .arm-r, .cursor, .bubble { animation: none; }
+      .code { animation: none; stroke-dashoffset: 0; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="tent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9a86ff"/>
+      <stop offset="1" stop-color="#c9a7ff" stop-opacity="0.25"/>
+    </linearGradient>
+    <linearGradient id="bell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b6f0ff"/>
+      <stop offset="1" stop-color="#9a86ff"/>
+    </linearGradient>
+  </defs>
+
+  <circle class="bubble" cx="69" cy="20" r="2" fill="none" stroke="#8fe4ff" stroke-width="1"/>
+
+  <g class="char">
+    <!-- bell -->
+    <path d="M13 39C13 18 25 5 40 5s27 13 27 34c-4.5 3-9 0-13.5 3-4.5-3-9 0-13.5-2-4.5 2-9-1-13.5 2-4.5-3-9 0-13.5-3z" fill="url(#bell)"/>
+    <ellipse cx="26" cy="15" rx="6" ry="3" fill="#fff" opacity="0.55" transform="rotate(-32 26 15)"/>
+    <!-- eyes -->
+    <g class="eyes">
+      <ellipse cx="31" cy="25" rx="4.6" ry="5.4" fill="#fff"/>
+      <ellipse cx="49" cy="25" rx="4.6" ry="5.4" fill="#fff"/>
+      <circle cx="31.5" cy="27" r="2.9" fill="#0b1324"/>
+      <circle cx="49.5" cy="27" r="2.9" fill="#0b1324"/>
+      <circle cx="32.6" cy="25.8" r="1.1" fill="#fff"/>
+      <circle cx="50.6" cy="25.8" r="1.1" fill="#fff"/>
+    </g>
+    <circle cx="24" cy="32" r="2.4" fill="#ff9ccf" opacity="0.7"/>
+    <circle cx="56" cy="32" r="2.4" fill="#ff9ccf" opacity="0.7"/>
+    <path d="M36.5 32.5q3.5 3 7 0" fill="none" stroke="#0b1324" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+
+  <!-- dangling tentacles (start behind the laptop) -->
+  <g fill="none" stroke="url(#tent)" stroke-width="2.6" stroke-linecap="round">
+    <path class="tent tent3" d="M20 70c-3 4 1 8-1 12s1 5-1 8"/>
+    <path class="tent" d="M27 66c-2 5 2 9 0 13s2 7 0 11"/>
+    <path class="tent tent2" d="M60 70c3 4-1 8 1 12s-1 5 1 8"/>
+    <path class="tent tent2" d="M35 66c-2 6 2 10 0 14s2 6 0 9"/>
+    <path class="tent tent3" d="M45 66c2 6-2 10 0 14s-2 6 0 9"/>
+    <path class="tent tent4" d="M53 66c2 5-2 9 0 13s-2 7 0 11"/>
+  </g>
+
+  <!-- laptop -->
+  <rect x="19" y="44" width="42" height="26" rx="3" fill="#0b1324" stroke="#8fe4ff" stroke-width="1.8"/>
+  <rect x="22.5" y="47.5" width="35" height="19" rx="1.5" fill="#132a46"/>
+  <path class="code" d="M26 52h16" stroke="#8fe4ff" stroke-width="1.8" stroke-linecap="round"/>
+  <path class="code code2" d="M29 56.5h20" stroke="#c9a7ff" stroke-width="1.8" stroke-linecap="round"/>
+  <path class="code code3" d="M29 61h12" stroke="#ff9ccf" stroke-width="1.8" stroke-linecap="round"/>
+  <rect class="cursor" x="43" y="59.6" width="1.8" height="3" fill="#e8fbff"/>
+  <circle cx="40" cy="45.8" r="0.7" fill="#8fe4ff"/>
+  <path d="M13 70h54l-4 5H17z" fill="#5d6f95"/>
+  <path d="M34 70h12l-1 1.6h-10z" fill="#3c4a68"/>
+
+  <!-- typing arms -->
+  <g fill="none" stroke="#a894ff" stroke-width="3.2" stroke-linecap="round">
+    <path class="arm-l" d="M17 40c-4 6-5 15-1 23 1.5 3 4 5 8 6"/>
+    <path class="arm-r" d="M63 40c4 6 5 15 1 23-1.5 3-4 5-8 6"/>
+  </g>
+</svg>
