@@ -132,6 +132,7 @@ img { max-width: 100%; height: auto; }
   color: var(--text-heading); text-decoration: none;
 }
 .brand:hover { color: var(--accent); }
+.brand-jelly { width: 40px; height: 40px; flex: none; margin: -6px 0; }
 /* The portfolio's jellyfish mark, held still. */
 .brand-mark {
   width: 22px; height: 22px; flex: none;
