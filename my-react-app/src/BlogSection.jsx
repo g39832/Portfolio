@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Reveal from './Reveal'
+import jellyfishCoder from './assets/jellyfish-coder.svg'
 
 const textOf = (item, tag) => item.getElementsByTagName(tag)[0]?.textContent?.trim() || ''
 
@@ -52,7 +53,7 @@ export default function BlogSection() {
       <div className="container">
         <Reveal>
           <div className="blog-section-head">
-            <img className="blog-section-jelly" src="/jellyfish-coder.svg" alt="" width="96" height="96" />
+            <img className="blog-section-jelly" src={jellyfishCoder} alt="" width="96" height="96" />
             <div>
               <h2>From the Blog</h2>
               <p className="section-copy">

@@ -3,6 +3,7 @@ import './App.css'
 import JellyfishBackground from './JellyfishBackground'
 import Reveal from './Reveal'
 import BlogSection from './BlogSection'
+import jellyfishCoder from './assets/jellyfish-coder.svg'
 import { ChevronIcon, MoonIcon, PauseIcon, PlayIcon, SunIcon } from './icons'
 import { projects, miniProjects } from './projects'
 
@@ -290,7 +291,7 @@ function App() {
         <header className={`header${scrolled ? ' scrolled' : ''}`}>
           <nav className={`nav${menuOpen ? ' nav-open' : ''}`} aria-label="Primary">
             <span className="logo">
-              <img className="logo-coder" src="/jellyfish-coder.svg" alt="" width="44" height="44" />
+              <img className="logo-coder" src={jellyfishCoder} alt="" width="44" height="44" />
               <span>Grayson Cox</span>
             </span>
 
