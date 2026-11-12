@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import JellyfishBackground from './JellyfishBackground'
 import Reveal from './Reveal'
+import BlogSection from './BlogSection'
 import { ChevronIcon, MoonIcon, PauseIcon, PlayIcon, SunIcon } from './icons'
 import { projects, miniProjects } from './projects'
 
@@ -14,7 +15,7 @@ const navLinks = [
   { href: '#hardware', label: 'Hardware' },
   { href: '#skills', label: 'Skills' },
   { href: '#working-on', label: 'Working On' },
-  { href: '/blog', label: 'Blog' },
+  { href: '#blog', label: 'Blog' },
   { href: '#contact', label: 'Contact' },
 ]
 
@@ -791,6 +792,8 @@ function App() {
               </div>
             </div>
           </section>
+
+          <BlogSection />
 
           <section id="contact" className="contact">
             <div className="container">

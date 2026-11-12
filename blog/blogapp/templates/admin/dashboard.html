@@ -3,7 +3,7 @@
 {% block title %}Articles{% endblock %}
 {% block main %}
 <div class="page-head">
-  <h1>Articles</h1>
+  <h1 class="jelly-title"><img class="jelly" src="{{ asset('jellyfish.svg') }}" alt="" width="44" height="44">Articles</h1>
   <div class="quick-actions">
     <a class="btn" href="{{ url_for('admin.new') }}">+ New article</a>
     <a class="btn btn-quiet" href="{{ url_for('admin.media_library') }}">Upload images</a>
@@ -50,9 +50,9 @@
   {% for a in result.items %}
     <tr>
       <td class="title-cell">
-        <a href="{{ url_for('admin.edit', article_id=a.id) }}" class="row-title">{{ a.title or 'Untitled' }}</a>
+        <a href="{{ url_for('admin.edit', article_id=a.id) }}" class="row-title" title="/blog/{{ a.slug }}">{{ a.title or 'Untitled' }}</a>
         {% if a.featured %}<span class="badge badge-featured">Featured</span>{% endif %}
-        <div class="muted small">/blog/{{ a.slug }} · {{ a.word_count }} words</div>
+        <div class="row-meta"><span>{{ "{:,}".format(a.word_count or 0) }} words</span><span>{{ a.reading_minutes }} min read</span></div>
       </td>
       <td>{{ status_badge(a) }}</td>
       <td>{{ a.category_name or '—' }}</td>

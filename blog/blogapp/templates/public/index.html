@@ -14,7 +14,7 @@
     {% if category and category.description %}<p class="lede">{{ category.description }}</p>{% endif %}
     {% else %}
     <p class="eyebrow">Writing</p>
-    <h1>Blog</h1>
+    <h1 class="jelly-title"><img class="jelly" src="{{ asset('jellyfish.svg') }}" alt="" width="64" height="64">Blog</h1>
     <p class="lede">Technical articles, projects, experiments and engineering notes — mostly Linux, self-hosting,
       homelab infrastructure, databases and the software I build and run myself.</p>
     {% endif %}

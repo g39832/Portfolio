@@ -413,3 +413,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px
   body { background: #fff; color: #000; }
   .prose { color: #000; }
 }
+
+/* Jellyfish mascot beside page titles */
+.jelly-title { display: flex; align-items: center; gap: 0.6rem; }
+.jelly { flex: none; width: 1.6em; height: 1.6em; filter: drop-shadow(0 0 10px rgba(146, 125, 255, 0.35)); }
