@@ -7,7 +7,7 @@
  * browser, so nothing sensitive is cached.
  */
 
-const CACHE = 'tumorsim-v2';
+const CACHE = 'tumorsim-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
