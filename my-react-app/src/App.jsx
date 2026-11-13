@@ -175,7 +175,14 @@ function PrivateRepo({ className }) {
 function App() {
   const year = new Date().getFullYear()
   const [theme, setTheme] = useState(getInitialTheme)
-  const [paused, setPaused] = useState(false)
+  // The ocean scene is still unless the visitor turns motion on.
+  const [paused, setPaused] = useState(() => {
+    try {
+      return localStorage.getItem('sea-motion') !== 'on'
+    } catch {
+      return true
+    }
+  })
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [activeSection, setActiveSection] = useState('')
@@ -345,7 +352,16 @@ function App() {
               <button
                 type="button"
                 className="control-btn"
-                onClick={() => setPaused((current) => !current)}
+                onClick={() =>
+                  setPaused((current) => {
+                    try {
+                      localStorage.setItem('sea-motion', current ? 'on' : 'off')
+                    } catch {
+                      /* storage blocked: preference just isn't remembered */
+                    }
+                    return !current
+                  })
+                }
                 aria-pressed={paused}
                 aria-label={paused ? 'Play ocean animation' : 'Pause ocean animation'}
                 title={paused ? 'Play ocean animation' : 'Pause ocean animation'}

@@ -22,6 +22,8 @@
       .char, .eyes, .tent, .arm-l, .arm-r, .cursor, .bubble { animation: none; }
       .code { animation: none; stroke-dashoffset: 0; }
     }
+      /* static: no continuous animation */
+    * { animation: none !important; }
   </style>
   <defs>
     <linearGradient id="bell" x1="0" y1="0" x2="0" y2="1">

@@ -41,8 +41,9 @@ const getProfile = (reducedMotion) => {
 
   return {
     dprCap: lite ? 1.1 : 1.25,
-    count: narrow ? 3 : lite ? 4 : 5,
-    snow: narrow ? 28 : lite ? 40 : 64,
+    // A calm scene: a few jellyfish and a little marine snow.
+    count: narrow ? 2 : 3,
+    snow: narrow ? 18 : lite ? 28 : 36,
     fish: true,
     frameInterval: lite ? 40 : 28,
   }
@@ -656,9 +657,20 @@ const JellyfishBackground = ({ theme = 'dark', paused = false }) => {
     redrawFrameRef.current?.()
   }, [theme])
 
+  const startLoopRef = useRef(null)
+
+  // Still by default: when paused, draw one frame and stop the loop entirely
+  // (no CPU spent re-drawing an unchanged picture). Playing restarts it.
   useEffect(() => {
     pausedRef.current = paused
-    if (paused) frozenTimeRef.current = performance.now()
+    if (paused) {
+      frozenTimeRef.current = performance.now()
+      if (animationRef.current) cancelAnimationFrame(animationRef.current)
+      animationRef.current = 0
+      redrawFrameRef.current?.()
+    } else {
+      startLoopRef.current?.()
+    }
   }, [paused])
 
   useEffect(() => {
@@ -786,7 +798,7 @@ const JellyfishBackground = ({ theme = 'dark', paused = false }) => {
         snow: Array.from({ length: profile.snow }, () => new MarineSnow(width, height)),
         back: jellies.slice(0, cut),
         front: [
-          ...(profile.fish ? [new LanternSchool(width, height), new Anglerfish(width, height), new Squid(width, height)] : []),
+          ...(profile.fish ? [new LanternSchool(width, height), new Anglerfish(width, height)] : []),
           ...jellies.slice(cut),
         ],
       }
@@ -815,7 +827,7 @@ const JellyfishBackground = ({ theme = 'dark', paused = false }) => {
     }
 
     redrawFrameRef.current = () => {
-      if (profileRef.current?.frameInterval === Infinity) renderFrame(performance.now(), 0)
+      if (profileRef.current?.frameInterval === Infinity || pausedRef.current) renderFrame(performance.now(), 0)
     }
 
     const animate = (time) => {
@@ -846,12 +858,20 @@ const JellyfishBackground = ({ theme = 'dark', paused = false }) => {
       redrawFrameRef.current?.()
     }
 
+    startLoopRef.current = () => {
+      if (pausedRef.current || profileRef.current?.frameInterval === Infinity) return
+      if (animationRef.current) return
+      lastTimeRef.current = 0
+      animationRef.current = requestAnimationFrame(animate)
+    }
+
     syncProfile()
     resizeCanvas()
     createCreatures()
 
-    if (profileRef.current?.frameInterval === Infinity) {
-      renderFrame(performance.now(), 0)
+    if (pausedRef.current || profileRef.current?.frameInterval === Infinity) {
+      frozenTimeRef.current = performance.now()
+      renderFrame(frozenTimeRef.current, 0)
     } else {
       animationRef.current = requestAnimationFrame(animate)
     }
@@ -888,6 +908,8 @@ const JellyfishBackground = ({ theme = 'dark', paused = false }) => {
         height: '100vh',
         zIndex: 0,
         pointerEvents: 'none',
+        // Kept quiet so the scene sits behind the content, not on top of it.
+        opacity: 0.5,
       }}
     />
   )

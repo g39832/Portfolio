@@ -171,7 +171,6 @@
 }
 
 .control-btn:hover {
-  transform: translateY(-1px);
   border-color: var(--border-strong);
   background: var(--fill-hover);
   color: var(--text-strong);
@@ -193,8 +192,6 @@
   z-index: 10;
   border-bottom: 1px solid var(--border);
   background: var(--header-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -246,7 +243,7 @@
   height: 24px;
   flex: 0 0 auto;
   filter: drop-shadow(0 0 12px rgba(117, 220, 255, 0.45));
-  animation: logo-float 4.8s ease-in-out infinite;
+  animation: none;
 }
 
 .logo-jellyfish-bell {
@@ -450,7 +447,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: gradient-flow 9s ease-in-out infinite;
+  animation: none;
 }
 
 .hero-copy {
@@ -514,7 +511,6 @@
 }
 
 .btn:hover {
-  transform: translateY(-1px);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
 }
 
@@ -568,7 +564,7 @@
   margin-left: -2px;
   border-radius: 999px;
   background: var(--accent);
-  animation: scroll-cue 2.2s ease-in-out infinite;
+  animation: none;
 }
 
 @keyframes scroll-cue {
@@ -651,7 +647,6 @@ section h2::after {
 
 .pillar-card:hover {
   border-color: var(--border-strong);
-  transform: translateY(-4px);
   box-shadow: 0 20px 36px rgba(0, 0, 0, 0.26);
 }
 
@@ -712,7 +707,6 @@ section h2::after {
 .achievement-card:hover {
   border-color: var(--border-strong);
   background: var(--fill);
-  transform: translateY(-4px);
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28);
 }
 
@@ -758,7 +752,6 @@ section h2::after {
 
 .featured-project:hover {
   border-color: var(--accent);
-  transform: translateY(-2px);
 }
 
 .featured-project > .reveal {
@@ -905,7 +898,6 @@ button.featured-project-screenshot:hover .featured-project-screenshot-img {
 
 .project-card:hover {
   border-color: var(--border-strong);
-  transform: translateY(-5px);
   box-shadow: 0 28px 48px rgba(0, 0, 0, 0.32);
 }
 
@@ -1072,8 +1064,6 @@ p.project-stat::before {
   place-items: center;
   padding: 1.25rem;
   background: var(--overlay-scrim);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   animation: modal-fade 0.25s ease;
 }
 
@@ -1105,8 +1095,6 @@ p.project-stat::before {
   font-size: 1.15rem;
   line-height: 1;
   cursor: pointer;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
@@ -1268,7 +1256,6 @@ p.project-stat::before {
 
 .mini-card:hover {
   border-color: var(--accent);
-  transform: translateY(-4px);
   box-shadow: 0 24px 44px rgba(0, 0, 0, 0.3);
 }
 
@@ -1432,7 +1419,6 @@ p.project-stat::before {
 
 .skill-category:hover {
   border-color: var(--border-strong);
-  transform: translateY(-4px);
   box-shadow: 0 20px 36px rgba(0, 0, 0, 0.26);
 }
 
@@ -1470,7 +1456,6 @@ p.project-stat::before {
 
 .skills-list li:hover {
   border-color: var(--border-strong);
-  transform: translateY(-2px);
 }
 
 .cert-badge {
@@ -1564,7 +1549,7 @@ p.project-stat::before {
   height: 6px;
   border-radius: 50%;
   background: var(--accent);
-  animation: status-pulse 2.4s ease-in-out infinite;
+  animation: none;
 }
 
 @keyframes status-pulse {
@@ -1576,7 +1561,6 @@ p.project-stat::before {
 .working-on-card:hover {
   border-color: var(--border-strong);
   background: var(--fill);
-  transform: translateY(-3px);
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.26);
 }
 
@@ -1616,7 +1600,6 @@ p.project-stat::before {
   border-color: var(--border-strong);
   background: var(--fill);
   color: var(--accent);
-  transform: translateY(-2px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.26);
 }
 
@@ -1677,8 +1660,6 @@ p.project-stat::before {
     gap: 0;
     padding: 0.5rem 0 1rem;
     background: var(--header-bg-scrolled);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border);
     box-shadow: 0 24px 40px rgba(0, 0, 0, 0.35);
     opacity: 0;
@@ -1926,7 +1907,6 @@ p.project-stat::before {
 .blog-post-card:focus-visible {
   border-color: var(--border-strong);
   background: var(--fill);
-  transform: translateY(-3px);
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.26);
 }
 
@@ -2048,4 +2028,283 @@ p.project-stat::before {
   .project-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+
+/* ==========================================================================
+   Refinements (2026-11): calmer, more editorial presentation.
+   Keeps the deep-sea identity (palette, background scene, jellyfish mark)
+   but drops decorative motion, glow and "template" patterns.
+   ========================================================================== */
+
+/* Content is simply there — no fade-in on scroll. */
+.reveal,
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition: none;
+}
+
+.scroll-progress {
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.7;
+}
+
+/* Headings: solid colour, sensible sizes, left-aligned with the content. */
+.gradient-name {
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  color: var(--accent);
+}
+
+section h2 {
+  text-align: left;
+  font-size: clamp(1.6rem, 2.4vw, 2.1rem);
+  letter-spacing: -0.015em;
+  color: var(--text-heading);
+  margin-bottom: 0.6rem;
+}
+
+section h2::after {
+  margin-left: 0;
+  margin-right: auto;
+  width: 40px;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.6;
+}
+
+.section-copy {
+  margin-left: 0;
+  margin-right: 0;
+  text-align: left;
+  font-size: 1.02rem;
+  line-height: 1.7;
+}
+
+/* Hero: a plain introduction, not a glowing centred card. */
+.hero {
+  place-items: center start;
+  min-height: min(92svh, 820px);
+}
+
+.hero-content {
+  width: min(100% - 2rem, 1180px);
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 2vw, 1.5rem);
+  align-items: flex-start;
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  gap: 0.5rem;
+}
+
+.eyebrow {
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  margin-bottom: 0.25rem;
+}
+
+.hero-content h1 {
+  max-width: 20ch;
+  font-size: clamp(2.4rem, 4.4vw, 3.6rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.hero-copy {
+  max-width: 58ch;
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.hero-stats {
+  justify-content: flex-start;
+  gap: 0;
+  margin-top: 1rem;
+}
+
+.hero-stat {
+  align-items: flex-start;
+  min-width: 0;
+  padding: 0.1rem 1.5rem 0.1rem 0;
+  margin-right: 1.5rem;
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  background: none;
+}
+
+.hero-stat:last-child {
+  border-right: 0;
+  margin-right: 0;
+}
+
+.hero-stat strong {
+  font-size: 1.35rem;
+  color: var(--text-strong);
+}
+
+.hero-stat span {
+  font-size: 0.82rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.hero-actions {
+  justify-content: flex-start;
+}
+
+.scroll-cue {
+  display: none;
+}
+
+/* Buttons and controls: firm corners, colour-only hover. */
+.btn {
+  border-radius: 8px;
+}
+
+.btn:hover {
+  box-shadow: none;
+}
+
+/* Hover states change colour/border only; nothing jumps or glows. */
+.pillar-card:hover,
+.achievement-card:hover,
+.featured-project:hover,
+.project-card:hover,
+.mini-card:hover,
+.skill-category:hover,
+.working-on-card:hover,
+.contact-link:hover,
+.blog-post-card:hover {
+  box-shadow: none;
+}
+
+@media (max-width: 720px) {
+  .hero-stats {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .hero-stat {
+    border-right: 0;
+    padding: 0;
+    margin: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Heading rule sits under the start of the (left-aligned) heading. */
+section h2::after {
+  left: 0;
+  transform: none;
+}
+
+/* Cards: quieter corners, content aligned to the left like the text above. */
+.pillar-card,
+.achievement-card,
+.project-card,
+.mini-card,
+.skill-category,
+.working-on-card {
+  border-radius: 12px;
+}
+
+.pillar-card {
+  align-items: flex-start;
+  text-align: left;
+  padding: 1.4rem 1.4rem 1.5rem;
+}
+
+.pillar-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(124, 198, 222, 0.08);
+}
+
+/* Technology tags: plain text, separated by a thin dot — not pill badges. */
+.project-tags {
+  gap: 0.25rem 0;
+}
+
+.project-tags span {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  letter-spacing: 0;
+}
+
+.project-tags span:not(:last-child)::after {
+  content: '·';
+  margin: 0 0.55rem;
+  color: var(--text-faint);
+  opacity: 0.6;
+}
+
+/* Skills: three readable lists instead of a wall of badges. */
+.skill-category {
+  padding: 1.25rem 1.4rem 1.4rem;
+}
+
+.skill-category h3 {
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 1rem;
+  color: var(--text-heading);
+  opacity: 1;
+  margin-bottom: 0.75rem;
+}
+
+.skills-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  justify-content: start;
+  gap: 0.45rem 1.25rem;
+}
+
+.skills-list li {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--text-soft);
+  font-size: 0.95rem;
+}
+
+.cert-badge {
+  padding: 0 0.35rem;
+  border-radius: 4px;
+  background: none;
+  font-size: 0.66rem;
+  color: var(--accent);
+}
+
+.featured-project-badge {
+  border-radius: 6px;
+}
+
+.skills-list {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
 }

@@ -57,13 +57,14 @@ export const projects = [
     solution:
       'Built an agent-based engine in TypeScript that runs each tissue in its own Web Worker, so six simulations tick in parallel on one clock while the page stays smooth. A dependency-free canvas renderer, charts and an evolution tree sit on top, with a guided first-run flow for beginners.',
     impact:
-      'Handles 10,000+ cells per tissue at interactive speed, works on phones (pinch to zoom), and the simulation core is covered by 56 automated tests, including deterministic replays.',
+      'Handles 10,000+ cells per tissue at interactive speed while staying inside a fixed CPU budget (it never maxes out your machine), works on phones with pinch-to-zoom, and the simulation core is covered by 56 automated tests, including deterministic replays.',
     live: '/tumorsim/',
     gallery: [
-      { src: '/TumorSim.jpg', alt: 'A tumour spreading through healthy tissue, with the body map lit up', caption: 'The starting tumour spreads, and the body map lights up as it reaches other organs.' },
-      { src: '/TumorSim-organ.jpg', alt: 'Zoomed into the liver, with the Body tab listing every organ', caption: 'Zoomed into the liver. The Body tab shows each organ and why it behaves differently.' },
+      { src: '/TumorSim.jpg', alt: 'A tumour growing as a mass in healthy tissue, with the body map showing where it has spread', caption: 'A tumour grows outward from where it started; the body map lights up as cells reach other organs.' },
+      { src: '/TumorSim-organ.jpg', alt: 'Zoomed into the lymph nodes, with the Body tab listing every organ', caption: 'Zoomed into an organ. The Body tab shows each site and why it behaves differently.' },
+      { src: '/TumorSim-inspect.jpg', alt: 'A selected tumour cell in the inspector next to the Evolution tab', caption: 'Click any cell to inspect it; the Evolution tab shows which mutant families are winning.' },
+      { src: '/TumorSim-treatment.jpg', alt: 'Chemotherapy shrinking a tumour, with the treatment-response chart', caption: 'Chemotherapy shrinks the tumour; the response chart shades when each dose is active.' },
       { src: '/TumorSim-end.jpg', alt: 'End-of-run summary showing where the tumour spread and which mutations won', caption: 'Every run ends with a summary: where it spread, which mutations won, and what to try next.' },
-      { src: '/TumorSim-tree.jpg', alt: 'Evolution tree showing which tumour clones dominate', caption: 'The evolution tree traces every clone and shows which mutations took over.' },
       { src: '/TumorSim-phone.jpg', alt: 'TumorSim on a phone', caption: 'Works on phones too, with pinch-to-zoom.', fit: 'contain' },
     ],
   },

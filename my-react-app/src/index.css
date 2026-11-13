@@ -7,13 +7,14 @@
   --text-heading: #dffaff;
   --text-soft: rgba(224, 241, 255, 0.82);
   --text-faint: rgba(224, 241, 255, 0.7);
-  --accent: #8fe4ff;
-  --accent-2: #93e4ff;
-  --accent-3: #a5f3ff;
-  --purple: #927dff;
-  --purple-soft: #c9a7ff;
-  --gradient: linear-gradient(90deg, #8fe4ff, #927dff);
-  --gradient-text: linear-gradient(120deg, #8fe4ff 0%, #a5f3ff 32%, #927dff 68%, #c9a7ff 100%);
+  /* Deep-sea palette: muted cyan accent, steel blue in place of purple. */
+  --accent: #7cc6de;
+  --accent-2: #8acbe0;
+  --accent-3: #9fd4e6;
+  --purple: #7f9cc8;
+  --purple-soft: #9db3d6;
+  --gradient: linear-gradient(90deg, #7cc6de, #7f9cc8);
+  --gradient-text: linear-gradient(120deg, #7cc6de 0%, #7f9cc8 100%);
 
   color: var(--text);
   background:
@@ -46,10 +47,10 @@
   --accent: #0b87c9;
   --accent-2: #0a7dbb;
   --accent-3: #06a2d8;
-  --purple: #6d5ae0;
-  --purple-soft: #7b64e8;
-  --gradient: linear-gradient(90deg, #0b87c9, #6d5ae0);
-  --gradient-text: linear-gradient(120deg, #0b87c9 0%, #06a2d8 32%, #6d5ae0 68%, #9a86ff 100%);
+  --purple: #3d5f92;
+  --purple-soft: #4a6ea3;
+  --gradient: linear-gradient(90deg, #0b87c9, #3d5f92);
+  --gradient-text: linear-gradient(120deg, #0b87c9 0%, #3d5f92 100%);
 
   background:
     radial-gradient(circle at top, rgba(95, 196, 255, 0.18), transparent 38%),
