@@ -1,0 +1,214 @@
+# Homepage: the start page with a big tile + logo for every app in the homelab.
+#   http://100.120.223.33:30300  from anywhere with Tailscale on (tiles link to Tailscale addresses too)
+#   http://192.168.1.35:30300    at home also works for the page itself
+# To add or change a tile: edit services.yaml below, then
+#   kubectl apply -f 45-homepage.yaml && kubectl -n homepage rollout restart deployment homepage
+# Logos come from https://github.com/homarr-labs/dashboard-icons (just the name, e.g. jellyfin.png).
+# The green/red dot on each tile is a live check done from inside the cluster.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: homepage
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: homepage
+data:
+  settings.yaml: |
+    title: Grayson's Homelab
+    description: Raspberry Pi 5 + Pi 4 cluster
+    theme: dark
+    color: slate
+    headerStyle: boxed
+    statusStyle: dot
+    hideVersion: true
+    target: _blank
+    layout:
+      Media:
+        style: row
+        columns: 3
+        icon: mdi-play-box-multiple
+      Website:
+        style: row
+        columns: 3
+        icon: mdi-web
+      Cluster & Network:
+        style: row
+        columns: 3
+        icon: mdi-server-network
+      Monitoring:
+        style: row
+        columns: 4
+        icon: mdi-chart-line
+  services.yaml: |
+    - Media:
+        - Jellyfin:
+            icon: jellyfin.png
+            href: http://100.120.223.33:8096
+            description: Movies, TV shows, music and home videos
+            siteMonitor: http://jellyfin.media.svc.cluster.local:8096/health
+    - Website:
+        - graysoncodes.org:
+            icon: https://graysoncodes.org/favicon.svg
+            href: https://graysoncodes.org
+            description: Portfolio (public)
+            siteMonitor: http://web.graysoncodes.svc.cluster.local/healthz
+        - Blog admin:
+            icon: mdi-pencil-box-multiple
+            href: https://graysoncodes.org/admin/blog
+            description: Write and edit blog posts
+            siteMonitor: http://blog.graysoncodes.svc.cluster.local:5080/blog
+    - Cluster & Network:
+        - Portainer:
+            icon: portainer.png
+            href: http://100.120.223.33:30777
+            description: Manage the cluster (apps, logs, restarts)
+            siteMonitor: http://portainer.portainer.svc.cluster.local:9000
+        - Pi-hole:
+            icon: pi-hole.png
+            href: http://100.120.223.33:30880/admin
+            description: Ad blocking for your devices
+            siteMonitor: http://pihole-web.pihole.svc.cluster.local/admin/
+        - Cloudflare:
+            icon: cloudflare.png
+            href: https://dash.cloudflare.com
+            description: Domain and tunnel settings
+    - Monitoring:
+        - Uptime Kuma:
+            icon: uptime-kuma.png
+            href: http://100.120.223.33:3001
+            description: Is everything up?
+            siteMonitor: http://192.168.1.35:3001
+        - Grafana:
+            icon: grafana.png
+            href: http://100.120.223.33:3000
+            description: Graphs and dashboards
+            siteMonitor: http://192.168.1.35:3000/api/health
+        - Prometheus:
+            icon: prometheus.png
+            href: http://100.120.223.33:9090
+            description: Metrics collector
+            siteMonitor: http://192.168.1.35:9090/-/healthy
+        - Homarr:
+            icon: homarr.png
+            href: http://100.120.223.33:7575
+            description: Old dashboard (Docker)
+            siteMonitor: http://192.168.1.35:7575
+  widgets.yaml: |
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: Cluster
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+    - datetime:
+        text_size: xl
+        format:
+          dateStyle: long
+          timeStyle: short
+  kubernetes.yaml: |
+    mode: cluster
+  bookmarks.yaml: ""
+  docker.yaml: ""
+  custom.css: ""
+  custom.js: ""
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: homepage
+  namespace: homepage
+---
+# Read-only access so the top bar can show the Pis' CPU and memory.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: homepage
+rules:
+  - apiGroups: [""]
+    resources: [namespaces, pods, nodes]
+    verbs: [get, list]
+  - apiGroups: [metrics.k8s.io]
+    resources: [nodes, pods]
+    verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: homepage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: homepage
+subjects:
+  - kind: ServiceAccount
+    name: homepage
+    namespace: homepage
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homepage
+  namespace: homepage
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: homepage}
+  template:
+    metadata:
+      labels: {app: homepage}
+    spec:
+      serviceAccountName: homepage
+      automountServiceAccountToken: true
+      containers:
+        - name: homepage
+          image: ghcr.io/gethomepage/homepage:v1.12.0
+          env:
+            # Addresses you may type in the browser. Add new ones here if you use another.
+            - name: HOMEPAGE_ALLOWED_HOSTS
+              value: "192.168.1.35:30300,192.168.1.36:30300,100.120.223.33:30300,raspberrypi.local:30300,pi2.local:30300,localhost:30300"
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - {name: config, mountPath: /app/config/settings.yaml, subPath: settings.yaml}
+            - {name: config, mountPath: /app/config/services.yaml, subPath: services.yaml}
+            - {name: config, mountPath: /app/config/widgets.yaml, subPath: widgets.yaml}
+            - {name: config, mountPath: /app/config/kubernetes.yaml, subPath: kubernetes.yaml}
+            - {name: config, mountPath: /app/config/bookmarks.yaml, subPath: bookmarks.yaml}
+            - {name: config, mountPath: /app/config/docker.yaml, subPath: docker.yaml}
+            - {name: config, mountPath: /app/config/custom.css, subPath: custom.css}
+            - {name: config, mountPath: /app/config/custom.js, subPath: custom.js}
+            - {name: logs, mountPath: /app/config/logs}
+          readinessProbe:
+            tcpSocket: {port: 3000}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 20m, memory: 64Mi}
+            limits: {memory: 256Mi}
+      volumes:
+        - name: config
+          configMap:
+            name: homepage-config
+        - name: logs
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: homepage
+  namespace: homepage
+spec:
+  type: NodePort
+  selector: {app: homepage}
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30300

@@ -138,3 +138,22 @@ docker run -d --name blog --network pftest -e BLOG_COOKIE_SECURE=0 portfolio-blo
 docker run -d --name pfweb --network pftest -p 18080:8080 -e BLOG_UPSTREAM=http://blog:5080 portfolio-web:test
 # http://localhost:18080
 ```
+
+## Other apps on the cluster
+
+| App | File | Address (Tailscale on) | Notes |
+|---|---|---|---|
+| Start page (Homepage) | `k8s/45-homepage.yaml` | http://100.120.223.33:30300 | A tile + logo for every app. Edit `services.yaml` inside the file to add tiles. |
+| Pi-hole | `k8s/50-pihole.yaml` | http://100.120.223.33:30880/admin | DNS ad blocker on the Pi 4 (`192.168.1.36`, port 53). Password: `kubectl -n pihole exec -it deploy/pihole -- pihole setpassword` |
+| Jellyfin | `k8s/60-jellyfin.yaml` | http://100.120.223.33:8096 | Media server on the Pi 5. Full guide: `media/README.md` |
+
+Install or update any of them from Windows without pushing first:
+```powershell
+Get-Content -Raw "$HOME\Desktop\Portfolio\cluster\k8s\FILE.yaml" | ssh grayson@raspberrypi.local "kubectl apply -f -"
+```
+
+Health report for a Pi (read-only):
+```powershell
+Get-Content -Raw "$HOME\Desktop\Portfolio\cluster\inspect-pi.sh" | ssh grayson@raspberrypi.local "tr -d '
+' | bash -s"
+```

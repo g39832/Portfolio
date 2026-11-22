@@ -1,0 +1,150 @@
+# Jellyfin: personal media server, on the Pi 5, local network + Tailscale only
+# (there is NO Cloudflare route, so it is never public).
+#   http://192.168.1.35:8096        at home (what TV/phone apps expect)
+#   http://100.120.223.33:8096      from anywhere with Tailscale on
+#   http://<either Pi>:30096        also works
+# Files live in plain folders on the Pi 5 (see cluster/media/README.md):
+#   /opt/media-server/config   settings, users, watch progress   (backed up nightly)
+#   /opt/media-server/cache    thumbnails etc., safe to delete
+#   /opt/media-server/media    movies/ shows/ music/ personal-videos/  (read-only to Jellyfin)
+#   /opt/media-server/backups  nightly config backups, kept 7
+# Jellyfin runs as the "grayson" user (uid 1000), so you can copy files in with scp as grayson.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: media
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jellyfin
+  namespace: media
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate          # one copy only: it owns its database and port 8096
+  selector:
+    matchLabels: {app: jellyfin}
+  template:
+    metadata:
+      labels: {app: jellyfin}
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: raspberrypi
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+      containers:
+        - name: jellyfin
+          image: jellyfin/jellyfin:10.11.10
+          env:
+            - {name: TZ, value: America/Chicago}
+            # The address Jellyfin tells apps to use.
+            - {name: JELLYFIN_PublishedServerUrl, value: "http://192.168.1.35:8096"}
+          ports:
+            - {name: http, containerPort: 8096, hostPort: 8096, protocol: TCP}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - {name: config, mountPath: /config}
+            - {name: cache, mountPath: /cache}
+            - {name: media, mountPath: /media, readOnly: true}
+          startupProbe:          # the first start can take a few minutes on a Pi
+            httpGet: {path: /health, port: 8096}
+            periodSeconds: 10
+            failureThreshold: 60
+          livenessProbe:
+            httpGet: {path: /health, port: 8096}
+            periodSeconds: 30
+            failureThreshold: 5
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {memory: 3Gi}
+      volumes:
+        - name: config
+          hostPath: {path: /opt/media-server/config, type: Directory}
+        - name: cache
+          hostPath: {path: /opt/media-server/cache, type: Directory}
+        - name: media
+          hostPath: {path: /opt/media-server/media, type: Directory}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jellyfin
+  namespace: media
+spec:
+  type: NodePort
+  selector: {app: jellyfin}
+  ports:
+    - name: http
+      port: 8096
+      targetPort: 8096
+      nodePort: 30096
+---
+# Nightly backup of Jellyfin's settings, users and watch progress at 4:00 am.
+# Databases are copied with SQLite's safe online backup, so it works while Jellyfin runs.
+# Writes /opt/media-server/backups/jellyfin-config-YYYYMMDD-HHMMSS.tar.gz, keeps the newest 7.
+# Media files are NOT in it (too big); they are your originals.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: jellyfin-backup
+  namespace: media
+spec:
+  schedule: "0 4 * * *"
+  timeZone: America/Chicago
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          nodeSelector:
+            kubernetes.io/hostname: raspberrypi
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+          containers:
+            - name: backup
+              # Reuses the blog image: it already has Python + SQLite.
+              image: ghcr.io/g39832/portfolio-blog:latest
+              command:
+                - python
+                - -c
+                - |
+                  import os, shutil, sqlite3, tarfile, tempfile, time, pathlib
+                  src = pathlib.Path("/config"); dest = pathlib.Path("/backups")
+                  stamp = time.strftime("%Y%m%d-%H%M%S")
+                  with tempfile.TemporaryDirectory() as tmp:
+                      tmp = pathlib.Path(tmp) / "config"
+                      def copy(s, d):
+                          s = pathlib.Path(s)
+                          if s.suffix == ".db":
+                              a = sqlite3.connect(f"file:{s}?mode=ro", uri=True); b = sqlite3.connect(d)
+                              a.backup(b); b.close(); a.close()
+                          elif not s.name.endswith(("-wal", "-shm")):
+                              shutil.copy2(s, d)
+                      shutil.copytree(src, tmp, copy_function=copy,
+                                      ignore=shutil.ignore_patterns("cache", "transcodes", "log"))
+                      out = dest / f"jellyfin-config-{stamp}.tar.gz"
+                      with tarfile.open(out, "w:gz") as t:
+                          t.add(tmp, arcname="config")
+                  old = sorted(dest.glob("jellyfin-config-*.tar.gz"))[:-7]
+                  for f in old: f.unlink()
+                  print("Backup written:", out, f"({out.stat().st_size // 1024} KB), removed {len(old)} old")
+              volumeMounts:
+                - {name: config, mountPath: /config}   # writable so SQLite can read safely; the job changes nothing
+                - {name: backups, mountPath: /backups}
+          volumes:
+            - name: config
+              hostPath: {path: /opt/media-server/config, type: Directory}
+            - name: backups
+              hostPath: {path: /opt/media-server/backups, type: Directory}
