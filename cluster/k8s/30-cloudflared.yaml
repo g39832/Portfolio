@@ -1,0 +1,41 @@
+# The Cloudflare Tunnel connector: this is how graysoncodes.org reaches the cluster.
+# Two copies (one per Pi) so the site survives either Pi going down.
+# Needs the tunnel token in a secret (kept out of git), made once with:
+#   kubectl -n graysoncodes create secret generic cloudflared-token --from-literal=token=PASTE_TOKEN
+# In the Cloudflare dashboard the tunnel's public hostname then points at:
+#   graysoncodes.org  ->  HTTP  web.graysoncodes.svc.cluster.local:80
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  namespace: graysoncodes
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: cloudflared}
+  template:
+    metadata:
+      labels: {app: cloudflared}
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: {app: cloudflared}
+      containers:
+        - name: cloudflared
+          image: cloudflare/cloudflared:2025.11.1
+          args: [tunnel, --no-autoupdate, --metrics, 0.0.0.0:2000, run]
+          env:
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef: {name: cloudflared-token, key: token}
+          livenessProbe:
+            httpGet: {path: /ready, port: 2000}
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests: {cpu: 20m, memory: 32Mi}
+            limits: {memory: 128Mi}

@@ -1,0 +1,5 @@
+# Everything for graysoncodes.org lives in this namespace.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: graysoncodes

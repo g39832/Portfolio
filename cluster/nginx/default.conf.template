@@ -1,0 +1,42 @@
+# nginx for the cluster: serves the built portfolio and forwards blog paths to the
+# blog service. Same paths as the old Pi's nginx (blog/deploy/nginx-blog.conf).
+# This is a template: at start-up the nginx image fills in the cluster's DNS
+# server and the blog's address (BLOG_UPSTREAM), then writes it to conf.d/default.conf.
+# The blog's address is looked up per request, so nginx starts even if the blog is down.
+resolver ${NGINX_LOCAL_RESOLVERS} valid=30s ipv6=off;
+
+server {
+    listen 8080;
+    listen [::]:8080;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    set $blog_upstream ${BLOG_UPSTREAM};
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml application/xml text/plain;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    # Vite puts a content hash in these file names, so they can be cached for a long time.
+    location ^~ /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    location = /blog              { include /etc/nginx/conf.d/blog-proxy.inc; }
+    location ^~ /blog/            { include /etc/nginx/conf.d/blog-proxy.inc; }
+    location = /sitemap.xml       { include /etc/nginx/conf.d/blog-proxy.inc; }
+    location ^~ /media/           { include /etc/nginx/conf.d/blog-proxy.inc; }
+    location ^~ /admin/blog {
+        client_max_body_size 12m;   # image uploads (the app itself limits images to 10 MB)
+        include /etc/nginx/conf.d/blog-proxy.inc;
+    }
+
+    # Lets the cluster check this container is alive.
+    location = /healthz { access_log off; default_type text/plain; return 200 "ok\n"; }
+}

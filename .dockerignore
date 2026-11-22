@@ -1,0 +1,14 @@
+# Only my-react-app (minus build output) and blog/ go into the images.
+**/node_modules
+**/dist
+**/__pycache__
+**/.venv
+**/*.log
+.git
+CRM_Template_Copy
+blog/instance
+blog/tests
+*.png
+*.jpeg
+deploy.py
+run code.txt

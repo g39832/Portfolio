@@ -1,0 +1,128 @@
+# The blog: one copy (SQLite can only have one writer), with its database and
+# pictures on a saved disk ("blog-data") that survives restarts and updates.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blog-settings
+  namespace: graysoncodes
+data:
+  BLOG_DATA_DIR: /data/blog
+  BLOG_BACKUP_DIR: /data/backups
+  BLOG_SITE_URL: https://graysoncodes.org
+  BLOG_SITE_NAME: Grayson Cox
+  BLOG_AUTHOR_NAME: Grayson Cox
+  BLOG_TIMEZONE: America/Chicago
+  BLOG_HOST: 0.0.0.0
+  BLOG_PORT: "5080"
+  BLOG_THREADS: "4"
+  BLOG_COOKIE_SECURE: "1"
+  BLOG_TRUST_CLOUDFLARE_IP: "1"
+  # nginx forwards /media to the blog, so the blog serves the pictures itself.
+  BLOG_SERVE_MEDIA: "1"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: blog-data
+  namespace: graysoncodes
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog
+  namespace: graysoncodes
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate          # never two copies writing the same database
+  selector:
+    matchLabels: {app: blog}
+  template:
+    metadata:
+      labels: {app: blog}
+    spec:
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      containers:
+        - name: blog
+          image: ghcr.io/g39832/portfolio-blog:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef: {name: blog-settings}
+          ports:
+            - containerPort: 5080
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            tcpSocket: {port: 5080}
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: {port: 5080}
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {memory: 256Mi}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: blog-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog
+  namespace: graysoncodes
+spec:
+  selector: {app: blog}
+  ports:
+    - port: 5080
+      targetPort: 5080
+---
+# Nightly backup at 3:30 am, keeping the newest 14 (same as the old Pi's timer).
+# Archives go to /data/backups on the same disk, so copy them to your PC now and
+# then (cluster/README.md, "Backups").
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: blog-backup
+  namespace: graysoncodes
+spec:
+  schedule: "30 3 * * *"
+  timeZone: America/Chicago
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+          containers:
+            - name: backup
+              image: ghcr.io/g39832/portfolio-blog:latest
+              imagePullPolicy: Always
+              command: [python, -m, blogapp, backup, --keep, "14"]
+              envFrom:
+                - configMapRef: {name: blog-settings}
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: blog-data
