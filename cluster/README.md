@@ -9,7 +9,7 @@ worker** (agent). Both are on Wi-Fi. The cluster runs:
 | `blog` | The Flask blog. Its database and pictures are on the saved disk `blog-data` | 1 (SQLite has one writer) |
 | `blog-backup` | Nightly backup at 3:30 am, keeps 14 | scheduled |
 | `cloudflared` | The Cloudflare Tunnel, how the internet reaches the site | 2 (one per Pi) |
-| `headlamp` | The cluster dashboard | 1 |
+| `portainer` | The cluster dashboard (own username + password) | 1 |
 
 The images are built by GitHub Actions (`.github/workflows/cluster-images.yml`) for ARM
 and published as `ghcr.io/g39832/portfolio-web` and `ghcr.io/g39832/portfolio-blog`.
@@ -84,22 +84,26 @@ https://graysoncodes.org and sign in at `/admin/blog`.
 
 ---
 
-## The dashboard (Headlamp)
+## The dashboard (Portainer)
 
-**Sign-in token** (run on the Pi 5, keep it private, it has full control):
+Sign in with your own username and password. The address works through either Pi:
+
+- **At home:** http://192.168.1.35:30777
+- **From anywhere:** http://100.120.223.33:30777 (the Pi 5's Tailscale address; turn Tailscale on)
+
+**First time only:** Portainer asks for a one-time setup code before it lets anyone create the
+admin account. Get it on the Pi 5 with:
 ```bash
-kubectl -n kube-system get secret grayson-dashboard-token -o jsonpath='{.data.token}' | base64 -d; echo
+kubectl -n portainer logs deploy/portainer | grep -o 'setup_token=[0-9a-f]*'
 ```
+Create the account within 5 minutes of Portainer starting. If it says it timed out:
+`kubectl -n portainer rollout restart deployment portainer`, then get the new code.
+After signing in, click **Get Started** to add this cluster ("local").
 
-**At home:** `http://PI5_IP:30466`
-
-**From anywhere:** do these in this order so the dashboard is never open to the world:
-1. Zero Trust → Access → Applications → **Add** → Self-hosted. Domain
-   `dashboard.graysoncodes.org`. Policy: **Allow**, Include → **Emails** → your email.
-2. Then tunnel → Public Hostname → **Add** `dashboard.graysoncodes.org` → HTTP
-   `headlamp.kube-system.svc.cluster.local:80`.
-
-Opening it then asks Cloudflare for a code sent to your email, then the Headlamp token.
+**Forgot the password?** Delete Portainer's saved settings and start fresh:
+```bash
+kubectl delete -f ~/Portfolio/cluster/k8s/40-portainer.yaml && kubectl apply -f ~/Portfolio/cluster/k8s/40-portainer.yaml
+```
 
 ---
 
