@@ -3,7 +3,7 @@
 #   At home / Tailscale:  http://100.120.223.33:30505
 # Anyone with the link only reaches the join page. Nobody arriving over the network is the DM:
 # the DM signs in with a DM link. Make one (prints a link to open on your own devices):
-#   kubectl -n ledger exec deploy/ledger -- python -c "import json,urllib.request as u; print('https://dnd.graysoncodes.org/dm-login?key=' + json.load(u.urlopen(u.Request('http://127.0.0.1:5050/api/dm-key', data=b'{}', headers={'Content-Type': 'application/json'}, method='POST')))['key'])"
+#   ssh grayson@raspberrypi.local "bash ~/Portfolio/cluster/ledger-dm-link.sh"
 # Making a new DM link cancels the old one.
 # Data (campaign database, uploaded maps/pictures, the app's own daily backups) is on the
 # saved disk "ledger-data" on the Pi 5.
