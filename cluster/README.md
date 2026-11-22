@@ -175,13 +175,17 @@ Look at what it caught (on the Pi 5):
 kubectl -n crowdsec get pods
 kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli alerts list
 kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli decisions list   # current bans
-kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli metrics          # lines read/parsed
+# lines read/parsed live in the agents (one per Pi), not the LAPI:
+for p in $(kubectl -n crowdsec get pods -o name | grep agent); do echo "== $p"; kubectl -n crowdsec exec $p -- cscli metrics show acquisition; done
 ```
 
 Unban someone (for example yourself while testing):
 ```bash
 kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli decisions delete --ip 1.2.3.4
 ```
+
+If the install job fails with `lookup ... server misbehaving`, the cluster DNS is stale:
+`kubectl -n kube-system rollout restart deployment coredns`
 
 Stage 1 only **detects**: a "ban" is recorded but nothing blocks the visitor yet.
 Stage 2 adds a bouncer that blocks banned IPs at Cloudflare (needs a Cloudflare API token).

@@ -15,7 +15,7 @@
 #   kubectl -n crowdsec get pods
 #   kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli alerts list
 #   kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli decisions list
-#   kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli metrics
+#   for p in $(kubectl -n crowdsec get pods -o name | grep agent); do kubectl -n crowdsec exec $p -- cscli metrics show acquisition; done
 #
 # Stage 1 (this file) DETECTS and records. Blocking at Cloudflare is stage 2
 # (needs a Cloudflare API token; see "Security (CrowdSec)" in cluster/README.md).
