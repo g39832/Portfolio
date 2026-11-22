@@ -30,6 +30,10 @@ data:
         style: row
         columns: 3
         icon: mdi-play-box-multiple
+      Games:
+        style: row
+        columns: 3
+        icon: mdi-sword-cross
       Website:
         style: row
         columns: 3
@@ -49,6 +53,12 @@ data:
             href: http://100.120.223.33:8096
             description: Movies, TV shows, music and home videos
             siteMonitor: http://jellyfin.media.svc.cluster.local:8096/health
+    - Games:
+        - Campaign Ledger:
+            icon: mdi-dice-d20
+            href: https://dnd.graysoncodes.org
+            description: D&D tracker - players join with the code
+            siteMonitor: http://ledger.ledger.svc.cluster.local:5050/api/join/build
     - Website:
         - graysoncodes.org:
             icon: https://graysoncodes.org/favicon.svg
