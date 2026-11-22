@@ -24,6 +24,7 @@ data:
     headerStyle: boxed
     statusStyle: dot
     hideVersion: true
+    useEqualHeights: true
     target: _blank
     layout:
       Learning:
@@ -138,7 +139,72 @@ data:
     mode: cluster
   bookmarks.yaml: ""
   docker.yaml: ""
-  custom.css: ""
+  custom.css: |
+    @import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap");
+
+    /* Grayson's Homelab: same look as the Pi to DevOps Path guide.
+       Homepage colors everything from --color-50..900; these replace the "slate" ramp with
+       the guide's cool neutrals, and the icon gradient with its cobalt accent. */
+    html.theme-slate {
+      --color-50: 246 247 249;  --color-100: 238 241 246; --color-200: 227 230 236; --color-300: 200 205 214;
+      --color-400: 160 167 180; --color-500: 124 132 149; --color-600: 75 82 97;    --color-700: 46 51 61;
+      --color-800: 21 24 30;    --color-900: 15 17 21;
+      --color-logo-start: 51 82 204; --color-logo-stop: 51 82 204;
+    }
+    :root {
+      --hl-bg: #f6f7f9; --hl-panel: #ffffff; --hl-line: #e3e6ec; --hl-hover: #eef1f6;
+      --hl-ink: #16181d; --hl-ink2: #4b5261; --hl-ink3: #7c8495; --hl-accent: #3352cc;
+      --hl-font: "Geist", "Segoe UI", system-ui, sans-serif; --hl-mono: "Geist Mono", Consolas, monospace;
+    }
+    html.dark {
+      --hl-bg: #0f1115; --hl-panel: #15181e; --hl-line: #252a32; --hl-hover: #1b1f27;
+      --hl-ink: #eceef2; --hl-ink2: #aab1bd; --hl-ink3: #7e8696; --hl-accent: #8aa0ff;
+      --color-logo-start: 138 160 255; --color-logo-stop: 138 160 255;
+    }
+
+    html, body, #__next, #page_wrapper { background: var(--hl-bg) !important; }
+    body { font-family: var(--hl-font) !important; color: var(--hl-ink); -webkit-font-smoothing: antialiased; }
+    #inner_wrapper { max-width: 1280px; margin: 0 auto; }
+
+    /* top bar: cluster CPU/memory + date */
+    #information-widgets { background: var(--hl-panel) !important; border: 1px solid var(--hl-line); box-shadow: none !important; border-radius: 12px !important; }
+    #information-widgets, #information-widgets * { font-variant-numeric: tabular-nums; }
+    .information-widget-datetime span { font-weight: 500; letter-spacing: -.01em; color: var(--hl-ink) !important; }
+
+    /* group headings */
+    .services-group { padding-top: 10px !important; }
+    .service-group-name { font-size: 15px !important; font-weight: 600 !important; letter-spacing: -.01em; color: var(--hl-ink) !important; }
+    .service-group-icon { width: 22px !important; height: 22px !important; display: grid; place-items: center; }
+    .service-group-icon > div { width: 18px !important; height: 18px !important; background: var(--hl-ink3) !important; }
+    .services-list { row-gap: 2px; }
+
+    /* app tiles */
+    .service-card {
+      background: var(--hl-panel) !important; border: 1px solid var(--hl-line); box-shadow: none !important;
+      border-radius: 12px !important; padding: 8px 6px !important;
+      transition: border-color .15s ease, background-color .15s ease, transform .15s ease !important;
+    }
+    .service-card:hover { background: var(--hl-hover) !important; border-color: var(--hl-accent); }
+    .service-card:focus-within { border-color: var(--hl-accent); }
+    .service-icon > div { width: 26px !important; height: 26px !important; background: var(--hl-accent) !important; }
+    .service-icon img { width: 30px !important; height: 30px !important; object-fit: contain; }
+    .service-name { font-size: 14.5px !important; font-weight: 600 !important; color: var(--hl-ink) !important; letter-spacing: -.005em; }
+    .service-description { font-size: 12.5px !important; font-weight: 400 !important; color: var(--hl-ink3) !important; margin-top: 2px; line-height: 1.4; }
+    .service-title-text:focus-visible, .service-icon:focus-visible { outline: 2px solid var(--hl-accent); outline-offset: 2px; border-radius: 8px; }
+
+    /* status: small dot with a soft ring, top right */
+    .site-monitor-status .rounded-full { width: 8px !important; height: 8px !important; box-shadow: 0 0 0 3px rgb(16 185 129 / .18); }
+    .site-monitor-status .bg-rose-500 { box-shadow: 0 0 0 3px rgb(244 63 94 / .2); }
+
+    /* when a check shows text (response time or an error code) instead of a dot: a small quiet pill */
+    .site-monitor-status { border-radius: 999px !important; background: transparent !important; border: 1px solid var(--hl-line); padding: 1px 7px !important; }
+    .site-monitor-status > div:not(.rounded-full) { font: 500 10px/1.4 var(--hl-mono) !important; letter-spacing: .02em; text-transform: lowercase !important; }
+
+    /* footer: keep the refresh and theme buttons, drop the version line */
+    #version { display: none !important; }
+    #footer { padding-top: 8px !important; padding-bottom: 24px !important; }
+
+    @media (prefers-reduced-motion: reduce) { .service-card { transition: none !important; } }
   custom.js: ""
 ---
 apiVersion: v1
