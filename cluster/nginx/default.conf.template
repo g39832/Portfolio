@@ -14,6 +14,13 @@ server {
 
     set $blog_upstream ${BLOG_UPSTREAM};
 
+    # Visitors arrive through the Cloudflare tunnel, so nginx only sees the
+    # cloudflared pods (10.42.x.x, the cluster's pod network). Cloudflare puts the
+    # real visitor's IP in CF-Connecting-IP; use it for logs and for the blog.
+    # CrowdSec (k8s/80-crowdsec.yaml) reads these logs to spot attackers.
+    set_real_ip_from 10.42.0.0/16;
+    real_ip_header CF-Connecting-IP;
+
     gzip on;
     gzip_types text/css application/javascript application/json image/svg+xml application/xml text/plain;
 

@@ -146,6 +146,7 @@ docker run -d --name pfweb --network pftest -p 18080:8080 -e BLOG_UPSTREAM=http:
 | Start page (Homepage) | `k8s/45-homepage.yaml` | http://100.120.223.33:30300 | A tile + logo for every app. Edit `services.yaml` inside the file to add tiles. |
 | Pi-hole | `k8s/50-pihole.yaml` | http://100.120.223.33:30880/admin | DNS ad blocker on the Pi 4 (`192.168.1.36`, port 53). Password: `kubectl -n pihole exec -it deploy/pihole -- pihole setpassword` |
 | Jellyfin | `k8s/60-jellyfin.yaml` | http://100.120.223.33:8096 | Media server on the Pi 5. Full guide: `media/README.md` |
+| CrowdSec | `k8s/80-crowdsec.yaml` | (no web page) | Watches the public site's logs for attackers. See **Security (CrowdSec)** below. |
 
 Install or update any of them from Windows without pushing first:
 ```powershell
@@ -156,3 +157,33 @@ Health report for a Pi (read-only):
 ```powershell
 Get-Content -Raw "$HOME\Desktop\Portfolio\cluster\inspect-pi.sh" | ssh grayson@raspberrypi.local "tr -d '\r' | bash -s"
 ```
+
+## Security (CrowdSec)
+
+CrowdSec reads the public website's nginx logs and flags attackers (scanners looking
+for `/.env` or `/wp-login.php`, password guessing, path-traversal tricks, bad bots).
+nginx logs the visitor's real IP from Cloudflare's `CF-Connecting-IP` header
+(`nginx/default.conf.template`), otherwise every visitor would look like the tunnel.
+
+Install or update (k3s pulls CrowdSec's official Helm chart by itself):
+```powershell
+Get-Content -Raw "$HOME\Desktop\Portfolio\cluster\k8s\80-crowdsec.yaml" | ssh grayson@raspberrypi.local "kubectl apply -f -"
+```
+
+Look at what it caught (on the Pi 5):
+```bash
+kubectl -n crowdsec get pods
+kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli alerts list
+kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli decisions list   # current bans
+kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli metrics          # lines read/parsed
+```
+
+Unban someone (for example yourself while testing):
+```bash
+kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli decisions delete --ip 1.2.3.4
+```
+
+Stage 1 only **detects**: a "ban" is recorded but nothing blocks the visitor yet.
+Stage 2 adds a bouncer that blocks banned IPs at Cloudflare (needs a Cloudflare API token).
+Not covered yet: `dnd.graysoncodes.org` goes straight from the tunnel to Campaign Ledger
+without nginx, so its logs are not read.

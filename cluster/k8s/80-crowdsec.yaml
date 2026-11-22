@@ -1,0 +1,70 @@
+# CrowdSec: watches the public website's logs and spots attackers
+# (vulnerability scans, password guessing, bad bots, path-traversal tricks...).
+#
+# How it fits together:
+#   visitor -> Cloudflare -> cloudflared pods -> web (nginx) pods
+#   nginx logs the real visitor IP (CF-Connecting-IP, see nginx/default.conf.template)
+#   -> a CrowdSec "agent" on each Pi reads those logs and flags bad behaviour
+#   -> the CrowdSec "LAPI" (on the Pi 5) stores the alerts and decisions (bans).
+#
+# k3s installs it for us from CrowdSec's official Helm chart (the HelmChart below),
+# so there is no helm to install. Apply with:
+#   kubectl apply -f ~/Portfolio/cluster/k8s/80-crowdsec.yaml
+#
+# Useful commands (run on the Pi 5):
+#   kubectl -n crowdsec get pods
+#   kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli alerts list
+#   kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli decisions list
+#   kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli metrics
+#
+# Stage 1 (this file) DETECTS and records. Blocking at Cloudflare is stage 2
+# (needs a Cloudflare API token; see "Security (CrowdSec)" in cluster/README.md).
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: crowdsec
+  namespace: kube-system
+spec:
+  repo: https://crowdsecurity.github.io/helm-charts
+  chart: crowdsec
+  version: 0.24.3            # CrowdSec 1.8.2
+  targetNamespace: crowdsec
+  createNamespace: true
+  valuesContent: |-
+    # k3s uses containerd, so pod logs are in CRI format.
+    container_runtime: containerd
+
+    agent:
+      # Which pod logs to read: the public website's nginx (both copies).
+      acquisition:
+        - namespace: graysoncodes
+          podName: web-*
+          program: nginx
+      env:
+        # nginx log parser + the common web-attack scenarios.
+        - name: COLLECTIONS
+          value: "crowdsecurity/nginx"
+        - name: TZ
+          value: America/Chicago
+      # The chart's defaults ask for half a CPU per pod; a Pi doesn't need that.
+      resources:
+        requests: {cpu: 50m, memory: 100Mi}
+        limits: {memory: 250Mi}
+
+    lapi:
+      # Keep the database on the Pi 5 (the Pi 4's SD card is nearly full).
+      nodeSelector:
+        kubernetes.io/hostname: raspberrypi
+      env:
+        - name: TZ
+          value: America/Chicago
+      persistentVolume:
+        data:
+          storageClassName: local-path
+          size: 1Gi
+        config:
+          storageClassName: local-path
+          size: 100Mi
+      resources:
+        requests: {cpu: 50m, memory: 150Mi}
+        limits: {memory: 500Mi}
