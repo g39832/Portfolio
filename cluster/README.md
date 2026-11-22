@@ -154,6 +154,5 @@ Get-Content -Raw "$HOME\Desktop\Portfolio\cluster\k8s\FILE.yaml" | ssh grayson@r
 
 Health report for a Pi (read-only):
 ```powershell
-Get-Content -Raw "$HOME\Desktop\Portfolio\cluster\inspect-pi.sh" | ssh grayson@raspberrypi.local "tr -d '
-' | bash -s"
+Get-Content -Raw "$HOME\Desktop\Portfolio\cluster\inspect-pi.sh" | ssh grayson@raspberrypi.local "tr -d '\r' | bash -s"
 ```
