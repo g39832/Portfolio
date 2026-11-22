@@ -26,6 +26,10 @@ data:
     hideVersion: true
     target: _blank
     layout:
+      Learning:
+        style: row
+        columns: 3
+        icon: mdi-book-open-variant
       Media:
         style: row
         columns: 3
@@ -47,6 +51,12 @@ data:
         columns: 4
         icon: mdi-chart-line
   services.yaml: |
+    - Learning:
+        - Pi to DevOps Path:
+            icon: mdi-school
+            href: http://100.120.223.33:30402
+            description: Learning guide + Pomodoro timer
+            siteMonitor: http://study.study.svc.cluster.local
     - Media:
         - Jellyfin:
             icon: jellyfin.png

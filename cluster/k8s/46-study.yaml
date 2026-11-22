@@ -1,0 +1,53 @@
+# "Pi to DevOps Path": the learning guide with its Pomodoro timer, served by nginx.
+#   http://100.120.223.33:30402   (Tailscale, from anywhere)   http://192.168.1.35:30402 at home
+# The page itself is cluster/study/index.html. It goes into the "study-page" ConfigMap with
+#   bash ~/Portfolio/cluster/study/deploy.sh
+# (that script also applies this file and restarts nginx so it picks up a new page).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: study
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: study
+  namespace: study
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: study}
+  template:
+    metadata:
+      labels: {app: study}
+    spec:
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:1.28-alpine
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - {name: page, mountPath: /usr/share/nginx/html/index.html, subPath: index.html}
+          readinessProbe:
+            httpGet: {path: /, port: 8080}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {memory: 64Mi}
+      volumes:
+        - name: page
+          configMap:
+            name: study-page
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: study
+  namespace: study
+spec:
+  type: NodePort
+  selector: {app: study}
+  ports:
+    - port: 80
+      targetPort: 8080
+      nodePort: 30402

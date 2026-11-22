@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Also published as a Claude artifact; this copy is served by the cluster (cluster/k8s/46-study.yaml). -->
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Pi to DevOps Path</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: a field guide. Header + suggested path, sticky filter bar, then topic chapters in learning order, each a grid of resource cards. */
+:root {
+  --bg: #eef3f4; --surface: #ffffff; --ink: #11232b; --muted: #566c75; --line: #d3dfe3;
+  --accent: #0d7686; --accent-ink: #ffffff; --soft: #e1eef0;
+  --do: #0d7686; --read: #9a5b06; --watch: #b4234a; --listen: #6a3fb0; --cert: #2e7d32; --tool: #46606b;
+  --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0c1519; --surface: #132127; --ink: #e2edf0; --muted: #94aab2; --line: #233840;
+  --accent: #4cc2d1; --accent-ink: #062126; --soft: #15303a;
+  --do: #4cc2d1; --read: #f0b44c; --watch: #ff7b98; --listen: #b89cff; --cert: #7fd483; --tool: #a9bec6;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0c1519; --surface: #132127; --ink: #e2edf0; --muted: #94aab2; --line: #233840;
+  --accent: #4cc2d1; --accent-ink: #062126; --soft: #15303a;
+  --do: #4cc2d1; --read: #f0b44c; --watch: #ff7b98; --listen: #b89cff; --cert: #7fd483; --tool: #a9bec6;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--font-body); }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, input:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header.top { padding-block: 40px 24px; display: grid; gap: 22px; }
+.eyebrow { font: 600 12px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 700 clamp(30px, 5vw, 46px)/1.05 var(--font-display); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+.lede { max-width: 66ch; color: var(--muted); margin: 0; font-size: 16px; }
+.prompt { font: 400 13px/1.5 var(--font-mono); color: var(--muted); }
+.prompt b { color: var(--accent); font-weight: 600; }
+
+.path { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; counter-reset: step; }
+.path li { list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; }
+.path li::before { counter-increment: step; content: "Step " counter(step); font: 600 11px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.path b { font: 600 14px/1.3 var(--font-display); }
+.path span { font-size: 13px; color: var(--muted); }
+.path { padding: 0; margin: 0; }
+
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding-block: 12px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.bar .wrap { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.search { flex: 1 1 220px; min-width: 0; font: 400 14px var(--font-body); padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 13px/1 var(--font-body); padding: 8px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+.toggles { display: flex; gap: 12px; font-size: 13px; color: var(--muted); }
+.toggles label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.count { font: 400 12px var(--font-mono); color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+
+main { padding-block: 10px 60px; display: grid; gap: 36px; }
+section.topic { display: grid; gap: 14px; scroll-margin-top: 90px; }
+.topic-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.topic-head h2 { font: 700 22px/1.2 var(--font-display); margin: 0; text-wrap: balance; }
+.topic-head .num { font: 600 13px var(--font-mono); color: var(--accent); }
+.topic-head p { margin: 0; color: var(--muted); font-size: 14px; flex: 1 1 320px; min-width: 0; }
+.topic-head .prog { font: 400 12px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px 12px; display: grid; gap: 7px; align-content: start; min-width: 0; position: relative; }
+.card.done { opacity: .55; }
+.card.done h3 a { text-decoration: line-through; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tag { font: 600 11px/1 var(--font-mono); letter-spacing: .04em; text-transform: uppercase; padding: 4px 6px; border-radius: 4px; border: 1px solid currentColor; }
+.t-do { color: var(--do); } .t-read { color: var(--read); } .t-watch { color: var(--watch); }
+.t-listen { color: var(--listen); } .t-cert { color: var(--cert); } .t-tool { color: var(--tool); }
+.cost, .lvl { font: 400 11px var(--font-mono); color: var(--muted); }
+.lvl::before { content: "· "; }
+.card h3 { margin: 0; font: 600 15.5px/1.3 var(--font-display); padding-right: 30px; overflow-wrap: anywhere; }
+.card h3 a { color: var(--ink); text-decoration: none; }
+.card h3 a:hover { color: var(--accent); text-decoration: underline; }
+.card p { margin: 0; color: var(--muted); font-size: 13.5px; }
+.card code, .proj code { font: 400 12px var(--font-mono); background: var(--soft); padding: 1px 4px; border-radius: 3px; overflow-wrap: anywhere; }
+.tick { position: absolute; top: 11px; right: 11px; }
+.tick input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+
+.proj { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 8px; padding: 14px 16px; display: grid; gap: 6px; min-width: 0; position: relative; }
+.proj h3 { margin: 0; font: 600 16px/1.3 var(--font-display); padding-right: 30px; }
+.proj p { margin: 0; color: var(--muted); font-size: 14px; }
+.proj .links { font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.proj.done { opacity: .55; }
+
+.empty { color: var(--muted); font-style: italic; }
+footer { border-top: 1px solid var(--line); padding-block: 22px 40px; color: var(--muted); font-size: 13px; }
+@media (prefers-reduced-motion: no-preference) { .card, .proj { transition: opacity .15s; } }
+
+/* Pomodoro timer: docked bottom-right, collapsible */
+.pomo { position: fixed; z-index: 20; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  width: min(300px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25); display: grid; gap: 10px; padding: 12px 14px 14px; }
+.pomo.min { width: auto; padding: 8px 12px; }
+.pomo-body { display: grid; gap: 10px; }
+.pomo.min .pomo-body { display: none; }
+.pomo-head { display: flex; align-items: center; gap: 10px; }
+.pomo-mode { font: 600 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; padding: 5px 7px; border-radius: 4px; border: 1px solid currentColor; color: var(--accent); }
+.pomo[data-mode="short"] .pomo-mode, .pomo[data-mode="long"] .pomo-mode { color: var(--cert); }
+.pomo-mini { font: 600 15px var(--font-mono); font-variant-numeric: tabular-nums; }
+.pomo:not(.min) .pomo-mini { display: none; }
+.pomo-x { margin-left: auto; background: none; border: 0; color: var(--muted); cursor: pointer; font: 500 13px var(--font-body); padding: 4px 6px; border-radius: 6px; }
+.pomo-time { font: 700 52px/1 var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -.02em; text-align: center; }
+.pomo-bar { height: 5px; background: var(--soft); border-radius: 99px; overflow: hidden; }
+.pomo-bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; }
+.pomo[data-mode="short"] .pomo-bar i, .pomo[data-mode="long"] .pomo-bar i { background: var(--cert); }
+.pomo-btns { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 6px; }
+.pomo-btns button, .pomo-set button { font: 600 13px var(--font-body); padding: 9px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.pomo-btns .go { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.pomo-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font: 400 12px var(--font-mono); color: var(--muted); }
+.pomo-dots { display: inline-flex; gap: 4px; align-items: center; }
+.pomo-dots i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--accent); }
+.pomo-dots i.on { background: var(--accent); }
+.pomo-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 12px; color: var(--muted); }
+.pomo-set label { display: grid; gap: 3px; }
+.pomo-set input { width: 100%; font: 500 13px var(--font-mono); padding: 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.pomo details summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+.pomo details[open] summary { margin-bottom: 8px; }
+main { padding-bottom: 200px; }
+</style>
+</head>
+<body>
+
+
+<header class="top wrap">
+  <div class="eyebrow">Field guide · checked links · Nov 2026</div>
+  <h1>Pi to DevOps Path</h1>
+  <p class="lede">Everything to do, read, watch and listen to on the way from "I built a two-Pi Kubernetes cluster" to working as a DevOps or platform engineer. Topics run in a sensible learning order. Tick items off as you finish them; your ticks stay in this browser.</p>
+  <p class="prompt"><b>grayson@raspberrypi</b>:~$ kubectl get nodes &nbsp;→&nbsp; raspberrypi Ready · pi2 Ready. &nbsp;You already run k3s, GitOps-style manifests, a tunnel, CI builds and alerts. This guide fills in the theory behind what you built and what comes next.</p>
+  <ol class="path" aria-label="Suggested order">
+    <li><b>Linux and the shell</b><span>Linux Journey, Bandit, Missing Semester</span></li>
+    <li><b>Networking basics</b><span>DNS, HTTP, ports, subnets</span></li>
+    <li><b>Git and scripting</b><span>Learn Git Branching, Bash, Python</span></li>
+    <li><b>Containers</b><span>Docker, images, layers, iximiuz Labs</span></li>
+    <li><b>Kubernetes</b><span>Killercoda + your own cluster</span></li>
+    <li><b>CI/CD and GitOps</b><span>Actions, Argo CD</span></li>
+    <li><b>Infrastructure as code</b><span>Terraform, Ansible</span></li>
+    <li><b>Observe and prove it</b><span>Prometheus, Grafana, Cloud Resume Challenge, KCNA → CKA</span></li>
+  </ol>
+</header>
+
+<div class="bar" role="region" aria-label="Filters">
+  <div class="wrap">
+    <input id="q" class="search" type="search" placeholder="Search: kubernetes, free book, terraform…" aria-label="Search resources">
+    <div class="chips" id="types" role="group" aria-label="Kind of resource"></div>
+    <div class="toggles">
+      <label><input id="free" type="checkbox"> Free only</label>
+      <label><input id="hide" type="checkbox"> Hide done</label>
+    </div>
+    <span class="count" id="count" aria-live="polite"></span>
+  </div>
+</div>
+
+<main class="wrap" id="main"></main>
+
+<aside class="pomo" id="pomo" data-mode="focus" aria-label="Pomodoro timer">
+  <div class="pomo-head">
+    <span class="pomo-mode" id="pomo-mode">Focus</span>
+    <span class="pomo-mini" id="pomo-mini">25:00</span>
+    <button class="pomo-x" id="pomo-min" type="button" aria-label="Shrink or expand the timer">Hide</button>
+  </div>
+  <div class="pomo-body">
+    <div class="pomo-time" id="pomo-time" role="timer" aria-live="off">25:00</div>
+    <div class="pomo-bar"><i id="pomo-bar"></i></div>
+    <div class="pomo-btns">
+      <button class="go" id="pomo-go" type="button">Start</button>
+      <button id="pomo-reset" type="button">Reset</button>
+      <button id="pomo-skip" type="button">Skip</button>
+    </div>
+    <div class="pomo-foot">
+      <span class="pomo-dots" id="pomo-dots" aria-label="Focus sessions in this round"></span>
+      <span id="pomo-today">0 sessions today</span>
+    </div>
+    <details>
+      <summary>Timer settings</summary>
+      <div class="pomo-set">
+        <label>Focus (min)<input id="pomo-f" type="number" min="1" max="120" inputmode="numeric"></label>
+        <label>Break (min)<input id="pomo-s" type="number" min="1" max="60" inputmode="numeric"></label>
+        <label>Long break<input id="pomo-l" type="number" min="1" max="90" inputmode="numeric"></label>
+      </div>
+    </details>
+  </div>
+</aside>
+
+<footer class="wrap">
+  Every link was checked on 21 Nov 2026. A few big sites (Cloudflare, Grafana, O'Reilly) block automated checks but open normally in a browser. Prices and free tiers change, so check before paying. Exams are paid; most learning material here is free.
+</footer>
+
+<script>
+const TYPES = { do: "Do", read: "Read", watch: "Watch", listen: "Listen", cert: "Certify", tool: "Tool" };
+const LVL = { start: "start here", next: "next", deep: "deep dive" };
+
+// [type, cost, level, title, url, description]
+const TOPICS = [
+ { id: "maps", name: "Maps of the whole field", blurb: "See the territory before walking it.", items: [
+  ["read","free","start","roadmap.sh DevOps roadmap","https://roadmap.sh/devops","Interactive map of every DevOps skill in a sensible order. Click any box for a short explanation and free links. Mark progress with a free account."],
+  ["read","free","start","roadmap.sh Kubernetes roadmap","https://roadmap.sh/kubernetes","The same idea focused on Kubernetes: pods, services, storage, security, operators."],
+  ["read","free","start","roadmap.sh Docker and Linux roadmaps","https://roadmap.sh/docker","Two more maps for the foundations. The Linux one is at roadmap.sh/linux."],
+  ["do","free","start","90DaysOfDevOps","https://github.com/MichaelCade/90DaysOfDevOps","Michael Cade's free day-by-day course on GitHub: one short lesson a day across Linux, networking, Git, containers, Kubernetes, IaC and monitoring."],
+  ["read","free","next","DevOps Roadmap (milanm)","https://github.com/milanm/DevOps-Roadmap","A popular curated roadmap with books, courses and projects for each step."],
+  ["read","free","next","Kubernetes learning path (techiescamp)","https://github.com/techiescamp/kubernetes-learning-path","A step-by-step Kubernetes path with free resources at each stage, from the DevOpsCube team."],
+  ["do","free","next","DevOps Exercises","https://github.com/bregman-arie/devops-exercises","Thousands of interview-style questions and exercises with answers, grouped by tool. Great for checking what you really know."],
+  ["read","free","deep","CNCF Landscape","https://landscape.cncf.io","The famous giant map of cloud-native tools. Use it to see where k3s, Prometheus, Argo CD and friends fit."],
+ ]},
+ { id: "linux", name: "Linux and the command line", blurb: "Everything else runs on this. Your Pis are Debian, so practise there.", items: [
+  ["do","free","start","Linux Journey","https://linuxjourney.com","Short, friendly lessons from \"what is a shell\" to processes, permissions, packages and networking, with quizzes."],
+  ["do","free","start","OverTheWire: Bandit","https://overthewire.org/wargames/bandit/","A game played over SSH: each level hides the password for the next. The best way to get fast at real commands."],
+  ["watch","free","start","The Missing Semester (MIT)","https://missing.csail.mit.edu","MIT's free course on the tools school skips: shell, scripting, Vim, Git, debugging. Lecture videos plus exercises."],
+  ["do","free","start","Linux Upskill Challenge","https://linuxupskillchallenge.org","A free month-long course: one practical lesson a day on a real server. Your Pi 4 works perfectly for it."],
+  ["read","free","next","The Linux Command Line (free book)","https://linuxcommand.org/tlcl.php","William Shotts' complete book on the shell and Bash scripting, free as a PDF."],
+  ["read","free","next","The Art of Command Line","https://github.com/jlevy/the-art-of-command-line","One long page of practical command-line tricks that experienced admins use every day."],
+  ["do","free","next","SadServers","https://sadservers.com","Broken Linux servers in your browser: find out why and fix them. Feels like a real on-call shift. Free scenarios plus paid extras."],
+  ["do","free","next","CMD Challenge","https://cmdchallenge.com","Solve small tasks with a single shell command, right in the browser."],
+  ["do","free","start","Linux Survival","https://linuxsurvival.com","A gentle beginner tutorial with an in-browser terminal."],
+  ["do","freemium","next","Vim Adventures","https://www.vim-adventures.com","A game that teaches Vim keys. First levels free."],
+  ["tool","free","start","explainshell","https://explainshell.com","Paste any command and it explains every flag. Great when a tutorial gives you a scary one-liner."],
+  ["tool","free","start","tldr pages","https://tldr.sh","Short, example-first help pages for commands, instead of long man pages."],
+  ["tool","free","next","ShellCheck","https://www.shellcheck.net","Finds bugs in Bash scripts. Run it on cluster/setup-pi.sh and the other scripts in your repo."],
+  ["read","free","next","Ubuntu tutorials","https://ubuntu.com/tutorials","Official step-by-step tutorials for servers, networking and tools."],
+ ]},
+ { id: "net", name: "Networking", blurb: "DNS, ports, NAT and TLS explain most of the \"why doesn't it load\" moments you hit with the cluster.", items: [
+  ["read","free","start","Cloudflare Learning Center","https://www.cloudflare.com/learning/","Clear explanations of DNS, CDNs, TLS, DDoS and how the internet works. Fits since your site already runs through Cloudflare."],
+  ["watch","free","start","Professor Messer: Network+","https://www.professormesser.com","Complete free video course for CompTIA Network+ (also A+ and Security+). Good structure even if you never take the exam."],
+  ["read","free","next","Practical Networking","https://www.practicalnetworking.net","Ed Harmoush's free lessons on how packets really move: ARP, routing, NAT, subnetting."],
+  ["read","freemium","next","Wizard Zines (Julia Evans)","https://wizardzines.com","Hand-drawn comics that make networking, DNS, Linux and debugging click. Some free comics, zines are paid."],
+  ["read","free","next","Julia Evans' blog","https://jvns.ca","Years of curious, beginner-friendly posts about DNS, networking, Linux and debugging."],
+  ["read","free","start","It's always DNS","https://isitdns.com","A one-question website. Bookmark it for the next time something on the cluster breaks."],
+ ]},
+ { id: "git", name: "Git and scripting", blurb: "Everything in DevOps lives in a Git repo and gets glued together with scripts.", items: [
+  ["do","free","start","Learn Git Branching","https://learngitbranching.js.org","Visual, interactive Git levels: branching, rebasing, cherry-picking. You already have it bookmarked; finish the Remote levels too."],
+  ["read","free","next","Pro Git (free book)","https://git-scm.com/book/en/v2","The official Git book. Chapters 2, 3 and 7 cover nearly everything you'll use at work."],
+  ["do","free","start","Oh My Git!","https://ohmygit.org","A free open-source card game that teaches Git with a live view of the repository."],
+  ["do","free","next","Exercism","https://exercism.org","Free coding practice with mentor feedback. The Bash, Python and Go tracks are the most useful for DevOps."],
+  ["tool","free","next","pre-commit","https://pre-commit.com","Runs checks (YAML lint, ShellCheck, secret scanning) before every commit. Easy first step towards a CI mindset."],
+ ]},
+ { id: "containers", name: "Containers and Docker", blurb: "You already built ARM images for the site, blog and Campaign Ledger. Learn what's happening underneath.", items: [
+  ["read","free","start","Docker: Get started","https://docs.docker.com/get-started/","The official tutorial: images, containers, volumes, networks and Compose."],
+  ["do","free","start","Play with Docker","https://labs.play-with-docker.com","Free Docker machines in your browser for a few hours. Good for trying things without touching your Pis."],
+  ["do","freemium","next","iximiuz Labs","https://labs.iximiuz.com","Hands-on playgrounds and challenges for containers, Kubernetes and Linux networking. Many free, some premium."],
+  ["read","free","deep","iximiuz.com articles","https://iximiuz.com/en/","Ivan Velichko's in-depth, illustrated posts on how containers really work: namespaces, cgroups, images."],
+  ["read","free","next","container.training","https://container.training","Free slide decks from Jérôme Petazzoni's Docker and Kubernetes workshops. Dense but excellent."],
+  ["read","paid","next","Docker Deep Dive (Nigel Poulton)","https://leanpub.com/dockerdeepdive","A clear, regularly updated book on Docker from the ground up."],
+  ["tool","free","next","Trivy","https://trivy.dev","Scans images for known vulnerabilities and bad settings. Try it on ghcr.io/g39832/portfolio-web."],
+ ]},
+ { id: "k8s", name: "Kubernetes", blurb: "Your biggest head start. Pair every lesson here with doing the same thing on raspberrypi + pi2.", items: [
+  ["read","free","start","Kubernetes tutorials (official)","https://kubernetes.io/docs/tutorials/","Official hands-on tutorials. Read Concepts alongside: https://kubernetes.io/docs/concepts/"],
+  ["do","free","start","Killercoda","https://killercoda.com","Free real clusters in your browser with guided scenarios, including CKA/CKAD practice. Break these instead of your Pis."],
+  ["read","free","start","k3s docs","https://docs.k3s.io","The docs for the exact Kubernetes you run: networking, storage (local-path), upgrades, HA."],
+  ["read","free","next","Kubernetes by Example","https://kubernetesbyexample.com","Short Red Hat lessons: one concept per page with runnable examples."],
+  ["read","free","next","Troubleshooting deployments flowchart","https://learnk8s.io/troubleshooting-deployments","The famous visual flowchart for \"why isn't my pod working\". Print it."],
+  ["read","free","deep","Learnk8s articles","https://learnk8s.io/blog","Deep, illustrated articles on scheduling, networking, autoscaling and architecture."],
+  ["read","free","next","Kubernetes blog","https://kubernetes.io/blog/","Release notes and deep dives from the project itself."],
+  ["do","free","deep","Kubernetes the Hard Way","https://github.com/kelseyhightower/kubernetes-the-hard-way","Build a cluster piece by piece with no installer. Hard, but you'll understand what k3s does for you."],
+  ["do","freemium","next","KodeKloud","https://kodekloud.com","Video courses with browser labs for Kubernetes, Docker, Linux and the CKA/CKAD/CKS exams. Some free content; full access is paid."],
+  ["tool","free","start","k9s","https://k9scli.io","A terminal dashboard for Kubernetes. Install it on the Pi 5 and you may never type kubectl get pods again."],
+  ["tool","free","next","Helm","https://helm.sh/docs/","The Kubernetes package manager. Most apps in the CNCF world ship as Helm charts."],
+  ["tool","free","next","Kustomize","https://kustomize.io","Built into kubectl: layer changes on YAML without templates. Good for a \"home\" vs \"test\" version of your cluster files."],
+  ["tool","free","next","kind","https://kind.sigs.k8s.io","Kubernetes in Docker on your PC. Spin up throwaway clusters to experiment safely."],
+  ["tool","free","start","minikube","https://minikube.sigs.k8s.io/docs/","Another easy local cluster for learning, with a built-in dashboard."],
+  ["read","paid","next","Kubernetes in Action, 2nd ed. (Manning)","https://www.manning.com/books/kubernetes-in-action-second-edition","Widely loved, thorough Kubernetes book with lots of diagrams."],
+  ["read","paid","next","Kubernetes: Up and Running (O'Reilly)","https://www.oreilly.com/library/view/kubernetes-up-and/9781098110192/","A shorter, practical book co-written by Kubernetes co-founders."],
+  ["read","free","deep","Jeff Geerling's pi-cluster","https://github.com/geerlingguy/pi-cluster","A real Raspberry Pi cluster built with Ansible, with monitoring and benchmarks. Compare it with yours."],
+ ]},
+ { id: "cicd", name: "CI/CD and GitOps", blurb: "You already build images in GitHub Actions. Next: tests before builds, and a cluster that updates itself.", items: [
+  ["read","free","start","GitHub Actions docs","https://docs.github.com/en/actions","Workflows, jobs, caching, matrices and secrets: the tool you already use for cluster-images.yml."],
+  ["read","free","next","Argo CD","https://argo-cd.readthedocs.io/en/stable/","GitOps: the cluster watches your repo and applies changes itself, with a web UI showing every app in sync or not."],
+  ["read","free","next","Flux","https://fluxcd.io","The other main GitOps tool: lighter, no UI by default, very Git-native."],
+  ["tool","free","next","Renovate","https://docs.renovatebot.com","A bot that opens pull requests when new versions of your images come out (Jellyfin, Pi-hole, Homepage)."],
+  ["read","free","deep","Continuous Delivery","https://continuousdelivery.com","Jez Humble's site on the ideas behind CD: deployment pipelines and small, safe releases."],
+  ["read","free","start","The Twelve-Factor App","https://12factor.net","Twelve short rules for building apps that deploy well. Campaign Ledger's hosted mode follows several of them."],
+ ]},
+ { id: "iac", name: "Infrastructure as code and automation", blurb: "Describe servers, DNS and config in files, so rebuilding is one command.", items: [
+  ["do","free","start","Terraform tutorials","https://developer.hashicorp.com/terraform/tutorials","Official step-by-step tutorials from install to modules and state."],
+  ["read","free","next","OpenTofu","https://opentofu.org","The open-source fork of Terraform, managed by the Linux Foundation. Same language."],
+  ["read","free","next","Cloudflare Terraform provider","https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs","Manage your real DNS records and tunnel routes for graysoncodes.org as code."],
+  ["read","free","start","Ansible docs","https://docs.ansible.com","Automate setting up machines over SSH: install packages, copy files, configure services."],
+  ["read","paid","next","Ansible for DevOps (Jeff Geerling)","https://www.ansiblefordevops.com","The go-to Ansible book. Jeff also has a free \"Ansible 101\" video series on his YouTube channel."],
+  ["read","paid","next","Terraform: Up and Running","https://www.terraformupandrunning.com","Yevgeniy Brikman's practical Terraform book, the standard reference."],
+ ]},
+ { id: "obs", name: "Monitoring, SRE and reliability", blurb: "Knowing it's up, why it went down, and how not to panic.", items: [
+  ["read","free","start","Prometheus overview","https://prometheus.io/docs/introduction/overview/","How metrics, scraping, PromQL and alerting work. You already run Prometheus on the Pi 5."],
+  ["do","free","start","Grafana tutorials","https://grafana.com/tutorials/","Build dashboards and alerts step by step."],
+  ["read","free","next","Grafana Loki docs","https://grafana.com/docs/loki/latest/","Collect and search logs from every pod in one place, next to your graphs."],
+  ["read","free","deep","OpenTelemetry docs","https://opentelemetry.io/docs/","The standard for traces, metrics and logs from inside your own apps, like the blog or Campaign Ledger."],
+  ["tool","free","next","kube-prometheus-stack","https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack","One Helm chart: Prometheus, Grafana and ready-made Kubernetes dashboards and alerts."],
+  ["read","free","start","Google SRE books (free)","https://sre.google/books/","Site Reliability Engineering, The SRE Workbook and Building Secure and Reliable Systems, all free online."],
+  ["read","free","next","Postmortem culture (SRE book)","https://sre.google/sre-book/postmortem-culture/","How teams write blameless postmortems after outages."],
+  ["read","free","next","Atlassian: incident postmortems","https://www.atlassian.com/incident-management/postmortem","Templates and examples for writing up incidents."],
+  ["read","free","deep","charity.wtf","https://charity.wtf","Charity Majors' blog on observability, on-call and engineering careers. Opinionated and fun."],
+  ["tool","free","next","Grafana k6","https://grafana.com/docs/k6/latest/","Load testing with small JavaScript scripts. Find out how many visitors your cluster really handles."],
+  ["tool","free","deep","Chaos Mesh","https://chaos-mesh.org","Breaks things on purpose (kill pods, add network lag) to prove your cluster recovers."],
+  ["tool","free","deep","LitmusChaos","https://litmuschaos.io","Another chaos engineering toolkit for Kubernetes, with a web portal."],
+  ["tool","free","next","Velero","https://velero.io","Backs up and restores whole Kubernetes namespaces and volumes to cloud storage."],
+ ]},
+ { id: "cloud", name: "Cloud platforms", blurb: "Most jobs use AWS, Azure or Google Cloud. Your cluster skills transfer straight across.", items: [
+  ["do","free","start","GitHub Student Developer Pack","https://education.github.com/pack","Free for verified students: cloud credits, domains, JetBrains IDEs, courses and more. Claim this first."],
+  ["do","free","next","The Cloud Resume Challenge","https://cloudresumechallenge.dev","Build and deploy your resume as a cloud app with CI/CD and IaC. A well-known portfolio project that hiring managers recognise."],
+  ["do","freemium","start","AWS Skill Builder","https://skillbuilder.aws","Amazon's own training: hundreds of free courses, including Cloud Practitioner prep."],
+  ["do","free","start","Microsoft Learn","https://learn.microsoft.com/en-us/training/","Free Azure learning paths with sandboxes. AZ-900 is the beginner cert."],
+  ["do","freemium","next","Google Cloud Skills Boost","https://www.cloudskillsboost.google","Google Cloud labs and courses, some free with credits."],
+  ["do","free","next","Oracle Cloud Free Tier","https://www.oracle.com/cloud/free/","Includes always-free ARM virtual machines: a free \"third node\" in the cloud to experiment with."],
+  ["read","free","next","DigitalOcean tutorials","https://www.digitalocean.com/community/tutorials","Thousands of clear tutorials on Linux, servers, Docker and Kubernetes."],
+  ["read","free","next","DevOpsCube","https://devopscube.com","Practical guides on Kubernetes, CI/CD and DevOps careers."],
+ ]},
+ { id: "sec", name: "Security (DevSecOps)", blurb: "You run public services now, so this matters for real.", items: [
+  ["do","freemium","start","TryHackMe","https://tryhackme.com","Guided security labs in the browser, from beginner to advanced. Lots of free rooms."],
+  ["do","free","start","picoCTF","https://picoctf.org","Free capture-the-flag challenges from Carnegie Mellon, made for students."],
+  ["do","freemium","next","Hack The Box","https://www.hackthebox.com","Harder hacking labs and an Academy with structured courses."],
+  ["do","free","next","OWASP Juice Shop","https://owasp.org/www-project-juice-shop/","A deliberately insecure web shop to practise attacks legally. You could run it on the cluster."],
+  ["do","free","deep","Kubernetes Goat","https://github.com/madhuakula/kubernetes-goat","A purposely vulnerable Kubernetes setup with guided scenarios. Run it in kind, not on your real cluster."],
+  ["tool","free","next","Sealed Secrets","https://github.com/bitnami-labs/sealed-secrets","Encrypt Kubernetes secrets so they can live safely in Git, such as your cloudflared token."],
+  ["tool","free","next","cert-manager","https://cert-manager.io/docs/","Automatic TLS certificates inside Kubernetes."],
+ ]},
+ { id: "design", name: "System design", blurb: "How big systems fit together; it shows up in interviews.", items: [
+  ["read","free","next","System Design Primer","https://github.com/donnemartin/system-design-primer","Free guide to scaling, caching, load balancing and databases, with practice questions."],
+  ["read","freemium","next","ByteByteGo","https://bytebytego.com","Alex Xu's system design newsletter with very clear diagrams."],
+  ["watch","free","next","ByteByteGo on YouTube","https://www.youtube.com/@ByteByteGo","Short animated explainers on system design topics."],
+ ]},
+ { id: "watch", name: "YouTube channels", blurb: "For evenings when you'd rather watch than read.", items: [
+  ["watch","free","start","TechWorld with Nana","https://www.youtube.com/@TechWorldwithNana","Clear, beginner-friendly DevOps, Docker and Kubernetes explainers and full-length courses."],
+  ["watch","free","start","Jeff Geerling","https://www.youtube.com/@JeffGeerling","Raspberry Pi clusters, homelabs and Ansible, including his free Ansible 101 series."],
+  ["watch","free","start","Techno Tim","https://www.youtube.com/@TechnoTim","Homelab and self-hosting tutorials, including k3s and Kubernetes at home."],
+  ["watch","free","start","NetworkChuck","https://www.youtube.com/@NetworkChuck","High-energy videos on Linux, networking, security and homelab projects."],
+  ["watch","free","next","DevOps Toolkit (Viktor Farcic)","https://www.youtube.com/@DevOpsToolkit","Honest reviews and deep dives on DevOps and Kubernetes tools."],
+  ["watch","free","start","Learn Linux TV","https://www.youtube.com/@LearnLinuxTV","Calm, thorough Linux and server tutorials and full courses."],
+  ["watch","free","next","Christian Lempa","https://www.youtube.com/@christianlempa","Homelab, Docker, Kubernetes and security tutorials."],
+  ["watch","free","next","KodeKloud","https://www.youtube.com/@KodeKloud","Free short lessons and full courses on DevOps tools."],
+  ["watch","free","start","freeCodeCamp","https://www.youtube.com/@freecodecamp","Free multi-hour courses: Linux, Docker, Kubernetes, Terraform, AWS and more. Search the channel for the topic."],
+  ["watch","free","start","Fireship","https://www.youtube.com/@Fireship","Fast, funny \"in 100 seconds\" explainers for almost every tool and language."],
+  ["watch","free","deep","CNCF (KubeCon talks)","https://www.youtube.com/@cncf","Every KubeCon talk, free. Search for any tool you use to see how big companies run it."],
+ ]},
+ { id: "books", name: "Books worth owning", blurb: "The stories and ideas behind DevOps. The first two are novels and read fast.", items: [
+  ["read","paid","start","The Phoenix Project","https://itrevolution.com/product/the-phoenix-project/","A novel about an IT team in chaos discovering DevOps. Almost everyone in the field has read it."],
+  ["read","paid","next","The Unicorn Project","https://itrevolution.com/product/the-unicorn-project/","The same story told from a developer's side."],
+  ["read","paid","next","The DevOps Handbook, 2nd ed.","https://itrevolution.com/product/the-devops-handbook-second-edition/","The practical companion: how to actually adopt DevOps in an organisation."],
+  ["read","paid","deep","Accelerate","https://itrevolution.com/product/accelerate/","The research behind the DORA metrics: what separates high-performing teams."],
+  ["read","paid","deep","Site Reliability Engineering (O'Reilly)","https://www.oreilly.com/library/view/site-reliability-engineering/9781491929117/","Google's SRE book in print. The same text is free at sre.google."],
+ ]},
+ { id: "news", name: "Newsletters, blogs and podcasts", blurb: "Ten minutes a week keeps you current.", items: [
+  ["read","free","start","DevOps Weekly","https://www.devopsweekly.com","A long-running weekly email of the best DevOps articles and tools."],
+  ["read","free","next","KubeWeekly","https://www.cncf.io/kubeweekly/","The CNCF's weekly Kubernetes newsletter."],
+  ["read","free","next","SRE Weekly","https://sreweekly.com","Weekly roundup of incident write-ups and reliability articles."],
+  ["read","free","next","Last Week in AWS","https://www.lastweekinaws.com","Corey Quinn's sarcastic, useful weekly AWS news."],
+  ["read","free","deep","Martin Fowler","https://martinfowler.com","Classic essays on software design, CI and microservices."],
+  ["read","free","next","freeCodeCamp DevOps articles","https://www.freecodecamp.org/news/tag/devops/","Free beginner-to-intermediate DevOps tutorials."],
+  ["listen","free","start","Kubernetes Podcast from Google","https://kubernetespodcast.com","Weekly news plus interviews with people building Kubernetes."],
+  ["listen","free","next","Arrested DevOps","https://www.arresteddevops.com","Conversations about DevOps culture, tools and careers."],
+  ["listen","free","next","Ship It! (Changelog)","https://changelog.com/shipit","Episodes about shipping and running software in production."],
+  ["listen","free","deep","Software Engineering Daily","https://softwareengineeringdaily.com","Interviews on infrastructure, cloud and engineering at well-known companies."],
+ ]},
+ { id: "community", name: "Communities and events", blurb: "Ask questions, see real setups, and meet people who hire.", items: [
+  ["read","free","start","r/homelab","https://www.reddit.com/r/homelab/","People's racks, setups and advice. Post yours."],
+  ["read","free","start","r/devops","https://www.reddit.com/r/devops/","Career questions, tool debates and war stories."],
+  ["read","free","next","r/kubernetes","https://www.reddit.com/r/kubernetes/","Kubernetes help and news."],
+  ["read","free","next","r/sysadmin","https://www.reddit.com/r/sysadmin/","The daily life of IT and operations work."],
+  ["do","free","next","CNCF Slack","https://cloud-native.slack.com","Chat with maintainers of k3s, Argo CD, Prometheus and more (join via slack.cncf.io)."],
+  ["do","free","next","DevOps meetups","https://www.meetup.com/topics/devops/","Local and online meetups. Great for internships and first jobs."],
+  ["do","paid","deep","KubeCon + CloudNativeCon","https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/","The big Kubernetes conference. Look for student and diversity scholarships, and watch the talks free on YouTube."],
+  ["read","free","next","Awesome-Selfhosted","https://github.com/awesome-selfhosted/awesome-selfhosted","Thousands of apps to run on your cluster: endless practice material."],
+ ]},
+ { id: "certs", name: "Certifications", blurb: "A path that builds on what you already know. Exams are paid; the study material above is mostly free.", items: [
+  ["cert","paid","start","CompTIA Linux+","https://www.comptia.org/certifications/linux","Vendor-neutral Linux admin cert. Pairs well with your IT background."],
+  ["cert","paid","start","CompTIA Network+","https://www.comptia.org/certifications/network","Networking fundamentals cert; Professor Messer covers it free."],
+  ["cert","paid","start","KCNA: Kubernetes and Cloud Native Associate","https://training.linuxfoundation.org/certification/kubernetes-cloud-native-associate/","The beginner Kubernetes cert (multiple choice). A good first step after building your cluster."],
+  ["cert","paid","next","CKA: Certified Kubernetes Administrator","https://training.linuxfoundation.org/certification/certified-kubernetes-administrator-cka/","The most respected hands-on Kubernetes exam: fix real clusters in a terminal. Killercoda has free practice."],
+  ["cert","paid","next","CKAD: Certified Kubernetes Application Developer","https://training.linuxfoundation.org/certification/certified-kubernetes-application-developer-ckad/","Hands-on exam focused on deploying and running apps on Kubernetes."],
+  ["cert","paid","deep","CKS: Certified Kubernetes Security Specialist","https://training.linuxfoundation.org/certification/certified-kubernetes-security-specialist/","Advanced security exam; requires a CKA first."],
+  ["cert","paid","next","LFCS: Linux Foundation Certified Sysadmin","https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/","Hands-on Linux admin exam in a real terminal."],
+  ["cert","paid","start","AWS Certified Cloud Practitioner","https://aws.amazon.com/certification/certified-cloud-practitioner/","The entry AWS cert. Skill Builder has free prep."],
+  ["cert","paid","next","HashiCorp Terraform Associate","https://developer.hashicorp.com/certifications/infrastructure-automation","Proves you can use Terraform. Pair with the Cloudflare-as-code project below."],
+ ]},
+];
+
+// Projects on Grayson's own cluster: [title, description, [[label,url],...]]
+const PROJECTS = [
+ ["Let the cluster deploy itself (Argo CD)","Install Argo CD and point it at the cluster/k8s folder in your Portfolio repo. After that, git push is the deploy: no more kubectl apply or rollout restart. Watch apps go green in its web UI.",[["Argo CD","https://argo-cd.readthedocs.io/en/stable/"]]],
+ ["Test before you build","Add a job to campaign-ledger's image.yml that runs the 640 tests first and stops the build if any fail. Fix the flaky test_mirage_on_spot_check test along the way by seeding the dice.",[["GitHub Actions","https://docs.github.com/en/actions"]]],
+ ["Your DNS as code","Describe dnd.graysoncodes.org, www and the tunnel routes in Terraform with the Cloudflare provider. Delete a route in the dashboard, run terraform apply, and watch it come back.",[["Cloudflare provider","https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs"],["Terraform tutorials","https://developer.hashicorp.com/terraform/tutorials"]]],
+ ["Rebuild a Pi with one command","Turn setup-pi.sh into an Ansible playbook, then wipe the Pi 4's card and rebuild it from scratch. If it rejoins the cluster untouched, you've proven your setup is reproducible.",[["Ansible","https://docs.ansible.com"],["pi-cluster","https://github.com/geerlingguy/pi-cluster"]]],
+ ["Real cluster monitoring","Install kube-prometheus-stack so Grafana shows every pod, node temperature and alert, then retire the old Docker Prometheus and Grafana on the Pi 5.",[["kube-prometheus-stack","https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack"]]],
+ ["Search every log in one place","Add Loki so logs from the blog, Jellyfin, Pi-hole and Campaign Ledger are searchable in Grafana. Answer \"what happened at 3am?\" in one query.",[["Loki","https://grafana.com/docs/loki/latest/"]]],
+ ["Secrets in Git, safely","Encrypt the cloudflared token with Sealed Secrets and commit it, so the whole cluster can be rebuilt from the repo.",[["Sealed Secrets","https://github.com/bitnami-labs/sealed-secrets"]]],
+ ["Scan your images","Add Trivy to cluster-images.yml so every build reports known vulnerabilities in the web and blog images.",[["Trivy","https://trivy.dev"]]],
+ ["Stay up to date automatically","Turn on Renovate for the Portfolio repo so it opens pull requests when Jellyfin, Pi-hole, Homepage or Portainer release new versions.",[["Renovate","https://docs.renovatebot.com"]]],
+ ["How many visitors can it take?","Write a k6 script that hits the site on your home network (http://192.168.1.35:30080) with rising traffic. Graph the results in Grafana and blog about where it breaks.",[["k6","https://grafana.com/docs/k6/latest/"]]],
+ ["Break it on purpose","Unplug the Pi 4 during a game of Campaign Ledger or while the site loads, then try Chaos Mesh pod-kill experiments. Write down what recovered and what didn't.",[["Chaos Mesh","https://chaos-mesh.org"]]],
+ ["Backups you've actually tested","Use Velero to back up the ledger and blog namespaces to cloud storage, then do a restore drill into a test namespace.",[["Velero","https://velero.io"]]],
+ ["Write your first postmortem","Pick a real problem you've hit (a broken route, a crashed pod, an expired token) and write it up blamelessly: timeline, cause, fix, prevention. Post it on your blog.",[["SRE postmortems","https://sre.google/sre-book/postmortem-culture/"]]],
+ ["A cloud node","Create an always-free Oracle Cloud ARM VM and join it to your cluster over Tailscale. Now your cluster spans your room and a data centre.",[["Oracle Free Tier","https://www.oracle.com/cloud/free/"]]],
+ ["Practise on a throwaway cluster","Use kind on your PC to rehearse risky changes, as we did for every app tonight, before they touch the Pis.",[["kind","https://kind.sigs.k8s.io"]]],
+];
+
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+                set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+let done = new Set(store.get("devops-done", []));
+const state = { q: "", types: new Set(), free: store.get("devops-free", false), hide: store.get("devops-hide", false) };
+
+const el = (tag, attrs, ...kids) => { const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) { if (k === "class") n.className = v; else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else if (v !== null && v !== false) n.setAttribute(k, v === true ? "" : v); }
+  for (const c of kids.flat()) if (c != null) n.append(c.nodeType ? c : document.createTextNode(c)); return n; };
+const link = (url, text) => el("a", { href: url, target: "_blank", rel: "noopener" }, text);
+
+function tickBox(key, label) {
+  const box = el("input", { type: "checkbox", id: "t-" + key.replace(/[^a-z0-9]/gi, "").slice(0, 60), "aria-label": "Mark done: " + label });
+  box.checked = done.has(key);
+  box.addEventListener("change", () => { box.checked ? done.add(key) : done.delete(key); store.set("devops-done", [...done]); render(); });
+  return el("label", { class: "tick" }, box);
+}
+
+function matches(it) {
+  const [type, cost, , title, url, desc] = it;
+  if (state.types.size && !state.types.has(type)) return false;
+  if (state.free && cost === "paid") return false;
+  if (state.hide && done.has(url)) return false;
+  if (state.q) { const hay = (title + " " + desc + " " + TYPES[type] + " " + cost).toLowerCase(); if (!state.q.split(/\s+/).every(w => hay.includes(w))) return false; }
+  return true;
+}
+
+function render() {
+  const main = document.getElementById("main");
+  const out = []; let shown = 0, total = 0;
+  TOPICS.forEach((t, i) => {
+    const items = t.items.filter(matches); total += t.items.length; shown += items.length;
+    const doneCount = t.items.filter(it => done.has(it[4])).length;
+    if (!items.length) return;
+    out.push(el("section", { class: "topic", id: t.id },
+      el("div", { class: "topic-head" },
+        el("span", { class: "num" }, String(i + 1).padStart(2, "0")),
+        el("h2", null, t.name), el("p", null, t.blurb),
+        el("span", { class: "prog" }, doneCount + "/" + t.items.length + " done")),
+      el("div", { class: "grid" }, items.map(([type, cost, lvl, title, url, desc]) =>
+        el("article", { class: "card" + (done.has(url) ? " done" : "") },
+          tickBox(url, title),
+          el("div", { class: "meta" }, el("span", { class: "tag t-" + type }, TYPES[type]), el("span", { class: "cost" }, cost), el("span", { class: "lvl" }, LVL[lvl])),
+          el("h3", null, link(url, title)), el("p", null, desc))))));
+  });
+  // Projects on your own cluster (shown unless filtering to a single other kind)
+  const projOk = (!state.types.size || state.types.has("do"));
+  const projs = PROJECTS.filter(([title, desc]) => projOk && !(state.hide && done.has("proj:" + title)) &&
+    (!state.q || state.q.split(/\s+/).every(w => (title + " " + desc).toLowerCase().includes(w))));
+  total += PROJECTS.length; shown += projs.length;
+  if (projs.length) out.push(el("section", { class: "topic", id: "projects" },
+    el("div", { class: "topic-head" }, el("span", { class: "num" }, "★"), el("h2", null, "Do it on your own cluster"),
+      el("p", null, "Projects built on raspberrypi + pi2, each one a portfolio story. Free, and they use what's above."),
+      el("span", { class: "prog" }, PROJECTS.filter(p => done.has("proj:" + p[0])).length + "/" + PROJECTS.length + " done")),
+    el("div", { class: "grid" }, projs.map(([title, desc, links]) =>
+      el("article", { class: "proj" + (done.has("proj:" + title) ? " done" : "") }, tickBox("proj:" + title, title),
+        el("h3", null, title), el("p", null, desc), el("div", { class: "links" }, links.map(([l, u]) => link(u, l + " ↗"))))))));
+  if (!out.length) out.push(el("p", { class: "empty" }, "Nothing matches. Clear the search or turn a filter off."));
+  main.replaceChildren(...out);
+  document.getElementById("count").textContent = shown + " of " + total + " shown · " + done.size + " done";
+}
+
+const chipBox = document.getElementById("types");
+for (const [k, v] of Object.entries(TYPES)) {
+  const b = el("button", { type: "button", class: "chip", "aria-pressed": "false", id: "chip-" + k },
+    el("span", { class: "dot", style: "background: var(--" + k + ")" }), v);
+  b.addEventListener("click", () => { state.types.has(k) ? state.types.delete(k) : state.types.add(k); b.setAttribute("aria-pressed", state.types.has(k)); render(); });
+  chipBox.append(b);
+}
+const q = document.getElementById("q");
+q.addEventListener("input", () => { state.q = q.value.trim().toLowerCase(); render(); });
+const free = document.getElementById("free"); free.checked = state.free;
+free.addEventListener("change", () => { state.free = free.checked; store.set("devops-free", state.free); render(); });
+const hide = document.getElementById("hide"); hide.checked = state.hide;
+hide.addEventListener("change", () => { state.hide = hide.checked; store.set("devops-hide", state.hide); render(); });
+render();
+</script>
+<script>
+// Pomodoro: focus / short break / long break. The end time is stored, so the timer stays
+// accurate in background tabs and survives a page refresh.
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const LABEL = { focus: "Focus", short: "Short break", long: "Long break" };
+  const today = () => new Date().toLocaleDateString("en-CA");
+  const save = () => store.set("devops-pomo", P);
+  const P = Object.assign({ mode: "focus", running: false, endAt: 0, left: 25 * 60000, round: 0,
+    cfg: { focus: 25, short: 5, long: 15, every: 4 }, day: today(), count: 0, min: false }, store.get("devops-pomo", {}));
+  if (P.day !== today()) { P.day = today(); P.count = 0; }
+  const dur = (m) => Math.max(1, Number(P.cfg[m]) || 1) * 60000;
+  const baseTitle = document.title;
+  let audio = null;
+
+  function chime() {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.25, 0.5].forEach((t, i) => {
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.type = "sine"; o.frequency.value = [660, 880, 990][i];
+        g.gain.setValueAtTime(0.0001, audio.currentTime + t);
+        g.gain.exponentialRampToValueAtTime(0.25, audio.currentTime + t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + t + 0.22);
+        o.connect(g).connect(audio.destination); o.start(audio.currentTime + t); o.stop(audio.currentTime + t + 0.25);
+      });
+    } catch (e) { /* no sound available */ }
+  }
+  const fmt = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); };
+  const remaining = () => P.running ? P.endAt - Date.now() : P.left;
+
+  function next(counted) {
+    if (P.mode === "focus") {
+      if (counted) { P.round += 1; if (P.day !== today()) { P.day = today(); P.count = 0; } P.count += 1; }
+      P.mode = P.round > 0 && P.round % P.cfg.every === 0 && counted ? "long" : "short";
+    } else {
+      if (P.mode === "long") P.round = 0;
+      P.mode = "focus";
+    }
+    P.running = false; P.left = dur(P.mode); save(); draw();
+  }
+
+  function draw() {
+    const left = remaining();
+    const box = $("pomo");
+    box.dataset.mode = P.mode; box.classList.toggle("min", !!P.min);
+    $("pomo-mode").textContent = LABEL[P.mode];
+    $("pomo-time").textContent = $("pomo-mini").textContent = fmt(left);
+    $("pomo-bar").style.width = (100 * (1 - left / dur(P.mode))).toFixed(1) + "%";
+    $("pomo-go").textContent = P.running ? "Pause" : (left < dur(P.mode) ? "Resume" : "Start");
+    $("pomo-min").textContent = P.min ? "Show" : "Hide";
+    $("pomo-today").textContent = P.count + (P.count === 1 ? " session" : " sessions") + " today";
+    const dots = [];
+    for (let i = 0; i < P.cfg.every; i++) { const d = document.createElement("i"); if (i < P.round % P.cfg.every || (P.round > 0 && P.round % P.cfg.every === 0 && P.mode === "long")) d.className = "on"; dots.push(d); }
+    $("pomo-dots").replaceChildren(...dots);
+    document.title = P.running ? fmt(left) + " · " + LABEL[P.mode] + " · " + baseTitle : baseTitle;
+  }
+
+  setInterval(() => {
+    if (P.running && remaining() <= 0) {
+      const wasFocus = P.mode === "focus";
+      chime(); next(true);
+      document.title = (wasFocus ? "Break time!" : "Back to focus") + " · " + baseTitle;
+      return;
+    }
+    if (P.running) draw();
+  }, 250);
+
+  $("pomo-go").addEventListener("click", () => {
+    try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (e) {}
+    if (P.running) { P.left = remaining(); P.running = false; }
+    else { P.endAt = Date.now() + P.left; P.running = true; }
+    save(); draw();
+  });
+  $("pomo-reset").addEventListener("click", () => { P.running = false; P.left = dur(P.mode); save(); draw(); });
+  $("pomo-skip").addEventListener("click", () => next(false));
+  $("pomo-min").addEventListener("click", () => { P.min = !P.min; save(); draw(); });
+  [["pomo-f", "focus"], ["pomo-s", "short"], ["pomo-l", "long"]].forEach(([id, key]) => {
+    const inp = $(id); inp.value = P.cfg[key];
+    inp.addEventListener("change", () => {
+      const v = Math.min(Number(inp.max), Math.max(1, Math.round(Number(inp.value) || P.cfg[key])));
+      inp.value = v; P.cfg[key] = v;
+      if (!P.running && P.mode === key) P.left = dur(key);
+      save(); draw();
+    });
+  });
+  // a timer that ran out while the page was closed finishes now
+  if (P.running && remaining() <= 0) next(true);
+  draw();
+})();
+</script>
+
+</body>
+</html>
