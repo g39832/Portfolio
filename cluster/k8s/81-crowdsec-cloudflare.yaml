@@ -1,0 +1,103 @@
+# CrowdSec stage 2: makes Cloudflare stop the IPs CrowdSec flags (k8s/80-crowdsec.yaml).
+#
+# This small program runs in the cluster and, while it runs, keeps a Cloudflare
+# Worker in front of every *graysoncodes.org page (dnd. included). Each visit, the
+# Worker checks the visitor's IP against the list this program keeps up to date.
+# Flagged IPs get a Cloudflare "are you human?" check (Turnstile) instead of the
+# site, so a real person flagged by mistake can still get in, but bots can't.
+# The cluster never has to be reachable from the internet: this program pulls the
+# bans from CrowdSec inside the cluster and pushes them out to Cloudflare.
+#
+# Set up once (on the Pi 5; it asks for the Cloudflare API token, never stored in git):
+#   bash ~/Portfolio/cluster/crowdsec-cloudflare-setup.sh
+#
+# Good to know:
+#  - When this program stops, it removes its Worker from Cloudflare (the site keeps
+#    working, just unprotected) and puts it back when it starts again.
+#  - Cloudflare creates the Worker route as "fail closed". Switch it to "Fail open"
+#    (Cloudflare dashboard > graysoncodes.org > Workers Routes > edit the route) after
+#    each restart of this program, or the site shows error 1027 if the free plan's
+#    100,000 requests/day are ever used up.
+#  - Free plan limits: 100k Worker requests/day, 1k list writes/day. Only our own
+#    CrowdSec's bans are sent (not the 10k+ community list) to stay well inside them.
+#
+# Test (on the Pi 5): flag a made-up IP, watch it appear in the logs, then remove it:
+#   kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli decisions add --ip 192.0.2.10 --type captcha
+#   kubectl -n crowdsec logs deploy/cloudflare-bouncer --tail=20
+#   kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli decisions delete --ip 192.0.2.10
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflare-bouncer
+  namespace: crowdsec
+data:
+  # ${...} values are filled in from the cloudflare-bouncer secret when it starts.
+  config.yaml: |
+    crowdsec_config:
+      lapi_url: http://crowdsec-service.crowdsec.svc.cluster.local:8080/
+      lapi_key: ${API_KEY}
+      update_frequency: 10s
+      # Only our own CrowdSec's bans (and ones typed with cscli), not the
+      # community blocklist: keeps us inside Cloudflare's free-plan limits.
+      only_include_decisions_from: ["crowdsec", "cscli"]
+
+    cloudflare_config:
+      accounts:
+        - id: ${CF_ACCOUNT_ID}
+          account_name: graysoncodes
+          token: ${CF_TOKEN}
+          zones:
+            - zone_id: ${CF_ZONE_ID}
+              # Every ban becomes a Turnstile "are you human?" check.
+              actions: [captcha]
+              default_action: captcha
+              routes_to_protect: ["*graysoncodes.org/*"]
+              turnstile:
+                enabled: true
+                rotate_secret_key: true
+                rotate_secret_key_every: 168h0m0s
+                mode: managed
+
+    log_media: stdout
+    log_level: info
+    prometheus:
+      enabled: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflare-bouncer
+  namespace: crowdsec
+spec:
+  replicas: 1            # exactly one: it owns the Worker in Cloudflare
+  strategy:
+    type: Recreate       # the old copy removes the Worker before the new one adds it
+  selector:
+    matchLabels: {app: cloudflare-bouncer}
+  template:
+    metadata:
+      labels: {app: cloudflare-bouncer}
+    spec:
+      # Time to remove the Worker from Cloudflare cleanly when stopped.
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: bouncer
+          image: crowdsecurity/cloudflare-worker-bouncer:v0.0.18
+          env:
+            - name: API_KEY
+              valueFrom: {secretKeyRef: {name: cloudflare-bouncer, key: lapi-key}}
+            - name: CF_TOKEN
+              valueFrom: {secretKeyRef: {name: cloudflare-bouncer, key: cf-token}}
+            - name: CF_ACCOUNT_ID
+              valueFrom: {secretKeyRef: {name: cloudflare-bouncer, key: account-id}}
+            - name: CF_ZONE_ID
+              valueFrom: {secretKeyRef: {name: cloudflare-bouncer, key: zone-id}}
+          volumeMounts:
+            # The image reads its settings from this exact path.
+            - {name: config, mountPath: /etc/crowdsec/bouncers/crowdsec-cloudflare-worker-bouncer.yaml, subPath: config.yaml, readOnly: true}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {memory: 128Mi}
+      volumes:
+        - name: config
+          configMap: {name: cloudflare-bouncer}

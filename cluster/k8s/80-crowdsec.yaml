@@ -17,8 +17,8 @@
 #   kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli decisions list
 #   for p in $(kubectl -n crowdsec get pods -o name | grep agent); do kubectl -n crowdsec exec $p -- cscli metrics show acquisition; done
 #
-# Stage 1 (this file) DETECTS and records. Blocking at Cloudflare is stage 2
-# (needs a Cloudflare API token; see "Security (CrowdSec)" in cluster/README.md).
+# Stage 1 (this file) DETECTS and records. Stage 2 (81-crowdsec-cloudflare.yaml)
+# makes Cloudflare stop flagged IPs; see "Security (CrowdSec)" in cluster/README.md.
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
@@ -58,6 +58,11 @@ spec:
       env:
         - name: TZ
           value: America/Chicago
+        # Registers the Cloudflare blocker (k8s/81-crowdsec-cloudflare.yaml) with its key.
+        # The secret is made by cluster/crowdsec-cloudflare-setup.sh; until then this is skipped.
+        - name: BOUNCER_KEY_cloudflare
+          valueFrom:
+            secretKeyRef: {name: cloudflare-bouncer, key: lapi-key, optional: true}
       persistentVolume:
         data:
           storageClassName: local-path

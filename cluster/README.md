@@ -146,7 +146,7 @@ docker run -d --name pfweb --network pftest -p 18080:8080 -e BLOG_UPSTREAM=http:
 | Start page (Homepage) | `k8s/45-homepage.yaml` | http://100.120.223.33:30300 | A tile + logo for every app. Edit `services.yaml` inside the file to add tiles. |
 | Pi-hole | `k8s/50-pihole.yaml` | http://100.120.223.33:30880/admin | DNS ad blocker on the Pi 4 (`192.168.1.36`, port 53). Password: `kubectl -n pihole exec -it deploy/pihole -- pihole setpassword` |
 | Jellyfin | `k8s/60-jellyfin.yaml` | http://100.120.223.33:8096 | Media server on the Pi 5. Full guide: `media/README.md` |
-| CrowdSec | `k8s/80-crowdsec.yaml` | (no web page) | Watches the public site's logs for attackers. See **Security (CrowdSec)** below. |
+| CrowdSec | `k8s/80-crowdsec.yaml` | (no web page) | Watches the public site's logs for attackers; `81-crowdsec-cloudflare.yaml` blocks them at Cloudflare. See **Security (CrowdSec)** below. |
 
 Install or update any of them from Windows without pushing first:
 ```powershell
@@ -187,7 +187,24 @@ kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli decisions delete --ip 1.2
 If the install job fails with `lookup ... server misbehaving`, the cluster DNS is stale:
 `kubectl -n kube-system rollout restart deployment coredns`
 
-Stage 1 only **detects**: a "ban" is recorded but nothing blocks the visitor yet.
-Stage 2 adds a bouncer that blocks banned IPs at Cloudflare (needs a Cloudflare API token).
+Stage 1 (`80-crowdsec.yaml`) **detects**. Stage 2 (`81-crowdsec-cloudflare.yaml`) makes
+Cloudflare stop flagged IPs: a Cloudflare Worker in front of every `*graysoncodes.org`
+page (dnd. included) shows them an "are you human?" check (Turnstile) instead of the site.
+Set it up once on the Pi 5 with a Cloudflare API token (the script asks for it, hidden,
+and keeps it in a cluster secret, never in git):
+```bash
+bash ~/Portfolio/cluster/crowdsec-cloudflare-setup.sh
+```
+Then in the Cloudflare dashboard: graysoncodes.org > **Workers Routes** > edit the
+CrowdSec route > **Fail open**. Redo that after the blocker restarts (it removes its
+Worker when it stops and re-adds it, "fail closed", when it starts).
+
+Test it with a made-up IP:
+```bash
+kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli decisions add --ip 192.0.2.10 --type captcha
+kubectl -n crowdsec logs deploy/cloudflare-bouncer --tail=20
+kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli decisions delete --ip 192.0.2.10
+```
+
 Not covered yet: `dnd.graysoncodes.org` goes straight from the tunnel to Campaign Ledger
-without nginx, so its logs are not read.
+without nginx, so its logs are not read (it is still protected by stage 2's blocks).
