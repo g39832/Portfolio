@@ -34,8 +34,65 @@ spec:
     # k3s uses containerd, so pod logs are in CRI format.
     container_runtime: containerd
 
+    config:
+      # What to do when an attack is spotted: a 4-hour ban (CrowdSec's default),
+      # and a message to Discord.
+      profiles.yaml: |
+        name: default_ip_remediation
+        filters:
+          - Alert.Remediation == true && Alert.GetScope() == "Ip"
+        decisions:
+          - type: ban
+            duration: 4h
+        notifications:
+          - discord
+        on_success: break
+        ---
+        name: default_range_remediation
+        filters:
+          - Alert.Remediation == true && Alert.GetScope() == "Range"
+        decisions:
+          - type: ban
+            duration: 4h
+        notifications:
+          - discord
+        on_success: break
+      notifications:
+        # Posts each ban to a Discord channel. The webhook address is a secret
+        # (crowdsec-discord, made by cluster/crowdsec-discord-setup.sh), never in git.
+        discord.yaml: |
+          type: http
+          name: discord
+          log_level: info
+          url: ${DISCORD_WEBHOOK_URL}
+          method: POST
+          headers:
+            Content-Type: application/json
+          format: |
+            {
+              "username": "CrowdSec",
+              "embeds": [
+                {{- range $i, $alert := . -}}
+                {{- range $j, $d := $alert.Decisions -}}
+                {{- if or $i $j }},{{ end }}
+                {
+                  "title": "Blocked an attacker on graysoncodes.org",
+                  "color": 15158332,
+                  "fields": [
+                    {"name": "IP", "value": {{ $d.Value | toJson }}, "inline": true},
+                    {"name": "Ban length", "value": {{ $d.Duration | toJson }}, "inline": true},
+                    {"name": "From", "value": {{ printf "%s %s" $alert.Source.Cn $alert.Source.AsName | trim | default "unknown" | toJson }}, "inline": true},
+                    {"name": "Why", "value": {{ $d.Scenario | toJson }}}
+                  ]
+                }
+                {{- end -}}
+                {{- end }}
+              ]
+            }
+
     agent:
-      # Which pod logs to read: the public website's nginx (both copies).
+      # Which pod logs to read: the web nginx (both copies). It serves graysoncodes.org
+      # and the blog, and passes dnd.graysoncodes.org on to Campaign Ledger.
       acquisition:
         - namespace: graysoncodes
           podName: web-*
@@ -63,6 +120,10 @@ spec:
         - name: BOUNCER_KEY_cloudflare
           valueFrom:
             secretKeyRef: {name: cloudflare-bouncer, key: lapi-key, optional: true}
+        # Discord webhook for ban messages (see config.notifications above).
+        - name: DISCORD_WEBHOOK_URL
+          valueFrom:
+            secretKeyRef: {name: crowdsec-discord, key: url, optional: true}
       persistentVolume:
         data:
           storageClassName: local-path

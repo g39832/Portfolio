@@ -206,5 +206,19 @@ kubectl -n crowdsec logs deploy/cloudflare-bouncer --tail=20
 kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli decisions delete --ip 192.0.2.10
 ```
 
-Not covered yet: `dnd.graysoncodes.org` goes straight from the tunnel to Campaign Ledger
-without nginx, so its logs are not read (it is still protected by stage 2's blocks).
+`dnd.graysoncodes.org` also goes through the web nginx (a second `server` block in
+`nginx/default.conf.template` that passes it on to Campaign Ledger), so CrowdSec watches
+it too. In the Cloudflare tunnel its public hostname points at
+`http://web.graysoncodes.svc.cluster.local:80`, the same as the main site.
+
+### Discord alerts
+
+Every ban is posted to a Discord channel. Set it up (or change the channel) on the Pi 5;
+it asks for the channel's webhook URL (Edit Channel > Integrations > Webhooks):
+```bash
+bash ~/Portfolio/cluster/crowdsec-discord-setup.sh
+```
+Send another test message any time:
+```bash
+kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli notifications test discord
+```
