@@ -1,9 +1,10 @@
-# Homepage: the start page with a big tile + logo for every app in the homelab.
-#   http://100.120.223.33:30300  from anywhere with Tailscale on (tiles link to Tailscale addresses too)
-#   http://192.168.1.35:30300    at home also works for the page itself
-# To add or change a tile: edit services.yaml below, then
+# Homepage: the app list + live checks behind the start page, and the "classic" dashboard.
+#   Start page (47-start.yaml): http://100.120.223.33:30300   uses this one's data
+#   Classic Homepage:           http://100.120.223.33:30301
+# To add or change a tile (shows on both): edit services.yaml below, then
 #   kubectl apply -f 45-homepage.yaml && kubectl -n homepage rollout restart deployment homepage
-# Logos come from https://github.com/homarr-labs/dashboard-icons (just the name, e.g. jellyfin.png).
+# Logos come from https://github.com/homarr-labs/dashboard-icons (just the name, e.g. jellyfin.png),
+# or mdi-<name> from https://pictogrammers.com/library/mdi/
 # The green/red dot on each tile is a live check done from inside the cluster.
 apiVersion: v1
 kind: Namespace
@@ -260,7 +261,7 @@ spec:
           env:
             # Addresses you may type in the browser. Add new ones here if you use another.
             - name: HOMEPAGE_ALLOWED_HOSTS
-              value: "192.168.1.35:30300,192.168.1.36:30300,100.120.223.33:30300,raspberrypi.local:30300,pi2.local:30300,localhost:30300"
+              value: "192.168.1.35:30301,192.168.1.36:30301,100.120.223.33:30301,raspberrypi.local:30301,pi2.local:30301,localhost:30301,localhost:30300"
           ports:
             - containerPort: 3000
           volumeMounts:
@@ -297,4 +298,4 @@ spec:
   ports:
     - port: 3000
       targetPort: 3000
-      nodePort: 30300
+      nodePort: 30301

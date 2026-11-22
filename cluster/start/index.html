@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Grayson's Homelab</title>
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233352cc'/%3E%3Cpath d='M9 11h14M9 16h14M9 21h14' stroke='white' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Grayson's Homelab start page. Same design as the Pi to DevOps Path guide:
+   sticky sidebar (clock, cluster load, sections) beside app cards; one column on phones.
+   Data comes from Homepage's API, proxied by this page's nginx at /api/. */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #16181d; --ink-2: #4b5261; --ink-3: #7c8495; --line: #e3e6ec; --hover: #eef1f6;
+  --accent: #3352cc; --accent-soft: #e7ecfb; --ok: #1d8a4b; --ok-soft: #e3f4ea; --bad: #c42f4a; --bad-soft: #fbe7eb; --warn: #b06a00;
+  --sans: "Geist", "Segoe UI", system-ui, sans-serif; --mono: "Geist Mono", "Cascadia Code", Consolas, monospace; --r: 8px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1115; --panel: #15181e; --ink: #eceef2; --ink-2: #aab1bd; --ink-3: #7e8696; --line: #252a32; --hover: #1b1f27;
+  --accent: #8aa0ff; --accent-soft: #1c2442; --ok: #6fd396; --ok-soft: #15261d; --bad: #ff7d95; --bad-soft: #2c1820; --warn: #f0b04a;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f1115; --panel: #15181e; --ink: #eceef2; --ink-2: #aab1bd; --ink-3: #7e8696; --line: #252a32; --hover: #1b1f27;
+  --accent: #8aa0ff; --accent-soft: #1c2442; --ok: #6fd396; --ok-soft: #15261d; --bad: #ff7d95; --bad-soft: #2c1820; --warn: #f0b04a;
+  color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 14.5px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+button { font: inherit; color: inherit; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.shell { max-width: 1240px; margin: 0 auto; padding: 36px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px));
+  display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 48px; }
+.shell > * { min-width: 0; }
+
+/* ---------- sidebar ---------- */
+aside.side { position: sticky; top: 24px; align-self: start; display: grid; gap: 26px; max-height: calc(100vh - 48px); overflow: auto; padding-right: 4px; }
+.brand { display: flex; gap: 10px; align-items: center; }
+.brand .mark { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); display: grid; place-items: center; flex: none; }
+.brand .mark svg { width: 16px; height: 16px; }
+.brand h1 { font: 700 17px/1.2 var(--sans); letter-spacing: -.02em; margin: 0; }
+.brand p { margin: 1px 0 0; color: var(--ink-3); font-size: 12.5px; }
+
+.clock { display: grid; gap: 2px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+.clock .time { font: 600 34px/1 var(--sans); letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+.clock .date { color: var(--ink-3); font-size: 13px; }
+
+.label { font: 500 11.5px var(--sans); color: var(--ink-3); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: baseline; }
+.label .num { font-size: 11px; }
+.stats { display: grid; gap: 12px; }
+.stat { display: grid; gap: 5px; }
+.stat .top { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-2); }
+.stat .top .num { font-size: 12px; color: var(--ink); }
+.meter { height: 4px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .4s ease; }
+.meter i.hot { background: var(--warn); }
+.nodes { display: grid; gap: 1px; margin-top: 4px; }
+.node { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto auto; gap: 9px; align-items: center; padding: 5px 0; font-size: 13px; }
+.node .name { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.node .num { font-size: 11.5px; color: var(--ink-3); min-width: 54px; text-align: right; }
+.node .num b { color: var(--ink-2); font-weight: 500; }
+
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); flex: none; }
+.dot.up { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+.dot.down { background: var(--bad); box-shadow: 0 0 0 3px var(--bad-soft); }
+
+nav.toc { display: grid; gap: 1px; }
+nav.toc a { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; text-decoration: none; padding: 5px 8px; margin: 0 -8px; border-radius: 6px; color: var(--ink-2); font-size: 13.5px; }
+nav.toc a:hover { background: var(--hover); color: var(--ink); }
+nav.toc a.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+nav.toc a span:last-child { font: 400 11.5px var(--mono); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+nav.toc a.has-down span:last-child { color: var(--bad); }
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); padding: 2px; gap: 2px; }
+.seg button { border: 0; background: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
+.seg button:hover { background: var(--hover); color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.foot { display: grid; gap: 10px; font-size: 12px; color: var(--ink-3); }
+.foot a { color: var(--ink-3); }
+.foot a:hover { color: var(--ink); }
+
+/* ---------- main ---------- */
+.content { display: grid; gap: 36px; align-content: start; }
+.intro { display: grid; gap: 10px; }
+.intro h2 { font: 600 30px/1.15 var(--sans); letter-spacing: -.03em; margin: 0; }
+.summary { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; color: var(--ink-2); font-size: 15px; margin: 0; }
+.summary .dot { margin-right: 2px; }
+.summary b { font-weight: 600; color: var(--ink); }
+.summary a { color: var(--bad); font-weight: 500; }
+
+.toolbar { position: sticky; top: 0; z-index: 5; background: var(--bg); padding-block: 10px; margin-block: -10px; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid var(--line); }
+.search { position: relative; flex: 1 1 auto; min-width: 0; }
+.search input { width: 100%; padding: 8px 34px 8px 11px; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); color: var(--ink); font: 400 14px var(--sans); }
+.search input::placeholder { color: var(--ink-3); }
+.search input:focus { outline: none; border-color: var(--accent); }
+.search kbd { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font: 500 11px var(--mono); color: var(--ink-3); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+.shown { font: 400 12px var(--mono); color: var(--ink-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+section.group { display: grid; gap: 12px; scroll-margin-top: 70px; }
+.group-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.group-head h3 { margin: 0; font: 600 18px/1.3 var(--sans); letter-spacing: -.015em; }
+.group-head .num { font-size: 12px; color: var(--ink-3); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+
+a.card { position: relative; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 4px 13px; align-items: start; padding: 14px 14px 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; text-decoration: none; transition: border-color .15s, background-color .15s; }
+a.card:hover { border-color: var(--accent); }
+a.card:focus-visible { outline-offset: 0; border-radius: 10px; }
+a.card.down { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+a.card.kbd-first { border-color: var(--accent); background: var(--hover); }
+.icon { width: 40px; height: 40px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); display: grid; place-items: center; overflow: hidden; grid-row: span 2; }
+.icon img { width: 24px; height: 24px; object-fit: contain; }
+.icon i { width: 21px; height: 21px; background: var(--accent); -webkit-mask: var(--m) center / contain no-repeat; mask: var(--m) center / contain no-repeat; }
+.icon span { font: 600 14px var(--sans); color: var(--accent); }
+.card .name { font: 600 14.5px/1.3 var(--sans); letter-spacing: -.01em; padding-right: 64px; overflow-wrap: anywhere; }
+.card .desc { color: var(--ink-3); font-size: 13px; line-height: 1.45; }
+.card .meta { grid-column: 2; display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--line); font: 400 11.5px var(--mono); color: var(--ink-3); }
+.card .meta .host { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.state { position: absolute; top: 13px; right: 13px; display: inline-flex; align-items: center; gap: 7px; font: 400 11.5px var(--mono); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+a.card.down .state { color: var(--bad); }
+#groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px 10px; }
+section.group { grid-column: span var(--span, 3); }
+section.group .grid { grid-template-columns: repeat(var(--span, 3), minmax(0, 1fr)); }
+.empty { display: none; padding: 40px 16px; text-align: center; color: var(--ink-3); border: 1px dashed var(--line); border-radius: 10px; }
+.notice { padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); color: var(--ink-2); font-size: 13.5px; }
+
+/* ---------- phones and narrow windows ---------- */
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-top: max(20px, env(safe-area-inset-top, 0px)); }
+  aside.side { position: static; max-height: none; overflow: visible; padding: 0; grid-template-columns: minmax(0, 1fr) auto; gap: 18px 16px; align-items: center; }
+  .clock { grid-column: 2; grid-row: 1; padding: 0; border: 0; text-align: right; }
+  .clock .time { font-size: 22px; }
+  .clock .date { font-size: 12px; }
+  .cluster { grid-column: 1 / -1; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+  .stats { grid-template-columns: 1fr 1fr; gap: 14px; }
+  nav.toc, .toc-wrap, .foot .keys { display: none; }
+  .foot { grid-column: 1 / -1; order: 10; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; }
+  .intro h2 { font-size: 24px; }
+  .summary { font-size: 14px; }
+  .search kbd { display: none; }
+  #groups { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  section.group { grid-column: auto; }
+  section.group .grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <div class="mark"><svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M3 4.5h10M3 8h10M3 11.5h10"/></svg></div>
+      <div><h1>Grayson's Homelab</h1><p>Pi 5 + Pi 4 · k3s</p></div>
+    </div>
+
+    <div class="clock"><div class="time" id="time">--:--</div><div class="date" id="date"></div></div>
+
+    <div class="cluster">
+      <div class="label"><span>Cluster</span><span class="num" id="updated"></span></div>
+      <div class="stats">
+        <div class="stat"><div class="top"><span>CPU</span><span class="num" id="cpu">–</span></div><div class="meter"><i id="cpu-bar"></i></div></div>
+        <div class="stat"><div class="top"><span>Memory</span><span class="num" id="mem">–</span></div><div class="meter"><i id="mem-bar"></i></div></div>
+      </div>
+      <div class="nodes" id="nodes"></div>
+    </div>
+
+    <div class="toc-wrap">
+      <div class="label"><span>Sections</span></div>
+      <nav class="toc" id="toc"></nav>
+    </div>
+
+    <div class="foot">
+      <div class="seg" role="group" aria-label="Theme">
+        <button type="button" data-theme="auto">Auto</button>
+        <button type="button" data-theme="light">Light</button>
+        <button type="button" data-theme="dark">Dark</button>
+      </div>
+      <div class="keys">Press <span class="num">/</span> to search, <span class="num">Enter</span> to open.</div>
+      <div><a href="http://100.120.223.33:30301" target="_blank" rel="noopener">Classic dashboard</a></div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="intro">
+      <h2 id="hello">Welcome back</h2>
+      <p class="summary" id="summary"><span class="dot"></span>Checking your apps…</p>
+    </div>
+
+    <div class="toolbar">
+      <label class="search"><input id="q" type="search" placeholder="Find an app" autocomplete="off" aria-label="Find an app"><kbd>/</kbd></label>
+      <span class="shown" id="shown"></span>
+    </div>
+
+    <div id="groups"></div>
+    <div class="empty" id="empty">No app matches that search.</div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const el = (tag, attrs, ...kids) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v == null || v === false) continue;
+      if (k === "class") n.className = v; else if (k === "text") n.textContent = v; else n.setAttribute(k, v);
+    }
+    for (const k of kids) if (k != null) n.append(k);
+    return n;
+  };
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  };
+
+  /* ---------- theme ---------- */
+  const applyTheme = (t) => {
+    if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+    document.querySelectorAll(".seg [data-theme]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.theme === (t || "auto"))));
+  };
+  applyTheme(store.get("homelab-theme") || "auto");
+  document.querySelectorAll(".seg [data-theme]").forEach((b) => b.addEventListener("click", () => { store.set("homelab-theme", b.dataset.theme); applyTheme(b.dataset.theme); }));
+
+  /* ---------- clock ---------- */
+  const tick = () => {
+    const d = new Date();
+    $("#time").textContent = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    $("#date").textContent = d.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+    const h = d.getHours();
+    $("#hello").textContent = h < 5 ? "Up late" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  };
+  tick(); setInterval(tick, 10000);
+
+  /* ---------- icons: same names as Homepage's services.yaml ---------- */
+  const iconFor = (icon, name) => {
+    const box = el("div", { class: "icon", "aria-hidden": "true" });
+    const letter = () => { box.replaceChildren(el("span", { text: name.trim().charAt(0).toUpperCase() })); };
+    if (!icon) { letter(); return box; }
+    if (icon.startsWith("mdi-")) {
+      const i = el("i");
+      i.style.setProperty("--m", `url("https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/${icon.slice(4)}.svg")`);
+      box.append(i); return box;
+    }
+    const src = /^https?:/.test(icon) ? icon
+      : `https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/${icon.endsWith(".svg") ? "svg" : "png"}/${icon}`;
+    const img = el("img", { src, alt: "", loading: "lazy" });
+    img.onerror = letter;
+    box.append(img); return box;
+  };
+  const hostOf = (href) => { try { const u = new URL(href); return u.host + (u.pathname.length > 1 ? u.pathname.replace(/\/$/, "") : ""); } catch { return href; } };
+
+  /* ---------- apps ---------- */
+  let apps = [];            // {group, name, desc, href, monitor, card, stateEl, status}
+  const render = (groups) => {
+    const wrap = $("#groups"), toc = $("#toc");
+    wrap.replaceChildren(); toc.replaceChildren(); apps = [];
+    groups.forEach((g, gi) => {
+      if (!g.services || !g.services.length) return;
+      const id = "g-" + gi;
+      const grid = el("div", { class: "grid" });
+      const count = el("span", { class: "num" });
+      const sec = el("section", { class: "group", id }, el("div", { class: "group-head" }, el("h3", { text: g.name }), count), grid);
+      sec.style.setProperty("--span", String(Math.min(3, g.services.length)));
+      const link = el("a", { href: "#" + id }, el("span", { text: g.name }), el("span"));
+      toc.append(link);
+      const groupApps = [];
+      g.services.forEach((s) => {
+        const state = el("span", { class: "state" }, el("span", { class: "dot" }));
+        const card = el("a", { class: "card", href: s.href, target: "_blank", rel: "noopener" },
+          iconFor(s.icon, s.name),
+          el("div", { class: "name", text: s.name }),
+          el("div", { class: "desc", text: s.description || "" }),
+          el("div", { class: "meta" }, el("span", { class: "host", text: hostOf(s.href) })),
+          state);
+        grid.append(card);
+        const app = { group: g.name, name: s.name, desc: s.description || "", href: s.href, monitor: !!s.siteMonitor, card, state, status: s.siteMonitor ? "checking" : "link", sec, link, count };
+        if (!app.monitor) state.replaceChildren(document.createTextNode("link"));
+        apps.push(app); groupApps.push(app);
+      });
+      sec._apps = groupApps;
+      wrap.append(sec);
+    });
+    observe(); filter(); summarize();
+  };
+
+  const setState = (a, ok, latency) => {
+    a.status = ok ? "up" : "down";
+    a.card.classList.toggle("down", !ok);
+    a.state.replaceChildren(document.createTextNode(ok ? `${Math.round(latency)} ms` : "down"), el("span", { class: "dot " + a.status }));
+    a.card.title = ok ? `${a.name} is up` : `${a.name} is not answering`;
+  };
+  const check = async (a) => {
+    try {
+      const r = await fetch(`api/siteMonitor?groupName=${encodeURIComponent(a.group)}&serviceName=${encodeURIComponent(a.name)}`, { cache: "no-store" });
+      const j = await r.json();
+      setState(a, j.status >= 200 && j.status < 400, j.latency || 0);
+    } catch { setState(a, false, 0); }
+  };
+  const checkAll = async () => { await Promise.all(apps.filter((a) => a.monitor).map(check)); summarize(); };
+
+  const summarize = () => {
+    const watched = apps.filter((a) => a.monitor);
+    const done = watched.filter((a) => a.status === "up" || a.status === "down");
+    const down = watched.filter((a) => a.status === "down");
+    const s = $("#summary");
+    if (!watched.length) return;
+    if (done.length < watched.length) { s.replaceChildren(el("span", { class: "dot" }), document.createTextNode("Checking your apps…")); }
+    else if (!down.length) { s.replaceChildren(el("span", { class: "dot up" }), el("b", { text: `All ${watched.length} apps are up.` }), document.createTextNode(` Checked from inside the cluster at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}.`)); }
+    else {
+      s.replaceChildren(el("span", { class: "dot down" }), el("b", { text: `${down.length} of ${watched.length} ${down.length === 1 ? "app is" : "apps are"} down:` }));
+      down.forEach((a, i) => { const l = el("a", { href: "#" + a.sec.id, text: a.name }); s.append(l); if (i < down.length - 1) s.append(document.createTextNode(",")); });
+    }
+    document.querySelectorAll("section.group").forEach((sec) => {
+      const list = sec._apps, d = list.filter((a) => a.status === "down").length, w = list.filter((a) => a.monitor).length;
+      const txt = w ? `${w - d}/${w} up` : `${list.length} link${list.length > 1 ? "s" : ""}`;
+      list[0].count.textContent = txt;
+      list[0].link.lastChild.textContent = w ? `${w - d}/${w}` : String(list.length);
+      list[0].link.classList.toggle("has-down", d > 0);
+    });
+  };
+
+  /* ---------- search ---------- */
+  const q = $("#q");
+  let first = null;
+  const filter = () => {
+    const term = q.value.trim().toLowerCase();
+    let shown = 0; first = null;
+    apps.forEach((a) => a.card.classList.remove("kbd-first"));
+    document.querySelectorAll("section.group").forEach((sec) => {
+      let any = 0;
+      sec._apps.forEach((a) => {
+        const hit = !term || `${a.name} ${a.desc} ${a.group} ${a.href}`.toLowerCase().includes(term);
+        a.card.hidden = !hit; if (hit) { any++; shown++; if (!first) first = a; }
+      });
+      sec.hidden = !any;
+    });
+    if (term && first) first.card.classList.add("kbd-first");
+    $("#shown").textContent = term ? `${shown} of ${apps.length}` : `${apps.length} apps`;
+    $("#empty").style.display = shown ? "none" : "block";
+  };
+  q.addEventListener("input", filter);
+  q.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && first) { window.open(first.href, "_blank", "noopener"); }
+    if (e.key === "Escape") { q.value = ""; filter(); q.blur(); }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "/" && document.activeElement !== q && !e.ctrlKey && !e.metaKey) { e.preventDefault(); q.focus(); q.select(); }
+  });
+
+  /* ---------- section highlight ---------- */
+  let io;
+  const observe = () => {
+    if (io) io.disconnect();
+    if (!("IntersectionObserver" in window)) return;
+    io = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) return;
+        document.querySelectorAll("nav.toc a").forEach((a) => a.classList.toggle("active", a.getAttribute("href") === "#" + en.target.id));
+      });
+    }, { rootMargin: "-20% 0px -70% 0px" });
+    document.querySelectorAll("section.group").forEach((s) => io.observe(s));
+  };
+
+  /* ---------- cluster load ---------- */
+  const gib = (b) => (b / 1073741824).toFixed(1);
+  const bar = (id, pct) => { const i = $(id); i.style.width = Math.min(100, pct).toFixed(1) + "%"; i.classList.toggle("hot", pct >= 80); };
+  const loadCluster = async () => {
+    try {
+      const r = await fetch("api/widgets/kubernetes?type=cluster", { cache: "no-store" });
+      const j = await r.json();
+      const c = j.cluster;
+      $("#cpu").textContent = `${c.cpu.percent.toFixed(0)}%`;
+      $("#mem").textContent = `${gib(c.memory.used)} / ${gib(c.memory.total)} GB`;
+      bar("#cpu-bar", c.cpu.percent); bar("#mem-bar", c.memory.percent);
+      const nodes = $("#nodes"); nodes.replaceChildren();
+      (j.nodes || []).sort((a, b) => a.name.localeCompare(b.name)).forEach((n) => {
+        nodes.append(el("div", { class: "node", title: n.ready ? `${n.name} is ready` : `${n.name} is not ready` },
+          el("span", { class: "dot " + (n.ready ? "up" : "down") }),
+          el("span", { class: "name", text: n.name === "raspberrypi" ? "raspberrypi (Pi 5)" : n.name === "pi2" ? "pi2 (Pi 4)" : n.name }),
+          el("span", { class: "num" }, document.createTextNode("cpu "), el("b", { text: n.cpu.percent.toFixed(0) + "%" })),
+          el("span", { class: "num" }, document.createTextNode("mem "), el("b", { text: n.memory.percent.toFixed(0) + "%" }))));
+      });
+      $("#updated").textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+    } catch { $("#updated").textContent = "no data"; }
+  };
+
+  /* ---------- start ---------- */
+  const start = async () => {
+    try {
+      const r = await fetch("api/services", { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      render(await r.json());
+      checkAll();
+    } catch {
+      $("#groups").replaceChildren(el("div", { class: "notice", text: "Couldn't load the app list from Homepage. It may still be starting; this page retries every 30 seconds." }));
+      $("#summary").replaceChildren(el("span", { class: "dot down" }), document.createTextNode("App list unavailable."));
+      setTimeout(start, 30000);
+    }
+  };
+  start(); loadCluster();
+  setInterval(loadCluster, 15000);
+  setInterval(() => { if (apps.length && !document.hidden) checkAll(); }, 60000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && apps.length) { checkAll(); loadCluster(); } });
+})();
+</script>
+</body>
+</html>
