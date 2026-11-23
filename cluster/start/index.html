@@ -5,7 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Grayson's Homelab</title>
 <meta name="color-scheme" content="light dark">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233352cc'/%3E%3Cpath d='M9 11h14M9 16h14M9 21h14' stroke='white' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" href="i/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="i/apple-touch-icon.png">
+<link rel="manifest" href="i/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Homelab">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#3352cc">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
@@ -43,8 +50,8 @@ button { font: inherit; color: inherit; }
 /* ---------- sidebar ---------- */
 aside.side { position: sticky; top: 24px; align-self: start; display: grid; gap: 26px; max-height: calc(100vh - 48px); overflow: auto; padding-right: 4px; }
 .brand { display: flex; gap: 10px; align-items: center; }
-.brand .mark { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); display: grid; place-items: center; flex: none; }
-.brand .mark svg { width: 16px; height: 16px; }
+.brand .mark { width: 34px; height: 34px; border-radius: 9px; overflow: hidden; flex: none; }
+.brand .mark img { display: block; width: 100%; height: 100%; }
 .brand h1 { font: 700 17px/1.2 var(--sans); letter-spacing: -.02em; margin: 0; }
 .brand p { margin: 1px 0 0; color: var(--ink-3); font-size: 12.5px; }
 
@@ -131,6 +138,35 @@ section.group .grid { grid-template-columns: repeat(var(--span, 3), minmax(0, 1f
 .empty { display: none; padding: 40px 16px; text-align: center; color: var(--ink-3); border: 1px dashed var(--line); border-radius: 10px; }
 .notice { padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); color: var(--ink-2); font-size: 13.5px; }
 
+/* ---------- daily DevOps snippet ---------- */
+.daily { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+.daily > * { min-width: 0; }
+@media (max-width: 900px) { .daily { padding: 16px; } .try .label { flex-direction: column; gap: 2px; } }
+.daily-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.daily-kicker { display: flex; align-items: center; gap: 8px; font: 500 12px var(--sans); color: var(--ink-3); }
+.pill { font: 500 11.5px var(--sans); color: var(--accent); background: var(--accent-soft); border-radius: 99px; padding: 2px 9px; }
+.daily-nav { display: inline-flex; gap: 4px; }
+.daily-nav button { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 3px 9px; cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
+.daily-nav button:hover { border-color: var(--accent); color: var(--ink); }
+.daily-nav button[hidden] { display: none; }
+.daily h3 { margin: 0; font: 600 19px/1.3 var(--sans); letter-spacing: -.015em; }
+.daily p { margin: 0; color: var(--ink-2); max-width: 72ch; }
+.try { display: grid; gap: 5px; }
+.try .label { margin: 0; }
+.cmd { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); overflow: hidden; }
+.cmd code { flex: 1 1 auto; min-width: 0; padding: 8px 11px; font: 400 12.5px/1.5 var(--mono); color: var(--ink); overflow-x: auto; white-space: pre; }
+.cmd button { flex: none; border: 0; border-left: 1px solid var(--line); background: var(--panel); padding: 0 12px; cursor: pointer; font-size: 12px; color: var(--ink-2); }
+.cmd button:hover { color: var(--accent); }
+.daily-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px 16px; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--line); }
+.read { display: inline-flex; gap: 8px; align-items: baseline; text-decoration: none; min-width: 0; }
+.read b { font-weight: 500; color: var(--accent); }
+.read:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.read span { font: 400 11.5px var(--mono); color: var(--ink-3); }
+.done-btn { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: var(--panel); border-radius: 99px; padding: 3px 11px 3px 8px; cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
+.done-btn::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ink-3); }
+.done-btn[aria-pressed="true"] { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); background: var(--ok-soft); }
+.done-btn[aria-pressed="true"]::before { border-color: var(--ok); background: var(--ok); }
+
 /* ---------- phones and narrow windows ---------- */
 @media (max-width: 900px) {
   .shell { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-top: max(20px, env(safe-area-inset-top, 0px)); }
@@ -156,7 +192,7 @@ section.group .grid { grid-template-columns: repeat(var(--span, 3), minmax(0, 1f
 <div class="shell">
   <aside class="side">
     <div class="brand">
-      <div class="mark"><svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M3 4.5h10M3 8h10M3 11.5h10"/></svg></div>
+      <div class="mark"><img src="i/icon.svg" alt="" width="34" height="34"></div>
       <div><h1>Grayson's Homelab</h1><p>Pi 5 + Pi 4 · k3s</p></div>
     </div>
 
@@ -192,6 +228,27 @@ section.group .grid { grid-template-columns: repeat(var(--span, 3), minmax(0, 1f
       <h2 id="hello">Welcome back</h2>
       <p class="summary" id="summary"><span class="dot"></span>Checking your apps…</p>
     </div>
+
+    <section class="daily" id="daily" aria-labelledby="daily-title">
+      <div class="daily-head">
+        <div class="daily-kicker"><span id="daily-when">Today's DevOps snippet</span><span class="pill" id="daily-topic"></span><span class="num" id="daily-count"></span></div>
+        <div class="daily-nav">
+          <button type="button" id="daily-prev" aria-label="Previous snippet">←</button>
+          <button type="button" id="daily-today">Today</button>
+          <button type="button" id="daily-next" aria-label="Next snippet">→</button>
+        </div>
+      </div>
+      <h3 id="daily-title">Loading…</h3>
+      <p id="daily-body"></p>
+      <div class="try">
+        <div class="label"><span>Try it</span><span id="daily-where"></span></div>
+        <div class="cmd"><code id="daily-cmd"></code><button type="button" id="daily-copy">Copy</button></div>
+      </div>
+      <div class="daily-foot">
+        <a class="read" id="daily-read" target="_blank" rel="noopener"><b id="daily-read-title"></b><span id="daily-read-host"></span></a>
+        <button type="button" class="done-btn" id="daily-done" aria-pressed="false">Done</button>
+      </div>
+    </section>
 
     <div class="toolbar">
       <label class="search"><input id="q" type="search" placeholder="Find an app" autocomplete="off" aria-label="Find an app"><kbd>/</kbd></label>
@@ -390,6 +447,133 @@ section.group .grid { grid-template-columns: repeat(var(--span, 3), minmax(0, 1f
       $("#updated").textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
     } catch { $("#updated").textContent = "no data"; }
   };
+
+  /* ---------- daily DevOps snippet ----------
+     One per day, same for every device (picked from the date). Each one: topic, title, short lesson,
+     a command to try on this cluster, where to run it, and an article. Add more by appending rows. */
+  const PI5 = "On the Pi 5 · ssh grayson@192.168.1.35";
+  const PC = "On your PC";
+  const SNIPS = [
+    ["Kubernetes", "Deployments keep your pods alive", "You never really run a pod by hand. A Deployment says \"I want 1 copy of this\" and Kubernetes keeps making that true, replacing pods that die. That's why your site came back by itself after the Pi rebooted.", "kubectl get deployments -A", PI5, "Kubernetes docs: Deployments", "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/"],
+    ["Kubernetes", "Readiness vs liveness probes", "A readiness probe decides if a pod gets traffic. A liveness probe decides if it gets restarted. Mixing them up is a classic way to cause restart loops. Your start page uses a readiness probe on /.", "kubectl -n start describe deploy start | grep -A2 Readiness", PI5, "Configure liveness, readiness and startup probes", "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/"],
+    ["Kubernetes", "Requests and limits", "Requests are what the scheduler reserves for a pod; limits are the ceiling. Go over a memory limit and the pod is OOMKilled. On a 4 GB Pi, good requests are what keep everything fitting.", "kubectl top pods -A --sort-by=memory | head -15", PI5, "Resource management for pods and containers", "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/"],
+    ["Networking", "Every Service gets a DNS name", "Inside the cluster, name.namespace.svc.cluster.local always finds a Service, even when the pods behind it move. That's how your Cloudflare tunnel reaches web.graysoncodes without knowing any IPs.", "kubectl run dnstest -it --rm --restart=Never --image=busybox:1.36 -- nslookup web.graysoncodes.svc.cluster.local", PI5, "DNS for Services and Pods", "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/"],
+    ["Kubernetes", "Rollouts have an undo button", "Every change to a Deployment makes a new revision. If a new image breaks the site, rollout undo puts the last one back in seconds. Knowing this makes shipping much less scary.", "kubectl -n graysoncodes rollout history deployment web", PI5, "Performing a rolling update", "https://kubernetes.io/docs/tutorials/kubernetes-basics/update/update-intro/"],
+    ["Kubernetes", "ConfigMaps hold config, not code", "Your start page itself lives in a ConfigMap. One gotcha you've already hit: files mounted with subPath don't refresh, so you need a rollout restart after changing them.", "kubectl -n start get configmap", PI5, "Kubernetes docs: ConfigMaps", "https://kubernetes.io/docs/concepts/configuration/configmap/"],
+    ["Security", "Secrets are only base64", "A Kubernetes Secret isn't encrypted, just encoded. Anyone who can read it can decode it. That's why secrets never go in Git as plain YAML (Sealed Secrets or SOPS fix that).", "kubectl get secrets -A", PI5, "Kubernetes docs: Secrets", "https://kubernetes.io/docs/concepts/configuration/secret/"],
+    ["Storage", "Where your data actually lives", "A PersistentVolumeClaim asks for storage; k3s's local-path provisioner hands out a folder on one node's disk. That means the Ledger and blog data are tied to one Pi and its SD card.", "kubectl get pvc -A", PI5, "Persistent Volumes", "https://kubernetes.io/docs/concepts/storage/persistent-volumes/"],
+    ["Kubernetes", "Namespaces are folders for your apps", "Each app in your lab has its own namespace (graysoncodes, ledger, media...). Deleting a namespace deletes everything inside it, so be careful with that command.", "kubectl get ns", PI5, "Namespaces", "https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/"],
+    ["Kubernetes", "Labels glue everything together", "Services find their pods by labels, not names. If a Service's selector doesn't match the pod's labels, traffic goes nowhere, and nothing errors. Check labels first when a Service is \"up\" but empty.", "kubectl get pods -A --show-labels | head -15", PI5, "Labels and selectors", "https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/"],
+    ["Debugging", "Events tell you why", "When a pod is stuck in Pending or CrashLoopBackOff, events usually say why: no room on a node, image pull failed, probe failing. It's the first place to look.", "kubectl get events -A --sort-by=.lastTimestamp | tail -20", PI5, "Debug running pods", "https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/"],
+    ["Debugging", "A flowchart for broken deployments", "This famous visual guide walks you from \"it doesn't work\" to the cause, one kubectl command at a time. Worth printing out.", "kubectl get pods -A | grep -v Running", PI5, "A visual guide on troubleshooting Kubernetes deployments", "https://learnkube.com/troubleshooting-deployments"],
+    ["Kubernetes", "DaemonSets run one pod per node", "CrowdSec's agent is a DaemonSet: every Pi gets exactly one copy, so it can read logs on each node. Add a third Pi and it gets one automatically.", "kubectl get daemonsets -A", PI5, "DaemonSet", "https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/"],
+    ["Kubernetes", "CronJobs are cron for the cluster", "Your Jellyfin config backup runs as a CronJob at 4am. Each run makes a Job, which makes a pod. You can also kick one off by hand to test it.", "kubectl get cronjobs -A", PI5, "CronJob", "https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/"],
+    ["Scheduling", "Which Pi runs what?", "nodeSelector and affinity pin pods to nodes. You pinned Pi-hole to pi2 and Jellyfin to the Pi 5. See it at a glance with custom columns.", "kubectl get pods -A -o custom-columns=NS:.metadata.namespace,POD:.metadata.name,NODE:.spec.nodeName", PI5, "Assigning pods to nodes", "https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/"],
+    ["Operations", "Draining a node before maintenance", "Before you unplug a Pi, drain it: pods move off politely. --dry-run shows what would happen without doing it.", "kubectl drain pi2 --ignore-daemonsets --delete-emptydir-data --dry-run=client", PI5, "Safely drain a node", "https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/"],
+    ["Tools", "Helm is a package manager", "A Helm chart is a template plus values. k3s can install charts from a HelmChart resource, which is how CrowdSec got on your cluster.", "kubectl get helmcharts -A", PI5, "Using Helm", "https://helm.sh/docs/intro/using_helm/"],
+    ["k3s", "What makes k3s small", "k3s is real Kubernetes packed into one binary, with SQLite instead of etcd by default and Traefik, CoreDNS and local-path storage built in. That's why it fits on Pis.", "kubectl get nodes -o wide", PI5, "k3s architecture", "https://docs.k3s.io/architecture"],
+    ["Practices", "Config belongs in the environment", "Twelve-factor rule 3: the same image should run anywhere, with settings coming from env vars. Your Campaign Ledger image does this with LEDGER_PUBLIC_URL.", "kubectl -n ledger describe deploy ledger | grep -A8 Environment", PI5, "The Twelve-Factor App: Config", "https://12factor.net/config"],
+    ["Practices", "Logs are a stream", "Apps should write logs to stdout and let the platform collect them. That's why kubectl logs works for every app without setup, and why CrowdSec can read nginx logs.", "kubectl -n graysoncodes logs deploy/web --tail=20", PI5, "The Twelve-Factor App: Logs", "https://12factor.net/logs"],
+    ["GitOps", "Git as the source of truth", "With GitOps, a tool like Argo CD watches your repo and makes the cluster match it. No more kubectl apply by hand, and Git history becomes your change log.", "git log --oneline -10 -- cluster/k8s", PC, "Argo CD core concepts", "https://argo-cd.readthedocs.io/en/stable/core_concepts/"],
+    ["SRE", "Blameless postmortems", "When something breaks, write what happened, why, and what you'll change, without blaming a person. Try one for the CoreDNS hiccup during the CrowdSec install.", "kubectl -n kube-system logs deploy/coredns --tail=30", PI5, "Google SRE book: Postmortem culture", "https://sre.google/sre-book/postmortem-culture/"],
+    ["SRE", "SLOs: how up is up enough?", "An SLO is a target like \"the site answers 99.5% of the time this month\". Uptime Kuma already measures this for you. Pick a number for graysoncodes.org.", "curl -s -o /dev/null -w '%{http_code} %{time_total}s\\n' https://graysoncodes.org", PC, "Google SRE book: Service level objectives", "https://sre.google/sre-book/service-level-objectives/"],
+    ["Monitoring", "The four golden signals", "Latency, traffic, errors and saturation. If you can only watch four things about a service, watch these. Your start page already shows latency and saturation (CPU/memory).", "kubectl top nodes", PI5, "Google SRE book: Monitoring distributed systems", "https://sre.google/sre-book/monitoring-distributed-systems/"],
+    ["SRE", "Toil is work a script should do", "Manual, repetitive work that grows with your setup is toil. Every time you SSH in to run the same commands, that's a candidate for a script or automation.", "history | awk '{print $2}' | sort | uniq -c | sort -rn | head", PI5, "Google SRE book: Eliminating toil", "https://sre.google/sre-book/eliminating-toil/"],
+    ["SRE", "Error budgets", "100% uptime is the wrong goal. If your SLO is 99.5%, the other 0.5% is a budget you can spend on risky changes and experiments.", "uptime", PI5, "Google SRE book: Embracing risk", "https://sre.google/sre-book/embracing-risk/"],
+    ["Networking", "How DNS updates really spread", "DNS is caches all the way down, which is why changes seem to take \"a while\". You run two Pi-holes now, so this one is very relevant.", "nslookup graysoncodes.org 100.68.50.51", PC, "Julia Evans: How updating DNS works", "https://jvns.ca/blog/how-updating-dns-works/"],
+    ["Networking", "Tunnels instead of open ports", "cloudflared dials out to Cloudflare, so your router has no open ports and your home IP stays hidden. Your site and dnd. both reach the world this way.", "kubectl -n graysoncodes logs deploy/cloudflared --tail=10", PI5, "Cloudflare Tunnel docs", "https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/"],
+    ["Networking", "What DNS actually does", "Every visit to a site starts with a DNS lookup that turns a name into an IP. Pi-hole works by answering \"nowhere\" for ad domains.", "nslookup doubleclick.net 192.168.1.36", PC, "Cloudflare: What is DNS?", "https://www.cloudflare.com/learning/dns/what-is-dns/"],
+    ["Networking", "Reverse proxies", "Your web nginx is a reverse proxy: one front door that sends /blog to Flask and dnd. to the Ledger. Proxies also add TLS, caching and logs in one place.", "kubectl -n graysoncodes get svc", PI5, "Cloudflare: What is a reverse proxy?", "https://www.cloudflare.com/learning/cdn/glossary/reverse-proxy/"],
+    ["Containers", "Multi-stage builds", "Build with a big image (Node, compilers), then copy only the output into a small one. Your web image does this: Vite builds the site, nginx serves it.", "docker images --format '{{.Repository}}:{{.Tag}} {{.Size}}'", PI5, "Docker docs: Multi-stage builds", "https://docs.docker.com/build/building/multi-stage/"],
+    ["Containers", "Dockerfile best practices", "Order layers from least to most changing so the cache works, pin versions, don't run as root, and keep images small.", "cat ~/Portfolio/cluster/web.Dockerfile", PI5, "Docker docs: Building best practices", "https://docs.docker.com/build/building/best-practices/"],
+    ["Containers", "What a container really is", "A container is just a Linux process with namespaces and cgroups around it. Once that clicks, a lot of Docker and Kubernetes behaviour makes sense.", "ps aux | grep -c containerd-shim", PI5, "Ivan Velichko: Container learning path", "https://iximiuz.com/en/posts/container-learning-path/"],
+    ["CI/CD", "Reading a GitHub Actions workflow", "on: says when it runs, jobs: run on fresh machines, steps: run in order. Your cluster images are built this way on every push.", "gh run list --limit 5", PC, "Workflow syntax for GitHub Actions", "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax"],
+    ["Practices", "Pin your versions", "A tag like :latest can change under you. Pinned versions (nginx 1.28, Jellyfin 10.11.10) mean the same YAML gives the same result next month.", "kubectl get pods -A -o jsonpath='{..image}' | tr ' ' '\\n' | sort -u", PI5, "Semantic Versioning", "https://semver.org/"],
+    ["Security", "Scan images for known holes", "Trivy checks an image's packages against CVE databases. Run it on the images you deploy and see what turns up.", "docker run --rm aquasec/trivy image --severity HIGH,CRITICAL nginxinc/nginx-unprivileged:1.28-alpine", PI5, "Trivy docs", "https://trivy.dev/docs/latest/guide/"],
+    ["Security", "Secrets you can commit", "Sealed Secrets encrypts a Secret with the cluster's public key. Only your cluster can decrypt it, so the encrypted file is safe in Git.", "kubectl get secrets -A | grep -v helm", PI5, "Sealed Secrets on GitHub", "https://github.com/bitnami/sealed-secrets"],
+    ["Backups", "The 3-2-1 rule", "3 copies of your data, on 2 kinds of media, 1 off-site. Right now the Ledger and blog data have 1 copy on an SD card. A backup you've never restored isn't a backup yet.", "sudo du -sh /var/lib/rancher/k3s/storage/*", PI5, "Backblaze: The 3-2-1 backup strategy", "https://www.backblaze.com/blog/the-3-2-1-backup-strategy/"],
+    ["Automation", "Ansible: rebuild a Pi from a file", "Ansible runs the same steps on many machines over SSH, and does nothing if they're already done (idempotent). Your setup-pi.sh is a great first playbook.", "cat ~/Portfolio/cluster/setup-pi.sh | head -30", PI5, "Getting started with Ansible", "https://docs.ansible.com/projects/ansible/latest/getting_started/index.html"],
+    ["IaC", "Terraform describes infrastructure", "Write what you want (a DNS record, a tunnel route), and Terraform makes it so and tracks it. You could manage your Cloudflare setup this way instead of clicking.", "nslookup -type=CNAME dnd.graysoncodes.org", PC, "What is Terraform?", "https://developer.hashicorp.com/terraform/intro"],
+    ["Monitoring", "Prometheus metric types", "Counters only go up, gauges go up and down, histograms bucket things like latency. node-exporter on your Pi 5 already serves hundreds of them.", "curl -s localhost:9100/metrics | grep -v '^#' | head -20", PI5, "Prometheus: Metric types", "https://prometheus.io/docs/concepts/metric_types/"],
+    ["Linux", "systemd runs your services", "Before k3s, your blog and tunnel were systemd units. k3s itself still is one. systemctl --failed is a quick health check for any Linux box.", "systemctl --failed; systemctl status k3s --no-pager | head -5", PI5, "How to use systemctl", "https://www.digitalocean.com/community/tutorials/how-to-use-systemctl-to-manage-systemd-services-and-units"],
+    ["Git", "Branching, visually", "Branches, rebase and cherry-pick are much easier to understand when you can see them. This one is a game; do a level a day.", "git log --oneline --graph -15", PC, "Learn Git Branching", "https://learngitbranching.js.org/"],
+    ["SRE", "Running an incident", "Atlassian's guide covers postmortem templates and the questions to ask. Good to read before the next outage, not during it.", "kubectl get pods -A --field-selector=status.phase!=Running", PI5, "Atlassian: Incident postmortems", "https://www.atlassian.com/incident-management/postmortem"],
+    ["Practices", "Continuous delivery", "Your code should always be in a state where you could ship it. Small changes, shipped often, are safer than big ones shipped rarely.", "git log --since='1 week ago' --oneline | wc -l", PC, "Martin Fowler: Continuous delivery", "https://martinfowler.com/bliki/ContinuousDelivery.html"],
+    ["Practices", "Feature toggles", "Ship code turned off, then flip it on. This splits \"deploy\" from \"release\" and makes rollbacks a switch instead of a redeploy.", "grep -rn 'getenv\\|environ' ~/Portfolio/blog --include=*.py | head", PI5, "Martin Fowler: Feature toggles", "https://martinfowler.com/articles/feature-toggles.html"],
+    ["Deploys", "Blue-green deployments", "Run the new version next to the old one, then switch traffic all at once. If it breaks, switch back. You did a small version of this when moving dnd. behind nginx.", "kubectl get svc -A", PI5, "Martin Fowler: Blue-green deployment", "https://martinfowler.com/bliki/BlueGreenDeployment.html"],
+    ["Deploys", "Canary releases", "Send a small slice of traffic to the new version first and watch the errors before sending everyone. Named after canaries in coal mines.", "kubectl -n graysoncodes get deploy -o wide", PI5, "Martin Fowler: Canary release", "https://martinfowler.com/bliki/CanaryRelease.html"],
+    ["Practices", "Immutable servers", "Don't fix running servers by hand; replace them with a new, known-good build. Containers make this the default: you change the image, not the pod.", "kubectl -n graysoncodes get pods -o wide", PI5, "Martin Fowler: Immutable server", "https://martinfowler.com/bliki/ImmutableServer.html"],
+    ["IaC", "Infrastructure as code", "If your setup is described in files, it can be reviewed, versioned and rebuilt. Your cluster/k8s folder is already this.", "ls ~/Portfolio/cluster/k8s", PI5, "Martin Fowler: Infrastructure as code", "https://martinfowler.com/bliki/InfrastructureAsCode.html"],
+    ["Security", "Network policies", "By default every pod can talk to every other pod. NetworkPolicies are a firewall between them, for example only nginx may talk to the Ledger.", "kubectl get networkpolicy -A", PI5, "Network policies", "https://kubernetes.io/docs/concepts/services-networking/network-policies/"],
+    ["Security", "RBAC: who can do what", "Roles list allowed actions, RoleBindings give them to users or service accounts. Homepage reads cluster stats through a read-only role.", "kubectl get clusterrolebindings | grep -v system:", PI5, "Using RBAC authorization", "https://kubernetes.io/docs/reference/access-authn-authz/rbac/"],
+    ["Security", "Don't run as root", "securityContext lets you set runAsNonRoot, drop capabilities and make the filesystem read-only. Your start page uses the nginx-unprivileged image, so it already runs as a normal user. Check it.", "kubectl -n start exec deploy/start -- id", PI5, "Configure a security context", "https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"],
+    ["Bash", "Lint your shell scripts", "ShellCheck catches quoting bugs and other traps in bash before they bite. Paste any of your cluster scripts in and see what it finds.", "docker run --rm -v ~/Portfolio/cluster:/mnt koalaman/shellcheck:stable /mnt/start/deploy.sh", PI5, "ShellCheck", "https://www.shellcheck.net/"],
+    ["Bash", "Bash strict mode", "set -euo pipefail makes a script stop on the first error, on unset variables, and on failures inside pipes. Every deploy script you have starts with it.", "head -6 ~/Portfolio/cluster/start/deploy.sh", PI5, "Unofficial bash strict mode", "http://redsymbol.net/articles/unofficial-bash-strict-mode/"],
+    ["Networking", "TLS certificates", "The padlock means a certificate authority vouched for the site's key. Cloudflare handles yours at the edge. See who issued it and when it expires.", "curl -svI https://graysoncodes.org 2>&1 | grep -iE 'issuer|expire'", PC, "Cloudflare: What is an SSL certificate?", "https://www.cloudflare.com/learning/ssl/what-is-an-ssl-certificate/"],
+    ["Networking", "How Tailscale works", "Tailscale builds a WireGuard mesh: devices connect directly and punch through NAT, with a coordination server only for keys. That's how your phone reaches the Pis.", "tailscale status", PC, "Tailscale: How Tailscale works", "https://tailscale.com/blog/how-tailscale-works"],
+    ["Kubernetes", "The kubectl cheat sheet", "Autocomplete, aliases, jsonpath and sort-by tricks. Set up `alias k=kubectl` with completion and you'll save thousands of keystrokes.", "kubectl api-resources | head -20", PI5, "kubectl quick reference", "https://kubernetes.io/docs/reference/kubectl/quick-reference/"],
+    ["Kubernetes", "Autoscaling", "The Horizontal Pod Autoscaler adds pods when CPU goes up. On two Pis there's not much room, but it's a classic interview topic.", "kubectl get hpa -A", PI5, "Horizontal Pod Autoscaling", "https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/"],
+    ["Kubernetes", "Init containers", "Containers that run to completion before the main one starts, for example to fix folder permissions or wait for a database.", "kubectl get pods -A -o jsonpath='{range .items[*]}{.metadata.name}{\": \"}{.spec.initContainers[*].name}{\"\\n\"}{end}' | grep -v ': $'", PI5, "Init containers", "https://kubernetes.io/docs/concepts/workloads/pods/init-containers/"],
+    ["Tools", "Kustomize", "Kustomize patches plain YAML for different setups without templates. It's built into kubectl (kubectl apply -k) and Argo CD understands it.", "kubectl kustomize --help | head -5", PI5, "Introduction to Kustomize", "https://kubectl.docs.kubernetes.io/guides/introduction/kustomize/"],
+    ["Debugging", "It's always DNS", "When something weird breaks on a network, check DNS first. You've had the CoreDNS install hiccup and two Pi-holes, so you know.", "kubectl -n kube-system get pods -l k8s-app=kube-dns", PI5, "Is it DNS?", "https://isitdns.com/"],
+    ["Linux", "What load average means", "Load average counts processes running or waiting, including waiting on disk. On a 4-core Pi, a load of 4 means fully busy. Slow SD cards push it up.", "uptime; nproc", PI5, "Brendan Gregg: Linux load averages", "https://www.brendangregg.com/blog/2017-08-08/linux-load-averages.html"],
+    ["Performance", "The USE method", "For every resource (CPU, memory, disk, network) check Utilization, Saturation and Errors. A simple checklist that finds most performance problems.", "vmstat 1 5", PI5, "Brendan Gregg: The USE method", "https://www.brendangregg.com/usemethod.html"],
+    ["Debugging", "OOMKilled pods", "If a container goes over its memory limit, the kernel kills it and the pod restarts. A high RESTARTS count is the clue; describe shows OOMKilled as the reason.", "kubectl get pods -A --sort-by='.status.containerStatuses[0].restartCount' | tail -5", PI5, "Assign memory resources", "https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource/"],
+    ["Security", "Watching for attackers", "CrowdSec reads your nginx logs, spots scanners and brute force, and Cloudflare blocks them at the edge. See what it has caught so far.", "kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli alerts list", PI5, "CrowdSec docs", "https://docs.crowdsec.net/docs/next/intro/"],
+    ["Kubernetes", "A pod's life", "Pending, Running, Succeeded, Failed. Knowing the phases and container states (Waiting, Running, Terminated) makes kubectl output much easier to read.", "kubectl get pods -A -o custom-columns=POD:.metadata.name,PHASE:.status.phase", PI5, "Pod lifecycle", "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/"],
+    ["Networking", "ClusterIP, NodePort, LoadBalancer", "ClusterIP is inside only, NodePort opens a port on every node (your :303xx apps), LoadBalancer gets an outside IP (k3s fakes this with ServiceLB).", "kubectl get svc -A | grep -i nodeport", PI5, "Kubernetes docs: Services", "https://kubernetes.io/docs/concepts/services-networking/service/"],
+    ["Backups", "Velero backs up a cluster", "Velero saves your Kubernetes objects and volumes to object storage like B2, and can restore a whole namespace. A great next project for the Ledger data.", "kubectl get pvc -A -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name,SIZE:.spec.resources.requests.storage", PI5, "Velero docs", "https://velero.io/docs/v1.19/"],
+    ["Monitoring", "Loki: logs like Prometheus", "Loki stores logs cheaply by only indexing labels. Pair it with Grafana and you can search every pod's logs from one page instead of kubectl logs one at a time.", "kubectl -n graysoncodes logs -l app=web --prefix --since=1h --tail=5", PI5, "Grafana Loki overview", "https://grafana.com/docs/loki/latest/get-started/overview/"],
+    ["Observability", "What OpenTelemetry is", "OpenTelemetry is the standard way to emit traces, metrics and logs from your own apps. Adding it to the blog or Ledger would be a nice resume line.", "pip index versions opentelemetry-sdk 2>/dev/null | head -1", PC, "What is OpenTelemetry?", "https://opentelemetry.io/docs/what-is-opentelemetry/"],
+    ["Linux", "Shell tools you'll use forever", "grep, find, xargs, awk and pipes. The MIT \"Missing Semester\" lecture is the best hour you can spend on the command line.", "find ~/Portfolio/cluster -name '*.sh' | xargs wc -l", PI5, "Missing Semester: Shell tools", "https://missing.csail.mit.edu/2020/shell-tools/"],
+    ["Kubernetes", "The big picture", "Control plane (API server, scheduler, controllers, datastore) and nodes (kubelet, container runtime, kube-proxy). Your Pi 5 is both a control plane and a worker.", "kubectl get --raw='/readyz?verbose' | tail -5", PI5, "Cluster architecture", "https://kubernetes.io/docs/concepts/architecture/"],
+    ["DevOps", "What DevOps actually means", "It's less about tools and more about developers and operations sharing the work of shipping and running software, with fast feedback. Your homelab is both jobs at once.", "kubectl get all -A | wc -l", PI5, "Red Hat: What is DevOps?", "https://www.redhat.com/en/topics/devops/what-is-devops"],
+  ];
+  const DAY = 86400000;
+  const todayIndex = () => { const d = new Date(); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY) % SNIPS.length; };
+  let snipAt = todayIndex();
+  const doneSet = new Set((() => { try { return JSON.parse(store.get("homelab-snips-done") || "[]"); } catch { return []; } })());
+  const showSnip = () => {
+    const [topic, title, body, cmd, where, readTitle, url] = SNIPS[snipAt];
+    const isToday = snipAt === todayIndex();
+    $("#daily-when").textContent = isToday ? "Today's DevOps snippet" : "DevOps snippet";
+    $("#daily-topic").textContent = topic;
+    $("#daily-count").textContent = `${snipAt + 1}/${SNIPS.length}`;
+    $("#daily-title").textContent = title;
+    $("#daily-body").textContent = body;
+    $("#daily-cmd").textContent = cmd;
+    $("#daily-where").textContent = where;
+    $("#daily-read").href = url;
+    $("#daily-read-title").textContent = readTitle + " ↗";
+    $("#daily-read-host").textContent = hostOf(url).split("/")[0].replace(/^www\./, "");
+    $("#daily-today").hidden = isToday;
+    $("#daily-done").setAttribute("aria-pressed", String(doneSet.has(title)));
+    $("#daily-done").textContent = doneSet.has(title) ? `Done · ${doneSet.size} learned` : "Mark done";
+    $("#daily-copy").textContent = "Copy";
+  };
+  $("#daily-prev").addEventListener("click", () => { snipAt = (snipAt - 1 + SNIPS.length) % SNIPS.length; showSnip(); });
+  $("#daily-next").addEventListener("click", () => { snipAt = (snipAt + 1) % SNIPS.length; showSnip(); });
+  $("#daily-today").addEventListener("click", () => { snipAt = todayIndex(); showSnip(); });
+  $("#daily-done").addEventListener("click", () => {
+    const t = SNIPS[snipAt][1];
+    if (doneSet.has(t)) doneSet.delete(t); else doneSet.add(t);
+    store.set("homelab-snips-done", JSON.stringify([...doneSet]));
+    showSnip();
+  });
+  // The page is plain http over Tailscale, where navigator.clipboard is blocked, so fall back to execCommand.
+  $("#daily-copy").addEventListener("click", async () => {
+    const text = SNIPS[snipAt][3];
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch {
+      const t = el("textarea", { readonly: "" }); t.value = text; t.style.position = "fixed"; t.style.opacity = "0";
+      document.body.append(t); t.select();
+      try { ok = document.execCommand("copy"); } catch {}
+      t.remove();
+    }
+    $("#daily-copy").textContent = ok ? "Copied" : "Select it";
+  });
+  showSnip();
+  setInterval(() => { if (!document.hidden && $("#daily-when").textContent.startsWith("Today") && snipAt !== todayIndex()) { snipAt = todayIndex(); showSnip(); } }, 60000);
 
   /* ---------- start ---------- */
   const start = async () => {

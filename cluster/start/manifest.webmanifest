@@ -1,0 +1,13 @@
+{
+  "name": "Grayson's Homelab",
+  "short_name": "Homelab",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1115",
+  "theme_color": "#3352cc",
+  "icons": [
+    { "src": "i/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "i/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "i/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
