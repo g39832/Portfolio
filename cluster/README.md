@@ -249,3 +249,22 @@ Send another test message any time:
 ```bash
 kubectl -n crowdsec exec deploy/crowdsec-lapi -- cscli notifications test discord
 ```
+
+## Off-site backups (D&D app + blog)
+
+Every night the Campaign Ledger data (4:30am) and the blog data (4:40am) are copied to
+Backblaze B2 with restic: encrypted on the Pi, 7 daily + 4 weekly + 12 monthly copies kept,
+and checked after each run. Free: it's a few MB and B2's first 10 GB are free. Failures are
+posted to the CrowdSec Discord channel. Files: `k8s/90-offsite-backup.yaml`, `backup/`.
+
+- Set up or update (asks for the B2 bucket and key; Enter keeps the saved ones):
+  `bash ~/Portfolio/cluster/backup/setup.sh`
+- Run one now: `kubectl -n ledger create job --from=cronjob/offsite-backup backup-now`
+  (blog: `-n graysoncodes`)
+- See the last runs: `kubectl -n ledger get jobs`
+- Get a copy back and check it (doesn't touch the running app):
+  `bash ~/Portfolio/cluster/backup/restore.sh ledger` (or `blog`), lands in `~/restores/`
+
+The backup password is in the `offsite-backup` secret and was shown once by setup.sh. Keep a
+copy off the Pi: without it nobody can read the backups. To read the password again on the Pi 5:
+`kubectl -n ledger get secret offsite-backup -o jsonpath='{.data.RESTIC_PASSWORD}' | base64 -d; echo`

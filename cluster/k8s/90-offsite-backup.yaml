@@ -1,0 +1,139 @@
+# Nightly off-site backups of the D&D app (Campaign Ledger) and the blog to Backblaze B2.
+# Free: the data is a few MB and B2's first 10 GB are free. Encrypted with restic before upload.
+#   4:30am  ledger  (ledger-data, Pi 5)      4:40am  blog  (blog-data, pi2)     Chicago time
+# Each run: step 1 (the app's own image) makes a safe copy of /data, including a consistent
+# copy of each SQLite database; step 2 (restic) uploads it, keeps 7 daily + 4 weekly + 12 monthly
+# copies, and checks the repository. Failures are posted to the CrowdSec Discord channel.
+#
+# Set up / update (asks for the B2 key the first time):  bash ~/Portfolio/cluster/backup/setup.sh
+# Run one now:   kubectl -n ledger create job --from=cronjob/offsite-backup backup-now
+# Get a copy back (test restore):  bash ~/Portfolio/cluster/backup/restore.sh ledger
+# Needs the Secret "offsite-backup" and ConfigMap "offsite-backup-scripts" in each namespace;
+# setup.sh makes both.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: offsite-backup
+  namespace: ledger
+spec:
+  schedule: "30 4 * * *"
+  timeZone: America/Chicago
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600      # if the Pi was off at 4:30, still run within the hour
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0          # one try; a failure is posted to Discord and it runs again the next night
+      activeDeadlineSeconds: 1800
+      template:
+        spec:
+          restartPolicy: Never
+          # The PVC is local-path on the Pi 5, so this pod is placed there automatically.
+          securityContext: {runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001}
+          initContainers:
+            - name: snapshot
+              image: ghcr.io/g39832/campaign-ledger:latest
+              imagePullPolicy: IfNotPresent
+              command: [python3, /scripts/snapshot.py]
+              volumeMounts:
+                - {name: data, mountPath: /data}
+                - {name: snapshot, mountPath: /snapshot}
+                - {name: scripts, mountPath: /scripts}
+              resources:
+                requests: {cpu: 20m, memory: 32Mi}
+                limits: {memory: 256Mi}
+          containers:
+            - name: restic
+              image: restic/restic:0.19.1
+              command: [sh, /scripts/backup.sh]
+              envFrom:
+                - secretRef: {name: offsite-backup}
+              env:
+                - {name: APP, value: ledger}
+                - {name: HOME, value: /cache}
+                - {name: RESTIC_CACHE_DIR, value: /cache/restic}
+                - name: NAMESPACE
+                  valueFrom: {fieldRef: {fieldPath: metadata.namespace}}
+                - name: JOB_NAME
+                  valueFrom: {fieldRef: {fieldPath: "metadata.labels['job-name']"}}
+              volumeMounts:
+                - {name: snapshot, mountPath: /snapshot}
+                - {name: scripts, mountPath: /scripts}
+                - {name: cache, mountPath: /cache}
+              resources:
+                requests: {cpu: 50m, memory: 64Mi}
+                limits: {memory: 512Mi}
+          volumes:
+            - name: data
+              persistentVolumeClaim: {claimName: ledger-data}
+            - name: snapshot
+              emptyDir: {}
+            - name: cache
+              emptyDir: {}
+            - name: scripts
+              configMap: {name: offsite-backup-scripts}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: offsite-backup
+  namespace: graysoncodes
+spec:
+  schedule: "40 4 * * *"
+  timeZone: America/Chicago
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0          # one try; a failure is posted to Discord and it runs again the next night
+      activeDeadlineSeconds: 1800
+      template:
+        spec:
+          restartPolicy: Never
+          # blog-data is local-path on pi2, so this pod is placed there automatically.
+          securityContext: {runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001}
+          initContainers:
+            - name: snapshot
+              image: ghcr.io/g39832/portfolio-blog:latest
+              imagePullPolicy: IfNotPresent
+              command: [python3, /scripts/snapshot.py]
+              volumeMounts:
+                - {name: data, mountPath: /data}
+                - {name: snapshot, mountPath: /snapshot}
+                - {name: scripts, mountPath: /scripts}
+              resources:
+                requests: {cpu: 20m, memory: 32Mi}
+                limits: {memory: 256Mi}
+          containers:
+            - name: restic
+              image: restic/restic:0.19.1
+              command: [sh, /scripts/backup.sh]
+              envFrom:
+                - secretRef: {name: offsite-backup}
+              env:
+                - {name: APP, value: blog}
+                - {name: HOME, value: /cache}
+                - {name: RESTIC_CACHE_DIR, value: /cache/restic}
+                - name: NAMESPACE
+                  valueFrom: {fieldRef: {fieldPath: metadata.namespace}}
+                - name: JOB_NAME
+                  valueFrom: {fieldRef: {fieldPath: "metadata.labels['job-name']"}}
+              volumeMounts:
+                - {name: snapshot, mountPath: /snapshot}
+                - {name: scripts, mountPath: /scripts}
+                - {name: cache, mountPath: /cache}
+              resources:
+                requests: {cpu: 50m, memory: 64Mi}
+                limits: {memory: 512Mi}
+          volumes:
+            - name: data
+              persistentVolumeClaim: {claimName: blog-data}
+            - name: snapshot
+              emptyDir: {}
+            - name: cache
+              emptyDir: {}
+            - name: scripts
+              configMap: {name: offsite-backup-scripts}
