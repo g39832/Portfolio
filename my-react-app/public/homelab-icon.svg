@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <!-- Homelab app icon: a jellyfish whose bell is a little server (status lights), with network-cable tentacles. -->
+  <defs>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d5ce0"/>
+      <stop offset="1" stop-color="#141c52"/>
+    </linearGradient>
+    <linearGradient id="bell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9e1ff"/>
+      <stop offset="1" stop-color="#9fb2ff"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".42" r=".5">
+      <stop offset="0" stop-color="#8aa0ff" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#8aa0ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="180" height="180" fill="url(#sea)"/>
+  <circle cx="90" cy="78" r="78" fill="url(#glow)"/>
+  <!-- bubbles -->
+  <g fill="none" stroke="#c9d4ff" stroke-opacity=".55" stroke-width="2">
+    <circle cx="146" cy="40" r="6"/><circle cx="157" cy="62" r="3.5"/><circle cx="30" cy="52" r="4"/>
+  </g>
+  <!-- tentacles = cables -->
+  <g fill="none" stroke-linecap="round" stroke-width="7">
+    <path d="M60 104c-6 14 8 22 0 36s-4 18 2 20" stroke="#6fd396"/>
+    <path d="M80 106c4 14-8 20-2 34s6 14 2 20" stroke="#ffd166"/>
+    <path d="M100 106c-4 14 8 20 2 34s-6 14-2 20" stroke="#ff8fab"/>
+    <path d="M120 104c6 14-8 22 0 36s4 18-2 20" stroke="#7fd8ff"/>
+  </g>
+  <!-- plugs on the cable ends -->
+  <g fill="#f4f6ff">
+    <rect x="56" y="156" width="12" height="11" rx="2.5"/><rect x="76" y="156" width="12" height="11" rx="2.5"/>
+    <rect x="92" y="156" width="12" height="11" rx="2.5"/><rect x="112" y="156" width="12" height="11" rx="2.5"/>
+  </g>
+  <!-- bell -->
+  <path d="M36 98c0-38 24-64 54-64s54 26 54 64c0 9-6 12-14 12H50c-8 0-14-3-14-12z" fill="url(#bell)"/>
+  <path d="M50 52c8-10 20-15 32-15" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-opacity=".8"/>
+  <!-- server band with status lights -->
+  <rect x="44" y="88" width="92" height="14" rx="7" fill="#1c2a78"/>
+  <circle cx="56" cy="95" r="3.4" fill="#6fd396"/><circle cx="67" cy="95" r="3.4" fill="#6fd396"/><circle cx="78" cy="95" r="3.4" fill="#ffd166"/>
+  <g stroke="#7f92e6" stroke-width="2.4" stroke-linecap="round"><path d="M98 95h28"/></g>
+  <!-- face -->
+  <g fill="#16205e">
+    <ellipse cx="74" cy="68" rx="5.5" ry="7"/><ellipse cx="106" cy="68" rx="5.5" ry="7"/>
+  </g>
+  <circle cx="76" cy="65.5" r="2" fill="#fff"/><circle cx="108" cy="65.5" r="2" fill="#fff"/>
+  <path d="M82 78q8 7 16 0" fill="none" stroke="#16205e" stroke-width="3.4" stroke-linecap="round"/>
+  <ellipse cx="63" cy="79" rx="6" ry="3.5" fill="#ff8fab" fill-opacity=".6"/><ellipse cx="117" cy="79" rx="6" ry="3.5" fill="#ff8fab" fill-opacity=".6"/>
+</svg>

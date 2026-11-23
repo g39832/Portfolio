@@ -64,8 +64,8 @@ const workingOn = [
         <path d="M20 15.31L23.31 12 20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/>
       </svg>
     ),
-    label: 'Linux Projects',
-    note: 'Hardening and scaling my Raspberry Pi server',
+    label: 'DevOps & Kubernetes',
+    note: 'Growing my Pi k3s cluster: GitOps with Argo CD and off-site backups next',
   },
 ]
 
@@ -103,7 +103,7 @@ const pillars = [
 const hardware = [
   {
     title: 'Self-hosted web server',
-    copy: 'This site runs on my own Raspberry Pi with Nginx, DNS and firewall rules.',
+    copy: 'This site runs on my own two-Raspberry-Pi Kubernetes cluster, reached through a Cloudflare Tunnel with no open ports.',
   },
   {
     title: 'Home network lab',
@@ -466,7 +466,7 @@ function App() {
               </Reveal>
               <Reveal delay={160}>
                 <p className="section-copy">
-                  I have 3.5 years of IT experience repairing and troubleshooting computers, Linux systems, and hardware. I&apos;ve repaired more than 500 devices, built internal business software, hosted projects on Raspberry Pi systems, and enjoy working on embedded systems, robotics, full-stack development, and hardware projects.
+                  I have 3.5 years of IT experience repairing and troubleshooting computers, Linux systems, and hardware. I&apos;ve repaired more than 500 devices, built internal business software, run my own Kubernetes homelab on Raspberry Pis, and enjoy working on embedded systems, robotics, full-stack development, and hardware projects.
                 </p>
               </Reveal>
               <Reveal delay={240}>
@@ -810,6 +810,11 @@ function App() {
                       <li>Diagnostics</li>
                       <li>Technical Support</li>
                       <li>DevOps</li>
+                      <li>Kubernetes (k3s)</li>
+                      <li>Docker</li>
+                      <li>CI/CD (GitHub Actions)</li>
+                      <li>Cloudflare</li>
+                      <li>Networking</li>
                     </ul>
                   </div>
                 </Reveal>

@@ -41,6 +41,28 @@ export const projects = [
     github: 'https://github.com/g39832/campaign-ledger',
   },
   {
+    id: 'homelab',
+    title: 'Homelab — Raspberry Pi Kubernetes Cluster',
+    featured: false,
+    logo: '/homelab-icon.svg',
+    logoAlt: 'Homelab logo: a jellyfish with a server for a head and network cables for tentacles',
+    stat: '2 Raspberry Pis · 15 apps · 0 open ports',
+    screenshot: '/Homelab.jpg',
+    alt: 'The homelab start page: a daily DevOps lesson, live up/down checks for every app, and CPU and memory for both Raspberry Pis',
+    tags: ['Kubernetes (k3s)', 'Docker', 'GitHub Actions', 'Cloudflare', 'Nginx', 'Linux', 'Networking'],
+    summary:
+      'A two-node Kubernetes cluster on a Raspberry Pi 5 and Pi 4 that runs this website, my blog, a media server, ad-blocking DNS, my D&D app and more, all as containers built by CI.',
+    writeup:
+      'I moved everything I self-host off hand-run services and onto a k3s cluster I built on two Raspberry Pis. GitHub Actions builds the container images on every push, and every app is a YAML file in Git. This site and dnd.graysoncodes.org reach the internet through a Cloudflare Tunnel, so my router has no open ports. CrowdSec reads the web server logs, spots scanners and brute-force attempts, has Cloudflare challenge them at the edge, and posts each ban to Discord. Two Pi-hole servers block ads and trackers for my devices, including my phone anywhere over Tailscale. Jellyfin serves movies with a nightly config backup, and Uptime Kuma sends phone alerts if anything goes down. I also built a custom start page with live health checks, cluster CPU and memory, and a daily DevOps lesson, plus router labs (FRR, OSPF) for practising networking.',
+    problem:
+      'My Pi was running a pile of separate services set up by hand. Nothing was written down, updates meant SSH and hoping, the site needed open ports, and I had no idea when something broke or who was poking at it.',
+    solution:
+      'Rebuilt it as infrastructure as code: k3s on two Pis, images built by GitHub Actions and published to GHCR, each app pinned to the right node with its own storage, a Cloudflare Tunnel instead of port forwarding, and CrowdSec plus a Cloudflare Worker for security. I rehearse every change in a throwaway k3s-in-Docker cluster before it touches the real one.',
+    impact:
+      '15 apps running across both Pis with live monitoring and phone alerts, zero open ports on my home network, attackers blocked before they reach the Pi, and the whole setup can be rebuilt from the repo.',
+    github: 'https://github.com/g39832/Portfolio/tree/main/cluster',
+  },
+  {
     id: 'tumorsim',
     title: 'TumorSim — Cancer Cell Evolution Simulator',
     featured: false,
@@ -114,15 +136,27 @@ export const projects = [
 
 export const miniProjects = [
   {
-    id: 'mp-selfhosted',
-    title: 'Self Hosted',
+    id: 'mp-network-labs',
+    title: 'Router Network Labs',
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M4 4h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 9h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2zm2 2.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm4 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="9" y="2" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><path d="M12 8v4M5 16v-4h14v4"/>
       </svg>
     ),
-    summary: 'A full web server on bare-metal Linux — Raspberry Pi 4 with Nginx, DNS, firewalls, and SSL.',
-    tags: ['Raspberry Pi', 'Nginx'],
+    summary: 'Five virtual router labs on my Pi (Containerlab + FRR): static routes, OSPF, and a broken network to troubleshoot.',
+    tags: ['Networking', 'Containerlab'],
+    github: 'https://github.com/g39832/Portfolio/tree/main/cluster/labs',
+  },
+  {
+    id: 'mp-devops-path',
+    title: 'Pi to DevOps Path',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M2 7l10-4 10 4-10 4z"/><path d="M6 9v5c0 1.7 2.7 3 6 3s6-1.3 6-3V9"/>
+      </svg>
+    ),
+    summary: 'My DevOps learning guide, hosted on the cluster: 140+ checked resources, projects to build, and a Pomodoro timer.',
+    tags: ['DevOps', 'Learning'],
   },
   {
     id: 'mp-pi-diagnostics',
