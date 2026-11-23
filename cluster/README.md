@@ -145,6 +145,9 @@ docker run -d --name pfweb --network pftest -p 18080:8080 -e BLOG_UPSTREAM=http:
 |---|---|---|---|
 | Start page (Homepage) | `k8s/45-homepage.yaml` | http://100.120.223.33:30300 | A tile + logo for every app. Edit `services.yaml` inside the file to add tiles. |
 | Pi-hole | `k8s/50-pihole.yaml` | http://100.120.223.33:30880/admin | DNS ad blocker on the Pi 4 (`192.168.1.36`, port 53). Password: `kubectl -n pihole exec -it deploy/pihole -- pihole setpassword` |
+| Pi-hole backup | `k8s/51-pihole-pi5.yaml` | http://100.120.223.33:30881/admin | Second Pi-hole on the Pi 5 (`192.168.1.35`). See **Pi-hole for the whole house** below. |
+| IT-Tools | `k8s/48-it-tools.yaml` | http://100.120.223.33:30481 | ~80 developer/IT tools. Private on purpose (no Cloudflare route). |
+| Network Labs | `k8s/49-labs.yaml` + `labs/` | http://100.120.223.33:30403 | Guide for the router labs. Page update: `bash labs/deploy.sh`. The labs run in Docker on the Pi 5 via Containerlab (`labs/lab.sh`), not in k3s. |
 | Jellyfin | `k8s/60-jellyfin.yaml` | http://100.120.223.33:8096 | Media server on the Pi 5. Full guide: `media/README.md` |
 | CrowdSec | `k8s/80-crowdsec.yaml` | (no web page) | Watches the public site's logs for attackers; `81-crowdsec-cloudflare.yaml` blocks them at Cloudflare. See **Security (CrowdSec)** below. |
 
@@ -157,6 +160,30 @@ Health report for a Pi (read-only):
 ```powershell
 Get-Content -Raw "$HOME\Desktop\Portfolio\cluster\inspect-pi.sh" | ssh grayson@raspberrypi.local "tr -d '\r' | bash -s"
 ```
+
+## Pi-hole for the whole house
+
+Goal: every device at home gets ad blocking, and nobody notices. Gentle default blocklist only, an allowlist
+for things blockers often break, privacy mode 2 (the dashboard shows counts, not who visited what), and two
+Pi-holes so one Pi being off changes nothing.
+
+Order matters:
+1. **Reserve the Pis' addresses** in the Orbi (Advanced > Setup > LAN Setup > Address Reservation):
+   `raspberrypi` = 192.168.1.35, `pi2` = 192.168.1.36. Otherwise a router reboot could move them and break DNS.
+2. **Pis look up names directly, never via Pi-hole** (prevents a loop after a power cut). On EACH Pi:
+   `sudo bash ~/Portfolio/cluster/pi-own-dns.sh`
+3. **Start Pi-hole #2 and set up both:** on the Pi 5, `bash ~/Portfolio/cluster/pihole-house-setup.sh`
+   (both lines of its test must show `0.0.0.0` and a real address), then
+   `kubectl -n pihole exec -it deploy/pihole-2 -- pihole setpassword`.
+4. **Router:** Orbi > Internet > Domain Name Server (DNS) Address > Use These DNS Servers:
+   Primary `192.168.1.36`, Secondary `192.168.1.35`. Do it when nobody is busy online.
+5. Add Uptime Kuma DNS monitors for both, so Discord tells you if one stops.
+
+Something broke on a website? Pi-hole admin > Disable blocking > 5 minutes, try again. If that fixes it,
+find the domain (set privacy level to 0 for a moment, Query Log) and add it to `ALLOW` in
+`pihole-house-setup.sh`, then re-run that script.
+
+**Undo everything in one step:** Orbi DNS back to "Get Automatically from ISP".
 
 ## Security (CrowdSec)
 

@@ -1,0 +1,17 @@
+# Lab 1: Two PCs, one cable (IP addresses, ping, ARP)
+# Two PCs joined by one cable. You give them addresses and make them talk.
+name: lab1
+topology:
+  defaults:
+    kind: linux
+  nodes:
+    pc1:
+      image: nicolaka/netshoot:v0.14
+      cmd: sleep infinity
+      exec: ["ip route del default"]
+    pc2:
+      image: nicolaka/netshoot:v0.14
+      cmd: sleep infinity
+      exec: ["ip route del default"]
+  links:
+    - endpoints: ["pc1:eth1", "pc2:eth1"]

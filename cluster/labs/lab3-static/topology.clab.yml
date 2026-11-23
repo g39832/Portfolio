@@ -1,0 +1,33 @@
+# Lab 3: Three routers in a row (static routes)
+# three routers in a row. Every address is set, but the routers only know the networks
+# they are plugged into. You add static routes so pc1 can reach pc2.
+name: lab3
+topology:
+  defaults:
+    kind: linux
+  nodes:
+    r1:
+      image: quay.io/frrouting/frr:10.4.5
+      binds: ["../daemons:/etc/frr/daemons", "../vtysh.conf:/etc/frr/vtysh.conf", "r1/frr.conf:/etc/frr/frr.conf"]
+      exec: ["sysctl -qw net.ipv4.ip_forward=1", "ip route del default"]
+    r2:
+      image: quay.io/frrouting/frr:10.4.5
+      binds: ["../daemons:/etc/frr/daemons", "../vtysh.conf:/etc/frr/vtysh.conf", "r2/frr.conf:/etc/frr/frr.conf"]
+      exec: ["sysctl -qw net.ipv4.ip_forward=1", "ip route del default"]
+    r3:
+      image: quay.io/frrouting/frr:10.4.5
+      binds: ["../daemons:/etc/frr/daemons", "../vtysh.conf:/etc/frr/vtysh.conf", "r3/frr.conf:/etc/frr/frr.conf"]
+      exec: ["sysctl -qw net.ipv4.ip_forward=1", "ip route del default"]
+    pc1:
+      image: nicolaka/netshoot:v0.14
+      cmd: sleep infinity
+      exec: ["ip route del default", "ip addr add 10.0.1.10/24 dev eth1", "ip route add default via 10.0.1.1"]
+    pc2:
+      image: nicolaka/netshoot:v0.14
+      cmd: sleep infinity
+      exec: ["ip route del default", "ip addr add 10.0.3.10/24 dev eth1", "ip route add default via 10.0.3.1"]
+  links:
+    - endpoints: ["pc1:eth1", "r1:eth1"]
+    - endpoints: ["r1:eth2", "r2:eth1"]
+    - endpoints: ["r2:eth2", "r3:eth1"]
+    - endpoints: ["r3:eth2", "pc2:eth1"]

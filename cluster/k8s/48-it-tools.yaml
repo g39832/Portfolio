@@ -1,0 +1,47 @@
+# IT-Tools: about 80 small developer/IT tools (subnet calculator, JWT decoder, hashes, QR codes,
+# base64, cron parser, UUIDs...). Everything runs in your browser; nothing is saved on the Pi.
+# Private: only your devices over Tailscale (no Cloudflare route on purpose).
+#   http://100.120.223.33:30481   (Tailscale, from anywhere)   http://192.168.1.35:30481 at home
+# Put it up or update it:  kubectl apply -f ~/Portfolio/cluster/k8s/48-it-tools.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: it-tools
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: it-tools
+  namespace: it-tools
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: it-tools}
+  template:
+    metadata:
+      labels: {app: it-tools}
+    spec:
+      containers:
+        - name: it-tools
+          image: corentinth/it-tools:2024.10.22-7ca5933
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet: {path: /, port: 80}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {memory: 64Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: it-tools
+  namespace: it-tools
+spec:
+  type: NodePort
+  selector: {app: it-tools}
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30481

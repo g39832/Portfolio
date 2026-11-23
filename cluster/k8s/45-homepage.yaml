@@ -59,6 +59,16 @@ data:
             href: http://100.120.223.33:30402
             description: Learning guide + Pomodoro timer
             siteMonitor: http://study.study.svc.cluster.local
+        - Network Labs:
+            icon: mdi-lan
+            href: http://100.120.223.33:30403
+            description: Router labs on the Pi 5, step by step
+            siteMonitor: http://labs.labs.svc.cluster.local
+        - IT-Tools:
+            icon: it-tools.png
+            href: http://100.120.223.33:30481
+            description: Subnet calculator, hashes, JWT, QR and more
+            siteMonitor: http://it-tools.it-tools.svc.cluster.local
     - Media:
         - Jellyfin:
             icon: jellyfin.png
@@ -91,8 +101,13 @@ data:
         - Pi-hole:
             icon: pi-hole.png
             href: http://100.120.223.33:30880/admin
-            description: Ad blocking for your devices
+            description: Ad blocking (main, on the Pi 4)
             siteMonitor: http://pihole-web.pihole.svc.cluster.local/admin/
+        - Pi-hole backup:
+            icon: pi-hole.png
+            href: http://100.120.223.33:30881/admin
+            description: Second Pi-hole (Pi 5), used if the Pi 4 is down
+            siteMonitor: http://pihole-2-web.pihole.svc.cluster.local/admin/
         - Cloudflare:
             icon: cloudflare.png
             href: https://dash.cloudflare.com

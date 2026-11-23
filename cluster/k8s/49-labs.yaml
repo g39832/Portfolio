@@ -1,0 +1,53 @@
+# "Network Labs": the step-by-step guide for the router labs (cluster/labs), served by nginx.
+#   http://100.120.223.33:30403   (Tailscale, from anywhere)   http://192.168.1.35:30403 at home
+# The page itself is cluster/labs/index.html. It goes into the "labs-page" ConfigMap with
+#   bash ~/Portfolio/cluster/labs/deploy.sh
+# (that script also applies this file and restarts nginx so it picks up a new page).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: labs
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: labs
+  namespace: labs
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: labs}
+  template:
+    metadata:
+      labels: {app: labs}
+    spec:
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:1.28-alpine
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - {name: page, mountPath: /usr/share/nginx/html/index.html, subPath: index.html}
+          readinessProbe:
+            httpGet: {path: /, port: 8080}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {memory: 64Mi}
+      volumes:
+        - name: page
+          configMap:
+            name: labs-page
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: labs
+  namespace: labs
+spec:
+  type: NodePort
+  selector: {app: labs}
+  ports:
+    - port: 80
+      targetPort: 8080
+      nodePort: 30403

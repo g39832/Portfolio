@@ -1,0 +1,86 @@
+# Pi-hole #2: a backup copy on the Pi 5, so the house keeps working (and keeps blocking ads)
+# if the Pi 4 is off. The router lists both: 192.168.1.36 (Pi 4) first, 192.168.1.35 (Pi 5) second.
+#   DNS server:  192.168.1.35   (port 53 on the Pi 5)
+#   Admin page:  http://100.120.223.33:30881/admin
+# Same settings as 50-pihole.yaml. Blocklist, allowlist and privacy mode are set on BOTH by
+#   bash ~/Portfolio/cluster/pihole-house-setup.sh
+# Set this one's admin password (can be the same as the first):
+#   kubectl -n pihole exec -it deploy/pihole-2 -- pihole setpassword
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pihole
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pihole-2-data
+  namespace: pihole
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pihole-2
+  namespace: pihole
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate          # only one copy can hold port 53
+  selector:
+    matchLabels: {app: pihole-2}
+  template:
+    metadata:
+      labels: {app: pihole-2}
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: raspberrypi
+      containers:
+        - name: pihole
+          image: pihole/pihole:2026.10.1
+          env:
+            - {name: TZ, value: America/Chicago}
+            # Answer devices anywhere on the home network, not just the container's own subnet.
+            - {name: FTLCONF_dns_listeningMode, value: all}
+            # Where Pi-hole sends allowed lookups (Cloudflare and Quad9).
+            - {name: FTLCONF_dns_upstreams, value: "1.1.1.1;9.9.9.9"}
+          ports:
+            - {name: dns-udp, containerPort: 53, hostPort: 53, protocol: UDP}
+            - {name: dns-tcp, containerPort: 53, hostPort: 53, protocol: TCP}
+            - {name: web, containerPort: 80, protocol: TCP}
+          securityContext:
+            capabilities:
+              add: [NET_BIND_SERVICE, SYS_NICE, CHOWN, SETUID, SETGID, SETFCAP]
+          volumeMounts:
+            - name: data
+              mountPath: /etc/pihole
+          readinessProbe:
+            tcpSocket: {port: 53}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 20m, memory: 64Mi}
+            limits: {memory: 256Mi}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pihole-2-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pihole-2-web
+  namespace: pihole
+spec:
+  type: NodePort
+  selector: {app: pihole-2}
+  ports:
+    - name: web
+      port: 80
+      targetPort: 80
+      nodePort: 30881
