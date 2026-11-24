@@ -173,7 +173,7 @@ for one mission, `learn reset` to start over, and in the Kubernetes lab `tidy` t
   Lab content: `sandbox/envs/<lab>/` (`seed.sh` sets it up, `missions.md` holds the missions and their checks).
   The terminal page with the phone key bar is `sandbox/terminal.html`.
 - Put it up / update it: `bash ~/Portfolio/cluster/sandbox/deploy.sh`. The first run prints the login
-  (user `grayson` + a random password); `--new-password` makes a new one.
+  (user `grayson` + a random password). `--choose-password` lets you pick your own, `--show-password` shows it again, `--new-password` makes a new random one.
 - Safety: kubectl in the labs can **read** the cluster (not Secrets) and **change** only the `playground`
   namespace (Pod Security "baseline", 20-pod quota, default limits). The `pi` lab is just SSH and needs the
   real Pi password. Work is kept on a 2Gi volume on the Pi 5, and each lab runs in tmux, so a dropped phone
