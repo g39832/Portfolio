@@ -612,27 +612,23 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
     /* jellies */
     const makeJelly = (name, i) => {
       const tents = sv("g", { fill: "none", stroke: "currentColor", "stroke-linecap": "round" });
-      [9, 14, 26, 31].forEach((x, k) => {
-        const a = `M${x} 20 q 3 10 0 20 t 0 20`, b = `M${x} 20 q -3 10 0 20 t 0 20`;
-        tents.append(sv("path", { d: a, "stroke-width": .9, opacity: .5 }, sv("animate", { attributeName: "d", values: `${a};${b};${a}`, dur: `${2.2 + k * .3}s`, repeatCount: "indefinite" })));
-      });
-      [17.5, 22.5].forEach((x, k) => {
-        const a = `M${x} 20 q -4 7 0 14 t 0 12`, b = `M${x} 20 q 4 7 0 14 t 0 12`;
-        tents.append(sv("path", { d: a, "stroke-width": 2.4, opacity: .75 }, sv("animate", { attributeName: "d", values: `${a};${b};${a}`, dur: `${3 + k * .4}s`, repeatCount: "indefinite" })));
-      });
-      const bell = sv("g", {},
-        sv("path", { d: "M3 20 C3 4 37 4 37 20 Q32 23 27 21 Q23 24 20 21.5 Q17 24 13 21 Q8 23 3 20Z", fill: "currentColor", "fill-opacity": .42, stroke: "currentColor", "stroke-opacity": .85, "stroke-width": .8 }),
+      // [where on the rim 0..1, length, width, opacity]: four thin tentacles at the rim, two thick oral arms in the middle
+      const tp = [[.18, 40, .9, .5], [.32, 37, .9, .5], [.68, 37, .9, .5], [.82, 40, .9, .5], [.43, 26, 2.4, .75], [.57, 26, 2.4, .75]]
+        .map(([f, len, w, o]) => { const e = sv("path", { "stroke-width": w, opacity: o }); tents.append(e); return { el: e, f, len, arm: w > 2, seed: rnd(0, 6.3), spd: rnd(1.5, 2.3) }; });
+      const bellPath = sv("path", { fill: "currentColor", "fill-opacity": .42, stroke: "currentColor", "stroke-opacity": .85, "stroke-width": .8 });
+      const deco = sv("g", {},
         sv("path", { d: "M8 18 C9 10 31 10 32 18", fill: "none", stroke: "#fff", "stroke-opacity": .3, "stroke-width": 1.1 }),
         sv("ellipse", { cx: 14, cy: 10.5, rx: 5, ry: 2.4, fill: "#fff", opacity: .25 }),
         sv("g", { fill: "none", stroke: "#fff", "stroke-opacity": .4, "stroke-width": .9 },
           sv("circle", { cx: 16.5, cy: 14.5, r: 2 }), sv("circle", { cx: 23.5, cy: 14.5, r: 2 }), sv("circle", { cx: 20, cy: 11.8, r: 2 }), sv("circle", { cx: 20, cy: 17.2, r: 2 })));
+      const bell = sv("g", {}, bellPath, deco);
       const tag = el("span", { class: "tag", text: labelOf(name) });
       const node = el("div", { class: "jelly" }, sv("svg", { width: 40, height: 62, viewBox: "0 0 40 62", "aria-hidden": "true" }, tents, bell), tag);
       node.style.transformOrigin = "20px 14px";
       box.append(node);
       const W = box.clientWidth || 240, H = box.clientHeight || 150;
       const s = rnd(.85, 1.05);
-      return { name, i, node, bell, tents, tag, x: rnd(30, W - 30), y: rnd(40, H - 60), vx: 0, vy: 0, svx: 0, svy: 0, r: rnd(-10, 10), phase: Math.random(),
+      return { name, i, node, bellPath, deco, tp, tag, w: 0, asym: 0, bend: 0, tt: rnd(0, 100), x: rnd(30, W - 30), y: rnd(40, H - 60), vx: 0, vy: 0, svx: 0, svy: 0, r: rnd(-10, 10), phase: Math.random(),
         s, sc: s, pace: rnd(.85, 1.2), z: rnd(.2, .9), zt: rnd(0, 1), mood: "", moodT: 0, tx: rnd(30, W - 30), ty: rnd(36, H - 60),
         cpu: 10, sick: false, yum: 0 };
     };
@@ -695,7 +691,7 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
         kind = (w.find(([, v]) => (r -= v) <= 0) || ["cruise"])[0];
       }
       j.mood = kind;
-      j.moodT = { drift: rnd(6, 11), rest: rnd(7, 12), loop: rnd(12, 18), flip: rnd(7, 9), rise: 25 }[kind] || rnd(9, 16);
+      j.moodT = { drift: rnd(6, 11), rest: rnd(7, 12), loop: rnd(12, 18), flip: rnd(16, 22), rise: 25 }[kind] || rnd(9, 16);
       j.tx = rnd(28, W - 28); j.ty = rnd(ceil + 18, floor - 30);
       if (kind === "rise") j.ty = ceil + rnd(6, 14);
       if (kind === "rest") j.ty = floor - rnd(6, 12);
@@ -703,7 +699,7 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
         j.cx = clamp(j.x, Math.min(60, W / 2), Math.max(W - 60, W / 2)); j.cy = clamp(j.y, ceil + 40, floor - 42);
         j.rad = rnd(22, 36); j.ang = Math.atan2(j.y - j.cy, j.x - j.cx); j.dir = Math.random() < .5 ? -1 : 1;
       }
-      if (kind === "flip") j.spin = (Math.random() < .5 ? -1 : 1) * rnd(38, 50);
+      if (kind === "flip") j.spinDir = Math.random() < .5 ? -1 : 1;
       j.zt = rnd(0, 1);
     };
     let last = 0, clock = rnd(0, 100);
@@ -742,14 +738,6 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
         }
         const [cx, cy] = current(j.x, j.y);
 
-        /* heading: turn slowly toward the target (0 = straight up) */
-        if (j.mood === "flip") j.r = angTo(j.r + j.spin * dt);
-        else {
-          let want = pulsing ? Math.atan2(j.tx - j.x, -(j.ty - j.y)) * 180 / Math.PI : clamp(cx * 4, -15, 15) + (j.sick ? 12 : 0);
-          want = clamp(want, -maxTilt, maxTilt);
-          j.r += clamp(angTo(want - j.r), -turn * dt, turn * dt);
-        }
-
         /* the bell: a quick squeeze that pushes, a slow relax, then a glide */
         const period = (j.sick ? 7.5 : 4.8 - 2.6 * (j.cpu / 100)) * j.pace * (j.mood === "chase" ? .7 : 1);
         j.phase = (j.phase + dt / period) % 1;
@@ -759,6 +747,20 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
           c = p < .22 ? Math.sin(p / .22 * Math.PI / 2) : p < .7 ? .5 + .5 * Math.cos((p - .22) / .48 * Math.PI) : 0;
           push = p < .3 ? Math.sin(p / .3 * Math.PI) : 0;
         } else { c = .12 * (.5 - .5 * Math.cos(p * Math.PI * 2)); push = 0; }
+
+        /* turning: a real jelly turns by squeezing one side of its bell harder than the other, so the
+           heading only changes during a pulse, in steps, and the bell squashes on that side. Between
+           pulses it glides on its heading; when it stops swimming it slowly rights itself. */
+        let want = j.mood === "flip" ? j.r + j.spinDir * 80
+          : pulsing ? clamp(Math.atan2(j.tx - j.x, -(j.ty - j.y)) * 180 / Math.PI, -maxTilt, maxTilt)
+          : clamp(cx * 4, -15, 15) + (j.sick ? 12 : 0);
+        const diff = clamp(angTo(want - j.r), -70, 70);
+        if (pulsing) j.w += diff * (turn / 22) * (j.mood === "flip" ? 1.8 : .95) * push * dt;
+        else j.w += diff * .25 * dt;
+        j.w *= Math.exp(-2.5 * dt);
+        j.r = angTo(j.r + j.w * dt);
+        j.asym += ((pulsing ? clamp(diff / 40, -1, 1) * Math.min(1, push * 1.4) : 0) - j.asym) * Math.min(1, 6 * dt);
+
         const up = j.mood === "flip" ? 1 : clamp(.4 + (j.y - j.ty) / 40, .1, 1.4);
         const T = 28 * effort * up * push, rr = j.r * Math.PI / 180;
         let ax = Math.sin(rr) * T, ay = -Math.cos(rr) * T + (j.sick ? 26 : 4.5);
@@ -786,12 +788,27 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
         const k = Math.min(1, 1.2 * dt);
         j.svx += (j.vx + cx - j.svx) * k; j.svy += (j.vy + cy - j.svy) * k;
         const fwd = j.svx * Math.sin(rr) - j.svy * Math.cos(rr), lat = j.svx * Math.cos(rr) + j.svy * Math.sin(rr);
-        const skew = clamp(-lat * 1.6, -28, 28), stretch = 1 + clamp(fwd * .012, -.08, .22);
+        const stretch = 1 + clamp(fwd * .012, -.08, .22);
+        j.bend += (clamp(-lat * .014 - j.w * .008, -.55, .55) - j.bend) * Math.min(1, 1.4 * dt);
+        j.tt += dt;
 
         j.yum = Math.max(0, j.yum - dt); j.node.classList.toggle("yum", j.yum > 0);
-        j.bell.setAttribute("transform", `translate(20 14) scale(${1 - .16 * c} ${1 + .08 * c}) translate(-20 -14)`);
-        j.tents.setAttribute("transform", `translate(20 20) skewX(${skew.toFixed(2)}) scale(${1 - .2 * c} ${stretch * (1 + .05 * c)}) translate(-20 -20)`);
+        const cL = clamp(c * (1 + .75 * j.asym), 0, 1.25), cR = clamp(c * (1 - .75 * j.asym), 0, 1.25);
+        const lx = 3 + 7 * cL, rx = 37 - 7 * cR, yL = 20 - 1.5 * cL, yR = 20 - 1.5 * cR;
+        const top = 4 - 1.25 * (cL + cR), lean = (cR - cL) * 3;
+        const X = (f) => lx + (rx - lx) * f, Y = (f) => yL + (yR - yL) * f, n2 = (v) => v.toFixed(2);
+        let d = `M${n2(lx)} ${n2(yL)} C${n2(lx + lean)} ${n2(top)} ${n2(rx + lean)} ${n2(top)} ${n2(rx)} ${n2(yR)}`;
+        for (let q = 3; q >= 0; q--) d += ` Q${n2(X((q + .5) / 4))} ${n2(Y((q + .5) / 4) + 3)} ${n2(X(q / 4))} ${n2(Y(q / 4) + (q ? 1 : 0))}`;
+        j.bellPath.setAttribute("d", d + "Z");
+        const ca = (cL + cR) / 2;
+        j.deco.setAttribute("transform", `translate(${n2((lx + rx) / 2 + lean * .4)} 13) scale(${n2((rx - lx) / 34)} ${n2(1 + .06 * ca)}) translate(-20 -13)`);
+        for (const t of j.tp) {
+          const x0 = X(t.f), y0 = Y(t.f) + (t.arm ? 1 : 0), L = t.len * stretch * (1 + .05 * ca);
+          const pt = (u) => n2(x0 + j.bend * t.len * u * u + (t.arm ? 3.2 : 2.6) * u * Math.sin(j.tt * t.spd - u * 4 + t.seed) + (t.f - .5) * (6 - 5 * ca) * u) + " " + n2(y0 + L * u);
+          t.el.setAttribute("d", `M${n2(x0)} ${n2(y0)} C${pt(1 / 3)} ${pt(2 / 3)} ${pt(1)}`);
+        }
         j.node.style.transform = `translate(${j.x - 20}px, ${j.y - 14}px) rotate(${j.r}deg) scale(${j.sc})`;
+        j.tag.style.transform = `translateX(-50%) rotate(${(-j.r).toFixed(1)}deg)`;
         j.node.style.opacity = String((.55 + .45 * j.z) * (j.sick ? .5 : 1));
         j.node.style.zIndex = String(10 + Math.round(j.z * 9));
       }
