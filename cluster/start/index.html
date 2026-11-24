@@ -80,9 +80,9 @@ aside.side { position: sticky; top: 24px; align-self: start; display: grid; gap:
   background: radial-gradient(120% 70% at 50% -10%, #1d5f8c 0%, transparent 60%), linear-gradient(180deg, #0d3657 0%, #08223d 45%, #041121 100%);
   border: 1px solid var(--line); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), inset 0 -18px 30px rgba(0,0,0,.35);
   transition: filter 1.2s ease; -webkit-tap-highlight-color: transparent; }
-.tank::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5; border-radius: inherit;
+.tank::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 31; border-radius: inherit;
   background: linear-gradient(115deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 22%, rgba(255,255,255,0) 70%, rgba(255,255,255,.05) 85%, rgba(255,255,255,0) 100%); }
-.tank::before { content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none; background: radial-gradient(90% 80% at 50% 40%, rgba(255,70,100,.10), rgba(255,40,80,.32)); opacity: 0; transition: opacity 1.2s ease; }
+.tank::before { content: ""; position: absolute; inset: 0; z-index: 30; pointer-events: none; background: radial-gradient(90% 80% at 50% 40%, rgba(255,70,100,.10), rgba(255,40,80,.32)); opacity: 0; transition: opacity 1.2s ease; }
 .tank.alarm::before { opacity: 1; animation: alarm 2.4s ease-in-out infinite; }
 @keyframes alarm { 50% { opacity: .55; } }
 .tank.alarm { filter: saturate(.85); }
@@ -98,10 +98,10 @@ aside.side { position: sticky; top: 24px; align-self: start; display: grid; gap:
 @keyframes bubble { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 1; } 50% { transform: translate(4px, -70px); } 100% { transform: translate(-2px, -150px); opacity: 0; } }
 .tank .snow { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: rgba(210,235,255,.35); z-index: 1; pointer-events: none; animation: snow linear infinite; }
 @keyframes snow { from { transform: translateY(-10px); } to { transform: translateY(170px); } }
-.tank .flake { position: absolute; width: 4px; height: 3px; border-radius: 1px; background: #f2c46b; z-index: 2; pointer-events: none; }
+.tank .flake { position: absolute; width: 4px; height: 3px; border-radius: 1px; background: #f2c46b; z-index: 9; pointer-events: none; }
 .tank .jelly { position: absolute; left: 0; top: 0; width: 40px; height: 62px; z-index: 3; pointer-events: none; color: var(--j, #7fdcff);
-  filter: drop-shadow(0 0 6px var(--j, #7fdcff)); transition: color 1.5s ease, filter 1.5s ease, opacity 1.5s ease; will-change: transform; }
-.tank .jelly.sick { opacity: .45; filter: grayscale(1) brightness(.75); }
+  filter: drop-shadow(0 0 6px var(--j, #7fdcff)); transition: color 1.5s ease, filter 1.5s ease; will-change: transform, opacity; }
+.tank .jelly.sick { filter: grayscale(1) brightness(.75); }
 .tank .jelly.yum { filter: drop-shadow(0 0 12px var(--j)) brightness(1.5); }
 .tank .jelly svg { display: block; overflow: visible; }
 .tank .tag { position: absolute; left: 50%; top: -14px; transform: translateX(-50%); font: 500 9.5px var(--mono); white-space: nowrap; color: rgba(220,240,255,.75); opacity: 0; transition: opacity .3s; text-shadow: 0 1px 2px #000; }
@@ -631,8 +631,10 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
       node.style.transformOrigin = "20px 14px";
       box.append(node);
       const W = box.clientWidth || 240, H = box.clientHeight || 150;
-      return { name, i, node, bell, tents, tag, x: rnd(30, W - 30), y: rnd(40, H - 60), vx: 0, vy: 0, r: 0, phase: Math.random(),
-        s: rnd(.8, 1), tx: rnd(30, W - 30), ty: rnd(36, H - 60), cpu: 10, sick: false, yum: 0 };
+      const s = rnd(.85, 1.05);
+      return { name, i, node, bell, tents, tag, x: rnd(30, W - 30), y: rnd(40, H - 60), vx: 0, vy: 0, svx: 0, svy: 0, r: rnd(-10, 10), phase: Math.random(),
+        s, sc: s, pace: rnd(.85, 1.2), z: rnd(.2, .9), zt: rnd(0, 1), mood: "", moodT: 0, tx: rnd(30, W - 30), ty: rnd(36, H - 60),
+        cpu: 10, sick: false, yum: 0 };
     };
     let jellies = [], alarm = false, downCount = 0, flakes = [];
     const sync = (list) => {
@@ -678,43 +680,120 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
     box.addEventListener("click", (e) => feed(e.clientX - box.getBoundingClientRect().left));
     box.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); feed(rnd(30, box.clientWidth - 30)); } });
 
-    /* swimming: a pulse of the bell pushes the jelly along its heading, then it slowly sinks */
-    let last = 0;
+    /* swimming. Each jelly holds a mood for a while: cruise somewhere, drift with the current, swim up
+       and then drift back down, loop around, a slow somersault, or rest near the sand. A pulse of the
+       bell pushes it along its heading; between pulses it glides and slowly sinks. A gentle current moves
+       all the water, and each jelly wanders nearer and farther (bigger, brighter, in front) over time. */
+    const MOODS = [["cruise", 5], ["drift", 3], ["rise", 2], ["loop", 2], ["rest", 1], ["flip", .6]];
+    const angTo = (a) => ((a % 360) + 540) % 360 - 180;
+    const pickMood = (j, W, ceil, floor, forced) => {
+      const busy = j.cpu / 100;
+      let kind = forced;
+      if (!kind) {
+        const w = MOODS.map(([k, v]) => [k, k === "drift" || k === "rest" ? v * (1 - .7 * busy) : v * (1 + busy)]);
+        let r = Math.random() * w.reduce((t, [, v]) => t + v, 0);
+        kind = (w.find(([, v]) => (r -= v) <= 0) || ["cruise"])[0];
+      }
+      j.mood = kind;
+      j.moodT = { drift: rnd(6, 11), rest: rnd(7, 12), loop: rnd(12, 18), flip: rnd(7, 9), rise: 25 }[kind] || rnd(9, 16);
+      j.tx = rnd(28, W - 28); j.ty = rnd(ceil + 18, floor - 30);
+      if (kind === "rise") j.ty = ceil + rnd(6, 14);
+      if (kind === "rest") j.ty = floor - rnd(6, 12);
+      if (kind === "loop") {
+        j.cx = clamp(j.x, Math.min(60, W / 2), Math.max(W - 60, W / 2)); j.cy = clamp(j.y, ceil + 40, floor - 42);
+        j.rad = rnd(22, 36); j.ang = Math.atan2(j.y - j.cy, j.x - j.cx); j.dir = Math.random() < .5 ? -1 : 1;
+      }
+      if (kind === "flip") j.spin = (Math.random() < .5 ? -1 : 1) * rnd(38, 50);
+      j.zt = rnd(0, 1);
+    };
+    let last = 0, clock = rnd(0, 100);
+    const current = (x, y) => [3.2 * Math.sin(clock * .07 + y * .03) + 1.6 * Math.sin(clock * .13 + x * .02 + 1.7), 1.1 * Math.sin(clock * .09 + x * .025)];
     const frame = (t) => {
-      const dt = Math.min(.05, last ? (t - last) / 1000 : 0); last = t;
+      const dt = Math.min(.05, last ? (t - last) / 1000 : 0); last = t; clock += dt;
       const W = box.clientWidth, H = box.clientHeight, floor = H - 30, ceil = 16;
       flakes = flakes.filter((f) => {
         f.y = Math.min(floor + 6, f.y + 11 * dt); f.sway += dt * 2.2;
         const fx = f.x + Math.sin(f.sway) * 3;
         f.el.style.transform = `translate(${fx}px, ${f.y}px)`;
         if (f.y >= floor + 6) { f.rest = (f.rest || 0) + dt; f.el.style.opacity = String(Math.max(0, 1 - f.rest / 3)); if (f.rest > 3) { f.el.remove(); return false; } }
-        const eater = jellies.find((j) => !j.sick && Math.hypot(j.x - fx, j.y + 8 - f.y) < 13 * j.s);
+        const eater = jellies.find((j) => !j.sick && Math.hypot(j.x - fx, j.y + 8 - f.y) < 13 * j.sc);
         if (eater) { eater.yum = .7; f.el.remove(); ate(); return false; }
         return true;
       });
       for (const j of jellies) {
-        const period = j.sick ? 5.5 : clamp(3 - (j.cpu / 100) * 2, 1, 3);
-        j.phase += dt / period;
-        if (j.phase >= 1) { j.phase -= 1; if (Math.random() < .3) { j.tx = rnd(24, W - 24); j.ty = rnd(ceil + 22, floor - 34); } }
-        if (j.sick) { j.ty = floor - 6; }
-        else if (flakes.length) {
-          const f = flakes.reduce((a, b) => Math.hypot(a.x - j.x, a.y - j.y) < Math.hypot(b.x - j.x, b.y - j.y) ? a : b);
-          j.tx = f.x; j.ty = f.y - 4;
+        /* choose what to do */
+        j.moodT -= dt;
+        if (j.sick) j.mood = "sink";
+        else if (flakes.length) j.mood = "chase";
+        else if (j.mood === "chase") pickMood(j, W, ceil, floor, "drift");
+        else if (!j.mood || j.mood === "sink" || j.moodT <= 0) pickMood(j, W, ceil, floor);
+        let effort = 1, pulsing = true, maxTilt = 60, turn = 22;
+        if (j.mood === "cruise" && Math.hypot(j.tx - j.x, j.ty - j.y) < 12) { j.tx = rnd(28, W - 28); j.ty = rnd(ceil + 18, floor - 30); }
+        if (j.mood === "rise") { effort = 1.25; maxTilt = 25; if (j.y < j.ty + 8) pickMood(j, W, ceil, floor, "drift"); }
+        if (j.mood === "drift" || j.mood === "sink") pulsing = false;
+        if (j.mood === "rest") { effort = .3; maxTilt = 15; }
+        if (j.mood === "loop") {
+          j.ang += j.dir * .3 * dt; j.tx = j.cx + Math.cos(j.ang) * j.rad; j.ty = j.cy + Math.sin(j.ang) * j.rad * .8;
+          effort = 1.15; maxTilt = 80; turn = 35;
         }
-        const c = j.phase < .28 ? Math.sin(j.phase / .28 * Math.PI) : 0;
-        const want = j.sick ? .05 : clamp(.35 + (j.y - j.ty) / 30, 0, 1.5);
-        const ang = j.r * Math.PI / 180, thrust = 75 * want * c;
-        j.vx += Math.sin(ang) * thrust * dt + (j.tx - j.x) * .1 * dt;
-        j.vy += -Math.cos(ang) * thrust * dt + (j.sick ? 34 : 8) * dt;
-        const drag = Math.exp(-1.6 * dt); j.vx *= drag; j.vy *= drag;
-        j.x += j.vx * dt; j.y += j.vy * dt;
-        if (j.x < 16 || j.x > W - 16) { j.x = clamp(j.x, 16, W - 16); j.vx *= -.3; }
-        if (j.y < ceil || j.y > floor - 6) { j.y = clamp(j.y, ceil, floor - 6); j.vy = 0; }
-        j.r += (clamp((j.tx - j.x) * .3, -22, 22) * (j.sick ? .2 : 1) - j.r) * Math.min(1, 1.5 * dt);
+        if (j.mood === "chase") {
+          const f = flakes.reduce((a, b) => Math.hypot(a.x - j.x, a.y - j.y) < Math.hypot(b.x - j.x, b.y - j.y) ? a : b);
+          j.tx = f.x; j.ty = f.y - 4; effort = 1.5; maxTilt = 75; turn = 45;
+        }
+        const [cx, cy] = current(j.x, j.y);
+
+        /* heading: turn slowly toward the target (0 = straight up) */
+        if (j.mood === "flip") j.r = angTo(j.r + j.spin * dt);
+        else {
+          let want = pulsing ? Math.atan2(j.tx - j.x, -(j.ty - j.y)) * 180 / Math.PI : clamp(cx * 4, -15, 15) + (j.sick ? 12 : 0);
+          want = clamp(want, -maxTilt, maxTilt);
+          j.r += clamp(angTo(want - j.r), -turn * dt, turn * dt);
+        }
+
+        /* the bell: a quick squeeze that pushes, a slow relax, then a glide */
+        const period = (j.sick ? 7.5 : 4.8 - 2.6 * (j.cpu / 100)) * j.pace * (j.mood === "chase" ? .7 : 1);
+        j.phase = (j.phase + dt / period) % 1;
+        const p = j.phase;
+        let c, push;
+        if (pulsing) {
+          c = p < .22 ? Math.sin(p / .22 * Math.PI / 2) : p < .7 ? .5 + .5 * Math.cos((p - .22) / .48 * Math.PI) : 0;
+          push = p < .3 ? Math.sin(p / .3 * Math.PI) : 0;
+        } else { c = .12 * (.5 - .5 * Math.cos(p * Math.PI * 2)); push = 0; }
+        const up = j.mood === "flip" ? 1 : clamp(.4 + (j.y - j.ty) / 40, .1, 1.4);
+        const T = 28 * effort * up * push, rr = j.r * Math.PI / 180;
+        let ax = Math.sin(rr) * T, ay = -Math.cos(rr) * T + (j.sick ? 26 : 4.5);
+
+        /* keep off the glass, and give each other room unless one is far behind the other */
+        if (j.x < 34) ax += (34 - j.x) * 1.2;
+        if (j.x > W - 34) ax -= (j.x - (W - 34)) * 1.2;
+        for (const o of jellies) {
+          if (o === j || Math.abs(o.z - j.z) > .35) continue;
+          const dx = j.x - o.x, dy = j.y - o.y, d = Math.hypot(dx, dy) || 1;
+          if (d < 34) { ax += dx / d * (34 - d) * .6; ay += dy / d * (34 - d) * .6; }
+        }
+        j.vx += ax * dt; j.vy += ay * dt;
+        const drag = Math.exp(-1 * dt); j.vx *= drag; j.vy *= drag;
+        j.x += (j.vx + cx) * dt; j.y += (j.vy + cy) * dt;
+        if (j.x < 14 || j.x > W - 14) { j.x = clamp(j.x, 14, W - 14); j.vx *= -.2; }
+        if (j.y < ceil) { j.y = ceil; j.vy = Math.max(0, j.vy); }
+        if (j.y > floor - 6) { j.y = floor - 6; j.vy = Math.min(0, j.vy); }
+
+        /* depth: drift nearer or farther, very slowly */
+        j.z += clamp(j.zt - j.z, -.04 * dt, .04 * dt);
+        j.sc = j.s * (.72 + .38 * j.z);
+
+        /* tentacles trail behind the way it's moving and stream out on a push */
+        const k = Math.min(1, 1.2 * dt);
+        j.svx += (j.vx + cx - j.svx) * k; j.svy += (j.vy + cy - j.svy) * k;
+        const fwd = j.svx * Math.sin(rr) - j.svy * Math.cos(rr), lat = j.svx * Math.cos(rr) + j.svy * Math.sin(rr);
+        const skew = clamp(-lat * 1.6, -28, 28), stretch = 1 + clamp(fwd * .012, -.08, .22);
+
         j.yum = Math.max(0, j.yum - dt); j.node.classList.toggle("yum", j.yum > 0);
         j.bell.setAttribute("transform", `translate(20 14) scale(${1 - .16 * c} ${1 + .08 * c}) translate(-20 -14)`);
-        j.tents.setAttribute("transform", `translate(20 20) scale(${1 - .22 * c} ${1 + .05 * c}) translate(-20 -20)`);
-        j.node.style.transform = `translate(${j.x - 20}px, ${j.y - 14}px) rotate(${j.r}deg) scale(${j.s})`;
+        j.tents.setAttribute("transform", `translate(20 20) skewX(${skew.toFixed(2)}) scale(${1 - .2 * c} ${stretch * (1 + .05 * c)}) translate(-20 -20)`);
+        j.node.style.transform = `translate(${j.x - 20}px, ${j.y - 14}px) rotate(${j.r}deg) scale(${j.sc})`;
+        j.node.style.opacity = String((.55 + .45 * j.z) * (j.sick ? .5 : 1));
+        j.node.style.zIndex = String(10 + Math.round(j.z * 9));
       }
       if (!still) requestAnimationFrame(frame);
     };
