@@ -1,0 +1,15 @@
+# Shell setup for every lab. $LAB is the lab's name, $HOME is /work/<lab>.
+[ -f /etc/bash.bashrc ] && . /etc/bash.bashrc
+[ -f /usr/share/bash-completion/bash_completion ] && . /usr/share/bash-completion/bash_completion
+export PATH="$HOME/bin:$PATH" EDITOR=nano KUBECONFIG=/work/.kube/config
+HISTFILE="$HOME/.bash_history"; HISTSIZE=5000; shopt -s histappend; PROMPT_COMMAND="history -a"
+alias ll='ls -lah' k=kubectl
+complete -o default -F __start_kubectl k 2>/dev/null
+PS1='\[\e[38;5;111m\][$LAB]\[\e[0m\] \w \$ '
+[ -f "$SANDBOX/envs/$LAB/bashrc" ] && . "$SANDBOX/envs/$LAB/bashrc"
+learn intro
+# tidy: delete everything you made in the Kubernetes playground (it holds 20 pods at most).
+tidy() {
+  helm list -q 2>/dev/null | xargs -r helm uninstall
+  kubectl delete deployments,statefulsets,services,configmaps,jobs,cronjobs,pods,hpa,networkpolicies,pvc --all --wait=false
+}

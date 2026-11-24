@@ -1,0 +1,6 @@
+# Real Pi lab: go straight to the Pi 5 the first time this tab's shell starts.
+if [ -z "${PI_SSH_STARTED:-}" ]; then
+  export PI_SSH_STARTED=1
+  printf '\nConnecting to the Pi 5 (ssh pi5). Type exit to come back here; ssh pi2 for the Pi 4.\n\n'
+  ssh pi5
+fi

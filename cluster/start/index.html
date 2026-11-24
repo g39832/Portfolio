@@ -167,6 +167,59 @@ section.group .grid { grid-template-columns: repeat(var(--span, 3), minmax(0, 1f
 .done-btn[aria-pressed="true"] { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); background: var(--ok-soft); }
 .done-btn[aria-pressed="true"]::before { border-color: var(--ok); background: var(--ok); }
 
+/* ---------- mini lesson actions, full lesson sheet, practice labs ---------- */
+.cmd a.run { flex: none; display: grid; place-items: center; border-left: 1px solid var(--line); background: var(--panel); padding: 0 12px; font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 500; }
+.cmd a.run:hover { background: var(--accent-soft); }
+.cmd a.run[hidden] { display: none; }
+.daily-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: var(--r); padding: 7px 13px; font: 500 13px var(--sans); cursor: pointer; text-decoration: none; }
+.btn[hidden] { display: none; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.btn.primary:hover { filter: brightness(1.08); color: var(--panel); }
+.daily h3 button { all: unset; cursor: pointer; }
+.daily h3 button:hover { color: var(--accent); }
+.daily h3 button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+dialog.lesson { width: min(760px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--ink); overflow: auto; overscroll-behavior: contain; }
+dialog.lesson::backdrop { background: rgb(8 10 14 / .55); }
+.ls-bar { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; padding: 10px 14px 10px 20px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.ls-bar .pill { flex: none; }
+.ls-bar .num { font-size: 11.5px; color: var(--ink-3); }
+.ls-bar .spacer { flex: 1; }
+.ls-bar button { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
+.ls-bar button:hover { border-color: var(--accent); color: var(--ink); }
+.ls-body { padding: 22px 24px 28px; display: grid; gap: 20px; }
+.ls-body h2 { margin: 0; font: 600 25px/1.2 var(--sans); letter-spacing: -.025em; }
+.ls-text { display: grid; gap: 12px; }
+.ls-text p { margin: 0; color: var(--ink-2); max-width: 68ch; }
+.ls-text p.lead { color: var(--ink); font-size: 15.5px; }
+.ls-body h4 { margin: 0 0 10px; font: 600 14px var(--sans); display: flex; justify-content: space-between; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; }
+.ls-body h4 small { font: 400 12px var(--sans); color: var(--ink-3); }
+#ls-steps-wrap[hidden], .quiz[hidden] { display: none; }
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: step; }
+ol.steps li { counter-increment: step; display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 5px 10px; }
+ol.steps li::before { content: counter(step); grid-row: span 2; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 600 12px/22px var(--sans); text-align: center; }
+ol.steps li > * { min-width: 0; }
+ol.steps .cmd code { white-space: pre-wrap; overflow-wrap: anywhere; }
+ol.steps li p { margin: 0; color: var(--ink-2); font-size: 14px; }
+.quiz { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: var(--bg); }
+.quiz p { margin: 0 0 8px; font-weight: 500; }
+.quiz summary { cursor: pointer; color: var(--accent); font-size: 13.5px; font-weight: 500; }
+.quiz details p { margin: 8px 0 0; font-weight: 400; color: var(--ink-2); }
+.ls-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px 16px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--line); }
+
+section.labs { display: grid; gap: 12px; }
+.labs .note { margin: -4px 0 0; color: var(--ink-3); font-size: 13px; }
+.labs .note b { font: 500 12.5px var(--mono); color: var(--ink-2); }
+.lab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 10px; }
+a.lab { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 2px 12px; align-items: center; padding: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; text-decoration: none; transition: border-color .15s; }
+a.lab:hover { border-color: var(--accent); }
+a.lab .icon { grid-row: span 2; }
+a.lab .icon span { font: 600 12px var(--mono); }
+a.lab b { font: 600 14px/1.3 var(--sans); letter-spacing: -.01em; }
+a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
+
 /* ---------- phones and narrow windows ---------- */
 @media (max-width: 900px) {
   .shell { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-top: max(20px, env(safe-area-inset-top, 0px)); }
@@ -184,6 +237,15 @@ section.group .grid { grid-template-columns: repeat(var(--span, 3), minmax(0, 1f
   #groups { grid-template-columns: minmax(0, 1fr); gap: 28px; }
   section.group { grid-column: auto; }
   section.group .grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+}
+@media (max-width: 600px) {
+  dialog.lesson { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; border: 0; border-radius: 0; }
+  .ls-body { padding: 18px 16px 32px; }
+  .ls-body h2 { font-size: 22px; }
+  .ls-bar { padding: max(10px, env(safe-area-inset-top, 0px)) 10px 10px 16px; }
+  .lab-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  a.lab { grid-template-columns: minmax(0, 1fr); padding: 11px; }
+  a.lab .icon { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -238,16 +300,26 @@ section.group .grid { grid-template-columns: repeat(var(--span, 3), minmax(0, 1f
           <button type="button" id="daily-next" aria-label="Next snippet">→</button>
         </div>
       </div>
-      <h3 id="daily-title">Loading…</h3>
+      <h3><button type="button" id="daily-title" aria-haspopup="dialog">Loading…</button></h3>
       <p id="daily-body"></p>
       <div class="try">
         <div class="label"><span>Try it</span><span id="daily-where"></span></div>
-        <div class="cmd"><code id="daily-cmd"></code><button type="button" id="daily-copy">Copy</button></div>
+        <div class="cmd"><code id="daily-cmd"></code><button type="button" id="daily-copy">Copy</button><a class="run" id="daily-run" target="practice" hidden>Run ↗</a></div>
+      </div>
+      <div class="daily-actions">
+        <button type="button" class="btn primary" id="daily-full" aria-haspopup="dialog">Read the full lesson</button>
+        <a class="btn" id="daily-lab" target="practice" hidden></a>
       </div>
       <div class="daily-foot">
         <a class="read" id="daily-read" target="_blank" rel="noopener"><b id="daily-read-title"></b><span id="daily-read-host"></span></a>
         <button type="button" class="done-btn" id="daily-done" aria-pressed="false">Done</button>
       </div>
+    </section>
+
+    <section class="labs" id="labs" aria-labelledby="labs-title">
+      <div class="group-head"><h3 id="labs-title">Practice labs</h3><span class="num">terminals on the Pi 5 · :30410</span></div>
+      <p class="note">A real terminal in your browser, phone included. Each lab has missions: type <b>learn</b> to see them. Your work is saved between visits.</p>
+      <div class="lab-grid" id="lab-grid"></div>
     </section>
 
     <div class="toolbar">
@@ -260,6 +332,31 @@ section.group .grid { grid-template-columns: repeat(var(--span, 3), minmax(0, 1f
   </main>
 </div>
 
+<dialog class="lesson" id="lesson" aria-labelledby="ls-title">
+  <div class="ls-bar">
+    <span class="pill" id="ls-topic"></span><span class="num" id="ls-count"></span>
+    <span class="spacer"></span>
+    <button type="button" id="ls-prev" aria-label="Previous lesson">←</button>
+    <button type="button" id="ls-next" aria-label="Next lesson">→</button>
+    <button type="button" id="ls-close">Close</button>
+  </div>
+  <div class="ls-body">
+    <h2 id="ls-title"></h2>
+    <div class="ls-text" id="ls-text"></div>
+    <div id="ls-steps-wrap">
+      <h4><span>Try it</span><small id="ls-where"></small></h4>
+      <ol class="steps" id="ls-steps"></ol>
+    </div>
+    <div class="quiz" id="ls-quiz"></div>
+    <div class="daily-actions"><a class="btn primary" id="ls-lab" target="practice"></a></div>
+    <div class="ls-foot">
+      <a class="read" id="ls-read" target="_blank" rel="noopener"><b id="ls-read-title"></b><span id="ls-read-host"></span></a>
+      <button type="button" class="done-btn" id="ls-done" aria-pressed="false">Mark done</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="i/lessons.js"></script>
 <script>
 (() => {
   const $ = (s) => document.querySelector(s);
@@ -533,8 +630,46 @@ section.group .grid { grid-template-columns: repeat(var(--span, 3), minmax(0, 1f
   const todayIndex = () => { const d = new Date(); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY) % SNIPS.length; };
   let snipAt = todayIndex();
   const doneSet = new Set((() => { try { return JSON.parse(store.get("homelab-snips-done") || "[]"); } catch { return []; } })());
+  // Full lessons (i/lessons.js) and the practice terminals (cluster/sandbox, NodePort 30410).
+  const LESSONS = window.LESSONS || {};
+  const LABS = [
+    ["linux", "Linux & the shell", "Files, permissions, pipes, grep, awk", "$_"],
+    ["bash", "Bash scripting", "shellcheck, strict mode, loops, args", "#!"],
+    ["git", "Git & GitHub", "Commits, branches, conflicts, gh", "git"],
+    ["k8s", "Kubernetes", "Your real cluster, safe playground", "k8s"],
+    ["net", "Networking", "DNS, HTTP, TLS, routes, Pi-hole", "net"],
+    ["containers", "Containers", "Dockerfiles, layers, pods", "box"],
+    ["security", "Security", "Secrets, RBAC, hashes, SSH keys", "key"],
+    ["backups", "Backups", "restic, restores, SQLite", "bak"],
+    ["ci", "CI/CD & YAML", "Actions, actionlint, jq, yq", "ci"],
+    ["iac", "Ansible & OpenTofu", "Infrastructure as code", "iac"],
+    ["pi", "Real Pi (SSH)", "Log in to the Pi 5 or Pi 4", "pi"],
+  ];
+  const LAB_NAME = Object.fromEntries(LABS.map((l) => [l[0], l[1]]));
+  const labUrl = (lab, cmd) => `${location.protocol}//${location.hostname}:30410/?arg=${lab}` + (cmd ? `&cmd=${encodeURIComponent(cmd)}` : "");
+  $("#lab-grid").replaceChildren(...LABS.map(([id, name, desc, mark]) =>
+    el("a", { class: "lab", href: labUrl(id), target: "practice" },
+      el("div", { class: "icon" }, el("span", { text: mark })), el("b", { text: name }), el("small", { text: desc }))));
+
+  const copyText = async (text) => {
+    try { await navigator.clipboard.writeText(text); return true; } catch {
+      const t = el("textarea", { readonly: "" }); t.value = text; t.style.position = "fixed"; t.style.opacity = "0";
+      document.body.append(t); t.select();
+      let ok = false; try { ok = document.execCommand("copy"); } catch {}
+      t.remove(); return ok;
+    }
+  };
+  const cmdRow = (cmd, lab) => {
+    const copy = el("button", { type: "button", text: "Copy" });
+    copy.addEventListener("click", async () => { copy.textContent = (await copyText(cmd)) ? "Copied" : "Select it"; });
+    return el("div", { class: "cmd" }, el("code", { text: cmd }), copy, el("a", { class: "run", href: labUrl(lab, cmd), target: "practice", text: "Run ↗" }));
+  };
+
   const showSnip = () => {
-    const [topic, title, body, cmd, where, readTitle, url] = SNIPS[snipAt];
+    const [topic, title, body, snipCmd, snipWhere, readTitle, url] = SNIPS[snipAt];
+    const L = LESSONS[title];
+    const cmd = L ? L.steps[0][1] : snipCmd;
+    const where = L ? `in the ${LAB_NAME[L.lab]} lab` : snipWhere;
     const isToday = snipAt === todayIndex();
     $("#daily-when").textContent = isToday ? "Today's DevOps snippet" : "DevOps snippet";
     $("#daily-topic").textContent = topic;
@@ -550,28 +685,82 @@ section.group .grid { grid-template-columns: repeat(var(--span, 3), minmax(0, 1f
     $("#daily-done").setAttribute("aria-pressed", String(doneSet.has(title)));
     $("#daily-done").textContent = doneSet.has(title) ? `Done · ${doneSet.size} learned` : "Mark done";
     $("#daily-copy").textContent = "Copy";
+    $("#daily-run").hidden = !L; $("#daily-lab").hidden = !L; $("#daily-full").hidden = !L;
+    if (L) {
+      $("#daily-run").href = labUrl(L.lab, cmd);
+      $("#daily-lab").href = labUrl(L.lab);
+      $("#daily-lab").textContent = `Open the ${LAB_NAME[L.lab]} lab ↗`;
+    }
   };
   $("#daily-prev").addEventListener("click", () => { snipAt = (snipAt - 1 + SNIPS.length) % SNIPS.length; showSnip(); });
   $("#daily-next").addEventListener("click", () => { snipAt = (snipAt + 1) % SNIPS.length; showSnip(); });
   $("#daily-today").addEventListener("click", () => { snipAt = todayIndex(); showSnip(); });
-  $("#daily-done").addEventListener("click", () => {
-    const t = SNIPS[snipAt][1];
+  const toggleDone = (t) => {
     if (doneSet.has(t)) doneSet.delete(t); else doneSet.add(t);
     store.set("homelab-snips-done", JSON.stringify([...doneSet]));
-    showSnip();
-  });
-  // The page is plain http over Tailscale, where navigator.clipboard is blocked, so fall back to execCommand.
+  };
+  $("#daily-done").addEventListener("click", () => { toggleDone(SNIPS[snipAt][1]); showSnip(); });
+  // The page is plain http over Tailscale, where navigator.clipboard is blocked, so copyText falls back to execCommand.
   $("#daily-copy").addEventListener("click", async () => {
-    const text = SNIPS[snipAt][3];
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; } catch {
-      const t = el("textarea", { readonly: "" }); t.value = text; t.style.position = "fixed"; t.style.opacity = "0";
-      document.body.append(t); t.select();
-      try { ok = document.execCommand("copy"); } catch {}
-      t.remove();
-    }
-    $("#daily-copy").textContent = ok ? "Copied" : "Select it";
+    $("#daily-copy").textContent = (await copyText($("#daily-cmd").textContent)) ? "Copied" : "Select it";
   });
+
+  /* ---------- the full lesson, as a sheet over the page (#lesson-12 links straight to one) ---------- */
+  const dlg = $("#lesson");
+  let lessonAt = 0;
+  const fillLesson = (i) => {
+    lessonAt = (i + SNIPS.length) % SNIPS.length;
+    const [topic, title, body, , , readTitle, url] = SNIPS[lessonAt];
+    const L = LESSONS[title] || { lab: "k8s", more: [], steps: [], quiz: null };
+    $("#ls-topic").textContent = topic;
+    $("#ls-count").textContent = `${lessonAt + 1}/${SNIPS.length}`;
+    $("#ls-title").textContent = title;
+    $("#ls-text").replaceChildren(el("p", { class: "lead", text: body }), ...L.more.map((t) => el("p", { text: t })));
+    $("#ls-where").textContent = `in the ${LAB_NAME[L.lab]} lab · Run opens it with the command ready to send`;
+    $("#ls-steps-wrap").hidden = !L.steps.length;
+    $("#ls-steps").replaceChildren(...L.steps.map(([say, cmd]) => el("li", {}, el("p", { text: say }), cmdRow(cmd, L.lab))));
+    $("#ls-quiz").hidden = !L.quiz;
+    if (L.quiz) $("#ls-quiz").replaceChildren(el("p", { text: "Check yourself: " + L.quiz[0] }),
+      el("details", {}, el("summary", { text: "Show answer" }), el("p", { text: L.quiz[1] })));
+    $("#ls-lab").href = labUrl(L.lab);
+    $("#ls-lab").textContent = `Open the ${LAB_NAME[L.lab]} lab ↗`;
+    $("#ls-read").href = url;
+    $("#ls-read-title").textContent = readTitle + " ↗";
+    $("#ls-read-host").textContent = hostOf(url).split("/")[0].replace(/^www\./, "");
+    const done = doneSet.has(title);
+    $("#ls-done").setAttribute("aria-pressed", String(done));
+    $("#ls-done").textContent = done ? `Done · ${doneSet.size} learned` : "Mark done";
+    dlg.scrollTop = 0;
+  };
+  const isLessonHash = () => /^#lesson-\d+$/.test(location.hash);
+  const openLesson = (i) => {
+    fillLesson(i);
+    const hash = `#lesson-${lessonAt + 1}`;
+    if (isLessonHash()) history.replaceState(null, "", hash); else history.pushState(null, "", hash);
+    if (!dlg.open) dlg.showModal();
+  };
+  // Closing goes "back", so the phone's back gesture and the Close button do the same thing.
+  const closeLesson = () => { if (isLessonHash()) history.back(); else if (dlg.open) dlg.close(); };
+  window.addEventListener("popstate", () => {
+    if (isLessonHash()) { fillLesson(+location.hash.slice(8) - 1); if (!dlg.open) dlg.showModal(); }
+    else if (dlg.open) dlg.close();
+  });
+  dlg.addEventListener("cancel", (e) => { e.preventDefault(); closeLesson(); });
+  dlg.addEventListener("click", (e) => {   // a click on the dimmed backdrop, outside the sheet
+    const r = dlg.getBoundingClientRect();
+    if (e.target === dlg && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) closeLesson();
+  });
+  $("#ls-close").addEventListener("click", closeLesson);
+  $("#ls-prev").addEventListener("click", () => openLesson(lessonAt - 1));
+  $("#ls-next").addEventListener("click", () => openLesson(lessonAt + 1));
+  $("#ls-done").addEventListener("click", () => { toggleDone(SNIPS[lessonAt][1]); fillLesson(lessonAt); showSnip(); });
+  $("#daily-full").addEventListener("click", () => openLesson(snipAt));
+  $("#daily-title").addEventListener("click", () => openLesson(snipAt));
+  if (isLessonHash()) {
+    const n = +location.hash.slice(8) - 1;
+    history.replaceState(null, "", location.pathname + location.search);
+    if (n >= 0 && n < SNIPS.length) openLesson(n);
+  }
   showSnip();
   setInterval(() => { if (!document.hidden && $("#daily-when").textContent.startsWith("Today") && snipAt !== todayIndex()) { snipAt = todayIndex(); showSnip(); } }, 60000);
 

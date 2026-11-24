@@ -37,10 +37,16 @@ data:
         add_header Cache-Control "no-store";
       }
 
-      # App icon + manifest, so Safari's "Add to Home Screen" gets the jellyfish logo.
+      # App icon + manifest (so Safari's "Add to Home Screen" gets the jellyfish logo) and lessons.js.
       location /i/ {
-        types { image/png png; image/svg+xml svg; application/manifest+json webmanifest; }
+        types { image/png png; image/svg+xml svg; application/manifest+json webmanifest; text/javascript js; }
         add_header Cache-Control "max-age=86400";
+      }
+
+      # The full lessons change more often than the icons, so always check for a new copy.
+      location = /i/lessons.js {
+        types { text/javascript js; }
+        add_header Cache-Control "no-cache";
       }
 
       location / { return 404; }

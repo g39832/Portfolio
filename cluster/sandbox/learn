@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+"""Missions for the practice labs.
+
+  learn            all missions in this lab, with a tick for the ones you've done
+  learn 3          read mission 3
+  learn hint 3     a hint (the commands) for mission 3
+  learn check      check your work again (same as plain `learn`)
+  learn reset      wipe this lab and start over
+  learn labs       the other labs
+
+Missions live in /opt/sandbox/envs/<lab>/missions.md:
+  # Title, an intro paragraph, then one "## Mission" heading per mission with its text,
+  "hint:" lines and one "check:" line (a bash test run from the lab's home folder).
+"""
+import json, os, shutil, subprocess, sys, textwrap
+
+LAB = os.environ.get("LAB", "")
+HOME = os.environ.get("HOME", "")
+SANDBOX = os.environ.get("SANDBOX", "/opt/sandbox")
+DONE_FILE = os.path.join(HOME, ".learn-done")
+B, D, G, Y, C, R, X = "\033[1m", "\033[2m", "\033[32m", "\033[33m", "\033[38;5;111m", "\033[31m", "\033[0m"
+LABS = {
+    "linux": "Linux & the shell: files, permissions, pipes, grep/awk/find",
+    "bash": "Bash scripting: shellcheck, strict mode, loops, arguments",
+    "git": "Git & GitHub: commits, branches, merge conflicts, revert, tags, gh",
+    "k8s": "Kubernetes: deployments, services, rollouts, probes (in a safe playground)",
+    "net": "Networking: DNS, HTTP, TLS, routes, cluster Services",
+    "containers": "Containers: Dockerfiles, hadolint, image layers, pods",
+    "security": "Security: secrets, RBAC, hashes, SSH keys, leaked tokens",
+    "backups": "Backups: restic snapshots, restores, retention, SQLite",
+    "ci": "CI/CD & YAML: GitHub Actions, actionlint, jq, yq, versions",
+    "iac": "Ansible & OpenTofu: infrastructure as code",
+    "pi": "Real Pi: SSH into the Pi 5 or Pi 4 (real commands, real cluster)",
+}
+
+
+def width():
+    return max(40, min(shutil.get_terminal_size((80, 24)).columns, 90) - 2)
+
+
+def wrap(text, indent=""):
+    out = []
+    for para in text.strip().split("\n\n"):
+        lines = para.split("\n")
+        if any(l.startswith("    ") or l.startswith("$ ") for l in lines):
+            out.append("\n".join(indent + l for l in lines))
+        else:
+            out.append(textwrap.fill(" ".join(l.strip() for l in lines), width(), initial_indent=indent, subsequent_indent=indent))
+    return "\n\n".join(out)
+
+
+def load():
+    path = os.path.join(SANDBOX, "envs", LAB, "missions.md")
+    title, intro, missions = LAB, [], []
+    if not os.path.exists(path):
+        return title, "", missions
+    cur = None
+    for line in open(path, encoding="utf-8").read().splitlines():
+        if line.startswith("## "):
+            cur = {"title": line[3:].strip(), "body": [], "hints": [], "check": ""}
+            missions.append(cur)
+        elif line.startswith("# ") and cur is None:
+            title = line[2:].strip()
+        elif cur is None:
+            intro.append(line)
+        elif line.startswith("hint:"):
+            cur["hints"].append(line[6:].rstrip() if line[5:6] == " " else line[5:].rstrip())
+        elif line.startswith("check:"):
+            cur["check"] = line[6:].strip()
+        else:
+            cur["body"].append(line)
+    for m in missions:
+        m["body"] = "\n".join(m["body"]).strip()
+    return title, "\n".join(intro).strip(), missions
+
+
+def passed(m):
+    if not m["check"]:
+        return None
+    try:
+        r = subprocess.run(["bash", "-c", m["check"]], cwd=HOME, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20)
+        return r.returncode == 0
+    except subprocess.TimeoutExpired:
+        return False
+
+
+def save_done(done):
+    try:
+        json.dump(sorted(done), open(DONE_FILE, "w"))
+    except OSError:
+        pass
+
+
+def read_done():
+    try:
+        return set(json.load(open(DONE_FILE)))
+    except (OSError, ValueError):
+        return set()
+
+
+def show_list():
+    title, intro, ms = load()
+    print(f"\n{B}{C}{title}{X}\n")
+    if not ms:
+        print(wrap(intro) + "\n")
+        return
+    done = set()
+    for i, m in enumerate(ms, 1):
+        ok = passed(m)
+        mark = f"{G}✓{X}" if ok else (f"{D}–{X}" if ok is None else f"{D}○{X}")
+        if ok:
+            done.add(m["title"])
+        print(f" {mark} {B}{i:>2}{X}  {m['title']}" + (f" {D}(no check){X}" if ok is None else ""))
+    save_done(done)
+    checked = [m for m in ms if m["check"]]
+    print(f"\n {G}{len(done)}{X}/{len(checked)} done.  {D}learn 3{X} to read one, {D}learn hint 3{X} if stuck.\n")
+
+
+def show_one(n):
+    _, _, ms = load()
+    if not 1 <= n <= len(ms):
+        print(f"There's no mission {n} here (1-{len(ms)}).")
+        return
+    m = ms[n - 1]
+    print(f"\n{B}{C}Mission {n}: {m['title']}{X}\n\n{wrap(m['body'])}\n")
+    if m["check"]:
+        ok = passed(m)
+        print(f" {G}✓ Done!{X}\n" if ok else f" {D}Not done yet. When you think it is, run {X}learn{D} to check.{X}\n")
+
+
+def show_hint(n):
+    _, _, ms = load()
+    if not 1 <= n <= len(ms):
+        print(f"There's no mission {n} here (1-{len(ms)}).")
+        return
+    m = ms[n - 1]
+    print(f"\n{B}Hint for mission {n}: {m['title']}{X}")
+    for h in m["hints"] or ["No hint for this one. Re-read the mission and look at the lesson's link."]:
+        print(f"  {Y}{h}{X}")
+    print()
+
+
+def intro():
+    title, text, ms = load()
+    print(f"\n{B}{C}{title}{X}")
+    if text:
+        first = text.split("\n\n")[0]
+        print(wrap(first))
+    if ms:
+        done = read_done()
+        nxt = next((i for i, m in enumerate(ms, 1) if m["title"] not in done and m["check"]), None)
+        print(f"\n {G}{len(done)}{X}/{len([m for m in ms if m['check']])} missions done." +
+              (f"  Next: {B}{nxt}. {ms[nxt - 1]['title']}{X}  ({D}learn {nxt}{X})" if nxt else ""))
+        print(f" Type {B}learn{X} for every mission.\n")
+    else:
+        print()
+
+
+def reset():
+    print(f"This wipes everything in {HOME} and sets the {LAB} lab up fresh.")
+    if input("Type reset to go ahead: ").strip() != "reset":
+        print("Nothing changed.")
+        return
+    for name in os.listdir(HOME):
+        p = os.path.join(HOME, name)
+        shutil.rmtree(p, ignore_errors=True) if os.path.isdir(p) and not os.path.islink(p) else os.remove(p)
+    subprocess.run([os.path.join(SANDBOX, "envs", LAB, "seed.sh")], cwd=HOME)
+    open(os.path.join(HOME, ".seeded"), "w").close()
+    print("Fresh start. Run `exec bash` to reload your shell, or close and reopen the tab.")
+
+
+def labs():
+    print(f"\n{B}Labs{X} (open them from the start page, or the terminal page with ?arg=<name>)\n")
+    for k, v in LABS.items():
+        print(f"  {C if k == LAB else ''}{k:<11}{X} {v}")
+    print()
+
+
+def main(argv):
+    if not argv or argv[0] in ("list", "check", "status"):
+        return show_list()
+    a = argv[0]
+    if a == "intro":
+        return intro()
+    if a == "hint" and len(argv) > 1 and argv[1].isdigit():
+        return show_hint(int(argv[1]))
+    if a.isdigit():
+        return show_one(int(a))
+    if a == "reset":
+        return reset()
+    if a == "labs":
+        return labs()
+    print(__doc__.split("Missions live")[0])
+
+
+if __name__ == "__main__":
+    try:
+        main(sys.argv[1:])
+    except KeyboardInterrupt:
+        print()

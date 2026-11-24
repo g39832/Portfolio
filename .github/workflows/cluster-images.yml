@@ -1,5 +1,5 @@
-# Builds the two images the Pi cluster runs and publishes them to GitHub's
-# container registry (ghcr.io/g39832/portfolio-web and portfolio-blog).
+# Builds the images the Pi cluster runs and publishes them to GitHub's
+# container registry (ghcr.io/g39832/portfolio-web, portfolio-blog and portfolio-sandbox).
 # Runs on every push to main that touches the site or the blog. Afterwards, on the Pi 5:
 #   kubectl -n graysoncodes rollout restart deployment web blog
 name: Cluster images
@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        image: [web, blog]
+        image: [web, blog, sandbox]
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3

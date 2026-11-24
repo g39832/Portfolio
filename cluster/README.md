@@ -148,6 +148,7 @@ docker run -d --name pfweb --network pftest -p 18080:8080 -e BLOG_UPSTREAM=http:
 | Pi-hole backup | `k8s/51-pihole-pi5.yaml` | http://100.120.223.33:30881/admin | Second Pi-hole on the Pi 5 (`192.168.1.35`). See **Pi-hole for the whole house** below. |
 | IT-Tools | `k8s/48-it-tools.yaml` | http://100.120.223.33:30481 | ~80 developer/IT tools. Private on purpose (no Cloudflare route). |
 | Network Labs | `k8s/49-labs.yaml` + `labs/` | http://100.120.223.33:30403 | Guide for the router labs. Page update: `bash labs/deploy.sh`. The labs run in Docker on the Pi 5 via Containerlab (`labs/lab.sh`), not in k3s. |
+| Practice labs | `k8s/55-sandbox.yaml` + `sandbox/` | http://100.120.223.33:30410 | Web terminals (phone friendly) with missions for Linux, Bash, Git & GitHub, Kubernetes, Networking, Containers, Security, Backups, CI/CD, IaC, plus an SSH jump to the Pis. See **Practice labs** below. |
 | Jellyfin | `k8s/60-jellyfin.yaml` | http://100.120.223.33:8096 | Media server on the Pi 5. Full guide: `media/README.md` |
 | CrowdSec | `k8s/80-crowdsec.yaml` | (no web page) | Watches the public site's logs for attackers; `81-crowdsec-cloudflare.yaml` blocks them at Cloudflare. See **Security (CrowdSec)** below. |
 
@@ -160,6 +161,24 @@ Health report for a Pi (read-only):
 ```powershell
 Get-Content -Raw "$HOME\Desktop\Portfolio\cluster\inspect-pi.sh" | ssh grayson@raspberrypi.local "tr -d '\r' | bash -s"
 ```
+
+## Practice labs
+
+Terminals in the browser, so lessons work from the phone too. The start page's daily lesson has
+**Read the full lesson** (steps, a self-check question) and **Run** buttons that open the right lab
+with the command ready to send. Inside a lab, type `learn` for its missions, `learn 3` / `learn hint 3`
+for one mission, `learn reset` to start over, and in the Kubernetes lab `tidy` to empty the playground.
+
+- Image: `sandbox.Dockerfile` (ttyd + the tools), built by GitHub Actions as `ghcr.io/g39832/portfolio-sandbox`.
+  Lab content: `sandbox/envs/<lab>/` (`seed.sh` sets it up, `missions.md` holds the missions and their checks).
+  The terminal page with the phone key bar is `sandbox/terminal.html`.
+- Put it up / update it: `bash ~/Portfolio/cluster/sandbox/deploy.sh`. The first run prints the login
+  (user `grayson` + a random password); `--new-password` makes a new one.
+- Safety: kubectl in the labs can **read** the cluster (not Secrets) and **change** only the `playground`
+  namespace (Pod Security "baseline", 20-pod quota, default limits). The `pi` lab is just SSH and needs the
+  real Pi password. Work is kept on a 2Gi volume on the Pi 5, and each lab runs in tmux, so a dropped phone
+  connection picks up where it left off.
+- Full lessons live in `start/lessons.js` (served at `/i/lessons.js` by the start page).
 
 ## Pi-hole for the whole house
 

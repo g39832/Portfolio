@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Practice terminal</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f1115">
+<!-- ttyd serves this page (-I). It talks ttyd's websocket protocol itself so it can add a
+     key bar for phones (Esc, Tab, Ctrl, arrows) and a "send a command" box. -->
+<style>
+/*XTERM_CSS*/
+</style>
+<style>
+:root { --bg: #0f1115; --panel: #15181e; --ink: #eceef2; --ink-2: #aab1bd; --ink-3: #7e8696; --line: #252a32; --accent: #8aa0ff; --ok: #6fd396; --bad: #ff7d95;
+  --sans: "Geist", "Segoe UI", system-ui, -apple-system, sans-serif; --mono: "Geist Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace; }
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 var(--sans); }
+body { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; grid-template-columns: minmax(0, 1fr); height: 100dvh; overflow: hidden;
+  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0); }
+header { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); min-width: 0; }
+header a { color: var(--ink-2); text-decoration: none; font-size: 13px; white-space: nowrap; }
+header a:hover { color: var(--accent); }
+header b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#state { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+#state::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+#state.on::before { background: var(--ok); } #state.off::before { background: var(--bad); }
+#term { min-height: 0; min-width: 0; overflow: hidden; padding: 6px 4px 0 8px; }
+.send { display: flex; gap: 6px; padding: 6px 8px; border-top: 1px solid var(--line); }
+.send input { flex: 1; min-width: 0; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font: 13px var(--mono); }
+.send input:focus { outline: none; border-color: var(--accent); }
+.send button, .keys button { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 7px; font: 500 13px var(--sans); cursor: pointer; }
+.send button { padding: 0 14px; }
+.keys { display: flex; gap: 5px; padding: 0 8px 8px; overflow-x: auto; scrollbar-width: none; }
+.keys button { flex: none; min-width: 42px; height: 36px; padding: 0 10px; font-family: var(--mono); }
+.keys button[aria-pressed="true"] { background: var(--accent); color: #0f1115; border-color: var(--accent); }
+.keys button:active, .send button:active { border-color: var(--accent); }
+#reconnect { display: none; position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); padding: 12px 20px; border-radius: 10px;
+  border: 1px solid var(--accent); background: var(--panel); color: var(--ink); font: 600 15px var(--sans); }
+@media (hover: hover) { .keys { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <a href="#" id="home">← Start page</a>
+  <b id="title">Practice terminal</b>
+  <span id="state">connecting</span>
+</header>
+<div id="term"></div>
+<form class="send" id="send" autocomplete="off">
+  <input id="line" placeholder="Type or paste a command, then Send" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Command to send">
+  <button type="submit">Send</button>
+</form>
+<div class="keys" id="keys">
+  <button type="button" data-k="ctrl" aria-pressed="false">Ctrl</button>
+  <button type="button" data-k="&#x1b;">Esc</button>
+  <button type="button" data-k="&#x09;">Tab</button>
+  <button type="button" data-k="&#x1b;[A">↑</button>
+  <button type="button" data-k="&#x1b;[B">↓</button>
+  <button type="button" data-k="&#x1b;[D">←</button>
+  <button type="button" data-k="&#x1b;[C">→</button>
+  <button type="button" data-k="&#x03;">^C</button>
+  <button type="button" data-k="|">|</button>
+  <button type="button" data-k="-">-</button>
+  <button type="button" data-k="/">/</button>
+  <button type="button" data-k="~">~</button>
+  <button type="button" data-k="scroll">Scroll</button>
+  <button type="button" data-k="q">q</button>
+</div>
+<button type="button" id="reconnect">Tap to reconnect</button>
+<script>
+/*XTERM_JS*/
+</script>
+<script>
+/*FIT_JS*/
+</script>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const lab = params.get("arg") || "";
+  const NAMES = { linux: "Linux & the shell", bash: "Bash scripting", git: "Git & GitHub", k8s: "Kubernetes", net: "Networking",
+    containers: "Containers", security: "Security", backups: "Backups", ci: "CI/CD & YAML", iac: "Ansible & OpenTofu", pi: "Real Pi (SSH)" };
+  const name = NAMES[lab] || "Practice terminal";
+  document.title = name + " · Practice";
+  document.getElementById("title").textContent = name;
+  // Back to the start page on whichever address this was opened with (Tailscale or home Wi-Fi).
+  document.getElementById("home").href = `${location.protocol}//${location.hostname}:30300/`;
+  if (params.get("cmd")) document.getElementById("line").value = params.get("cmd");
+
+  const term = new Terminal({ cursorBlink: true, fontSize: window.innerWidth < 600 ? 13 : 14, scrollback: 5000,
+    fontFamily: 'ui-monospace, "Cascadia Code", Menlo, Consolas, monospace',
+    theme: { background: "#0f1115", foreground: "#eceef2", cursor: "#8aa0ff", selectionBackground: "#2b3a73" } });
+  const fit = new FitAddon.FitAddon();
+  term.loadAddon(fit);
+  term.open(document.getElementById("term"));
+  fit.fit();
+
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const state = document.getElementById("state"), again = document.getElementById("reconnect");
+  let ws = null, ctrl = false, closedByUs = false;
+  const setState = (t, c) => { state.textContent = t; state.className = c; };
+
+  const send = (s) => { if (ws && ws.readyState === 1) ws.send(enc.encode("0" + s)); };
+  const resize = () => { fit.fit(); if (ws && ws.readyState === 1) ws.send(enc.encode("1" + JSON.stringify({ columns: term.cols, rows: term.rows }))); };
+
+  const connect = async () => {
+    again.style.display = "none"; setState("connecting", "");
+    let token = "";
+    // location.origin, so it still works when the address has user:password@ in it.
+    try { const r = await fetch(location.origin + location.pathname.replace(/[^/]*$/, "") + "token", { cache: "no-store", credentials: "include" }); token = (await r.json()).token || ""; } catch {}
+    const base = location.pathname.replace(/[^/]*$/, "");
+    ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}${base}ws${location.search}`, ["tty"]);
+    ws.binaryType = "arraybuffer";
+    ws.onopen = () => { ws.send(enc.encode(JSON.stringify({ AuthToken: token, columns: term.cols, rows: term.rows }))); setState("connected", "on"); term.focus(); };
+    ws.onmessage = (e) => {
+      const d = new Uint8Array(e.data), cmd = String.fromCharCode(d[0]);
+      if (cmd === "0") term.write(d.subarray(1));
+      else if (cmd === "1") { /* window title: keep ours */ }
+    };
+    ws.onclose = () => { setState("disconnected", "off"); if (!closedByUs) again.style.display = "block"; };
+  };
+
+  term.onData((s) => {
+    if (ctrl && s.length === 1) {
+      const c = s.toUpperCase().charCodeAt(0);
+      if (c >= 64 && c <= 95) s = String.fromCharCode(c - 64);
+      ctrl = false; document.querySelector('[data-k="ctrl"]').setAttribute("aria-pressed", "false");
+    }
+    send(s);
+  });
+
+  document.getElementById("keys").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    const k = b.dataset.k;
+    if (k === "ctrl") { ctrl = !ctrl; b.setAttribute("aria-pressed", String(ctrl)); }
+    else if (k === "scroll") send("\x02[\x1b[5~");    // tmux: enter scroll mode, page up (q leaves)
+    else send(k);
+    term.focus();
+  });
+  // Don't let the key bar steal focus (that would close the phone keyboard).
+  document.getElementById("keys").addEventListener("mousedown", (e) => e.preventDefault());
+
+  document.getElementById("send").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const line = document.getElementById("line");
+    if (!line.value) { send("\r"); return; }
+    send(line.value.replace(/\n/g, " ") + "\r");
+    line.value = "";
+  });
+
+  again.addEventListener("click", connect);
+  // Phones drop the connection when you switch apps; the lab lives on in tmux, so just reconnect.
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && ws && ws.readyState > 1) connect(); });
+  window.addEventListener("resize", resize);
+  if (window.visualViewport) visualViewport.addEventListener("resize", resize);
+  window.addEventListener("pagehide", () => { closedByUs = true; });
+  connect();
+})();
+</script>
+</body>
+</html>
