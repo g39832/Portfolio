@@ -74,6 +74,41 @@ aside.side { position: sticky; top: 24px; align-self: start; display: grid; gap:
 .node .num { font-size: 11.5px; color: var(--ink-3); min-width: 54px; text-align: right; }
 .node .num b { color: var(--ink-2); font-weight: 500; }
 
+/* ---------- jellyfish tank: one jelly per Pi; speed = CPU, colour = health. Tap to feed. ---------- */
+.tank-wrap { display: grid; gap: 7px; }
+.tank { position: relative; height: 150px; border-radius: 12px; overflow: hidden; cursor: pointer; isolation: isolate;
+  background: radial-gradient(120% 70% at 50% -10%, #1d5f8c 0%, transparent 60%), linear-gradient(180deg, #0d3657 0%, #08223d 45%, #041121 100%);
+  border: 1px solid var(--line); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), inset 0 -18px 30px rgba(0,0,0,.35);
+  transition: filter 1.2s ease; -webkit-tap-highlight-color: transparent; }
+.tank::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5; border-radius: inherit;
+  background: linear-gradient(115deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 22%, rgba(255,255,255,0) 70%, rgba(255,255,255,.05) 85%, rgba(255,255,255,0) 100%); }
+.tank::before { content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none; background: radial-gradient(90% 80% at 50% 40%, rgba(255,70,100,.10), rgba(255,40,80,.32)); opacity: 0; transition: opacity 1.2s ease; }
+.tank.alarm::before { opacity: 1; animation: alarm 2.4s ease-in-out infinite; }
+@keyframes alarm { 50% { opacity: .55; } }
+.tank.alarm { filter: saturate(.85); }
+.tank:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tank .ray { position: absolute; top: -20px; width: 26px; height: 190px; z-index: 0; pointer-events: none; transform-origin: top center;
+  background: linear-gradient(180deg, rgba(160,220,255,.16), rgba(160,220,255,0) 85%); filter: blur(3px); animation: ray 9s ease-in-out infinite alternate; }
+@keyframes ray { from { transform: rotate(14deg); opacity: .5; } to { transform: rotate(4deg); opacity: 1; } }
+.tank .sand { position: absolute; left: 0; bottom: 0; width: 100%; height: 30px; z-index: 1; pointer-events: none; }
+.tank .weed { position: absolute; bottom: 10px; z-index: 1; pointer-events: none; transform-origin: bottom center; animation: weed 5s ease-in-out infinite alternate; }
+@keyframes weed { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+.tank .bubble { position: absolute; bottom: 14px; width: 4px; height: 4px; border-radius: 50%; z-index: 2; pointer-events: none;
+  border: 1px solid rgba(200,240,255,.6); background: rgba(200,240,255,.12); animation: bubble linear forwards; }
+@keyframes bubble { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 1; } 50% { transform: translate(4px, -70px); } 100% { transform: translate(-2px, -150px); opacity: 0; } }
+.tank .snow { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: rgba(210,235,255,.35); z-index: 1; pointer-events: none; animation: snow linear infinite; }
+@keyframes snow { from { transform: translateY(-10px); } to { transform: translateY(170px); } }
+.tank .flake { position: absolute; width: 4px; height: 3px; border-radius: 1px; background: #f2c46b; z-index: 2; pointer-events: none; }
+.tank .jelly { position: absolute; left: 0; top: 0; width: 40px; height: 62px; z-index: 3; pointer-events: none; color: var(--j, #7fdcff);
+  filter: drop-shadow(0 0 6px var(--j, #7fdcff)); transition: color 1.5s ease, filter 1.5s ease, opacity 1.5s ease; will-change: transform; }
+.tank .jelly.sick { opacity: .45; filter: grayscale(1) brightness(.75); }
+.tank .jelly.yum { filter: drop-shadow(0 0 12px var(--j)) brightness(1.5); }
+.tank .jelly svg { display: block; overflow: visible; }
+.tank .tag { position: absolute; left: 50%; top: -14px; transform: translateX(-50%); font: 500 9.5px var(--mono); white-space: nowrap; color: rgba(220,240,255,.75); opacity: 0; transition: opacity .3s; text-shadow: 0 1px 2px #000; }
+.tank:hover .tag, .tank.show-tags .tag { opacity: 1; }
+.tank-mood { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--ink-3); }
+.tank-mood b { color: var(--ink-2); font-weight: 500; }
+
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); flex: none; }
 .dot.up { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
 .dot.down { background: var(--bad); box-shadow: 0 0 0 3px var(--bad-soft); }
@@ -229,6 +264,8 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
   .clock .date { font-size: 12px; }
   .cluster { grid-column: 1 / -1; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
   .stats { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .tank-wrap { grid-column: 1 / -1; }
+  .tank { height: 170px; }
   nav.toc, .toc-wrap, .foot .keys { display: none; }
   .foot { grid-column: 1 / -1; order: 10; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; }
   .intro h2 { font-size: 24px; }
@@ -267,6 +304,12 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
         <div class="stat"><div class="top"><span>Memory</span><span class="num" id="mem">–</span></div><div class="meter"><i id="mem-bar"></i></div></div>
       </div>
       <div class="nodes" id="nodes"></div>
+    </div>
+
+    <div class="tank-wrap">
+      <div class="label"><span>Jelly tank</span><span>tap to feed</span></div>
+      <div class="tank" id="tank" role="button" tabindex="0" aria-label="Jellyfish tank, one jellyfish per Pi. Press to feed them."></div>
+      <div class="tank-mood"><span id="tank-mood">Calm water</span><span class="num" id="tank-fed"></span></div>
     </div>
 
     <div class="toc-wrap">
@@ -465,6 +508,7 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
     const down = watched.filter((a) => a.status === "down");
     const s = $("#summary");
     if (!watched.length) return;
+    if (done.length === watched.length) tank.alarm(down.length);
     if (done.length < watched.length) { s.replaceChildren(el("span", { class: "dot" }), document.createTextNode("Checking your apps…")); }
     else if (!down.length) { s.replaceChildren(el("span", { class: "dot up" }), el("b", { text: `All ${watched.length} apps are up.` }), document.createTextNode(` Checked from inside the cluster at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}.`)); }
     else {
@@ -522,6 +566,164 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
     document.querySelectorAll("section.group").forEach((s) => io.observe(s));
   };
 
+  /* ---------- jellyfish tank ----------
+     One moon jelly per Pi (named on hover). They pulse faster when that Pi's CPU is busy, a Pi that
+     isn't ready turns grey and sinks to the sand, and the water goes red while any app is down.
+     Tap the tank to drop food; the nearest jelly swims over to eat it. */
+  const tank = (() => {
+    const box = $("#tank"), NS = "http://www.w3.org/2000/svg";
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const sv = (tag, attrs, ...kids) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, v); n.append(...kids); return n; };
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const COLORS = ["#7fdcff", "#c59bff", "#8fffd1", "#ffb3e6"], SICK = "#8a96a8", ALARM = "#ff8fa3";
+    const labelOf = (n) => n === "raspberrypi" ? "Pi 5" : n === "pi2" ? "Pi 4" : n;
+
+    /* scenery */
+    ["8%", "42%", "74%"].forEach((left, i) => { const r = el("div", { class: "ray" }); r.style.left = left; r.style.animationDelay = `${-i * 3}s`; box.append(r); });
+    for (let i = 0; i < 12; i++) {
+      const s = el("div", { class: "snow" });
+      s.style.left = rnd(2, 98) + "%"; s.style.animationDuration = rnd(14, 26) + "s"; s.style.animationDelay = -rnd(0, 26) + "s";
+      if (still) s.style.animation = "none", s.style.top = rnd(5, 80) + "%";
+      box.append(s);
+    }
+    const weed = (left, h, color, delay) => {
+      const w = sv("svg", { class: "weed", width: 16, height: h, viewBox: `0 0 16 ${h}` },
+        sv("path", { d: `M8 ${h} C2 ${h * .75} 14 ${h * .55} 7 ${h * .3} C4 ${h * .15} 10 ${h * .08} 8 0`, fill: "none", stroke: color, "stroke-width": 3, "stroke-linecap": "round" }),
+        sv("path", { d: `M8 ${h} C12 ${h * .8} 4 ${h * .6} 10 ${h * .45}`, fill: "none", stroke: color, "stroke-width": 2.2, "stroke-linecap": "round", opacity: .8 }));
+      w.style.left = left; w.style.animationDelay = delay + "s"; box.append(w);
+    };
+    weed("5%", 48, "#2f8f6a", 0); weed("11%", 32, "#3aa67b", -2); weed("86%", 40, "#2f8f6a", -1);
+    box.append(sv("svg", { class: "sand", viewBox: "0 0 200 30", preserveAspectRatio: "none" },
+      sv("path", { d: "M0 16 Q25 10 50 15 T100 14 T150 16 T200 12 V30 H0Z", fill: "#4d3f2c" }),
+      sv("path", { d: "M0 16 Q25 10 50 15 T100 14 T150 16 T200 12", fill: "none", stroke: "#8a7350", "stroke-width": 1, opacity: .6 }),
+      sv("ellipse", { cx: 150, cy: 18, rx: 14, ry: 6, fill: "#3b4552" }), sv("ellipse", { cx: 162, cy: 20, rx: 8, ry: 4, fill: "#4a5563" }),
+      sv("circle", { cx: 40, cy: 22, r: 1.4, fill: "#a08a62" }), sv("circle", { cx: 70, cy: 25, r: 1, fill: "#a08a62" }), sv("circle", { cx: 118, cy: 21, r: 1.2, fill: "#a08a62" })));
+    const bubble = () => {
+      if (!document.hidden) {
+        const b = el("div", { class: "bubble" }); const d = rnd(3, 6);
+        b.style.left = `calc(78% + ${rnd(-3, 3)}px)`; b.style.width = b.style.height = d + "px"; b.style.animationDuration = rnd(3, 4.5) + "s";
+        b.addEventListener("animationend", () => b.remove()); box.append(b);
+      }
+      setTimeout(bubble, rnd(700, 2200));
+    };
+    if (!still) bubble();
+
+    /* jellies */
+    const makeJelly = (name, i) => {
+      const tents = sv("g", { fill: "none", stroke: "currentColor", "stroke-linecap": "round" });
+      [9, 14, 26, 31].forEach((x, k) => {
+        const a = `M${x} 20 q 3 10 0 20 t 0 20`, b = `M${x} 20 q -3 10 0 20 t 0 20`;
+        tents.append(sv("path", { d: a, "stroke-width": .9, opacity: .5 }, sv("animate", { attributeName: "d", values: `${a};${b};${a}`, dur: `${2.2 + k * .3}s`, repeatCount: "indefinite" })));
+      });
+      [17.5, 22.5].forEach((x, k) => {
+        const a = `M${x} 20 q -4 7 0 14 t 0 12`, b = `M${x} 20 q 4 7 0 14 t 0 12`;
+        tents.append(sv("path", { d: a, "stroke-width": 2.4, opacity: .75 }, sv("animate", { attributeName: "d", values: `${a};${b};${a}`, dur: `${3 + k * .4}s`, repeatCount: "indefinite" })));
+      });
+      const bell = sv("g", {},
+        sv("path", { d: "M3 20 C3 4 37 4 37 20 Q32 23 27 21 Q23 24 20 21.5 Q17 24 13 21 Q8 23 3 20Z", fill: "currentColor", "fill-opacity": .42, stroke: "currentColor", "stroke-opacity": .85, "stroke-width": .8 }),
+        sv("path", { d: "M8 18 C9 10 31 10 32 18", fill: "none", stroke: "#fff", "stroke-opacity": .3, "stroke-width": 1.1 }),
+        sv("ellipse", { cx: 14, cy: 10.5, rx: 5, ry: 2.4, fill: "#fff", opacity: .25 }),
+        sv("g", { fill: "none", stroke: "#fff", "stroke-opacity": .4, "stroke-width": .9 },
+          sv("circle", { cx: 16.5, cy: 14.5, r: 2 }), sv("circle", { cx: 23.5, cy: 14.5, r: 2 }), sv("circle", { cx: 20, cy: 11.8, r: 2 }), sv("circle", { cx: 20, cy: 17.2, r: 2 })));
+      const tag = el("span", { class: "tag", text: labelOf(name) });
+      const node = el("div", { class: "jelly" }, sv("svg", { width: 40, height: 62, viewBox: "0 0 40 62", "aria-hidden": "true" }, tents, bell), tag);
+      node.style.transformOrigin = "20px 14px";
+      box.append(node);
+      const W = box.clientWidth || 240, H = box.clientHeight || 150;
+      return { name, i, node, bell, tents, tag, x: rnd(30, W - 30), y: rnd(40, H - 60), vx: 0, vy: 0, r: 0, phase: Math.random(),
+        s: rnd(.8, 1), tx: rnd(30, W - 30), ty: rnd(36, H - 60), cpu: 10, sick: false, yum: 0 };
+    };
+    let jellies = [], alarm = false, downCount = 0, flakes = [];
+    const sync = (list) => {
+      const names = list.map((n) => n.name);
+      jellies.filter((j) => !names.includes(j.name)).forEach((j) => j.node.remove());
+      jellies = list.map((n, i) => {
+        const j = jellies.find((x) => x.name === n.name) || makeJelly(n.name, i);
+        j.i = i; j.cpu = n.cpu; j.sick = !n.ready;
+        j.tag.textContent = `${labelOf(n.name)} · ${Math.round(n.cpu)}%`;
+        return j;
+      });
+      paint();
+    };
+    const paint = () => {
+      jellies.forEach((j) => {
+        j.node.style.setProperty("--j", j.sick ? SICK : alarm ? ALARM : COLORS[j.i % COLORS.length]);
+        j.node.classList.toggle("sick", j.sick);
+      });
+      box.classList.toggle("alarm", alarm);
+      const sick = jellies.filter((j) => j.sick), busy = Math.max(0, ...jellies.map((j) => j.cpu));
+      const [b, rest] = sick.length ? ["Sinking:", `${sick.map((j) => labelOf(j.name)).join(", ")} not ready`]
+        : alarm ? ["Murky water:", `${downCount} app${downCount === 1 ? "" : "s"} down`]
+        : busy >= 70 ? ["Busy:", "jellies swimming fast"]
+        : ["Calm water:", "all good"];
+      $("#tank-mood").replaceChildren(el("b", { text: b }), document.createTextNode(" " + rest));
+      box.setAttribute("aria-label", `Jellyfish tank, one jellyfish per Pi. ${b} ${rest}. Press to feed them.`);
+    };
+
+    /* feeding: a count per day, kept on this device */
+    const today = () => new Date().toDateString();
+    const fedGet = () => { const [d, n] = (store.get("homelab-jelly-fed") || "").split("|"); return d === today() ? +n || 0 : 0; };
+    const showFed = () => { const n = fedGet(); $("#tank-fed").textContent = n ? `fed ${n}× today` : ""; };
+    const ate = () => { store.set("homelab-jelly-fed", `${today()}|${fedGet() + 1}`); showFed(); };
+    showFed();
+    const feed = (x) => {
+      box.classList.add("show-tags"); clearTimeout(feed.t); feed.t = setTimeout(() => box.classList.remove("show-tags"), 3000);
+      if (still) { ate(); return; }
+      for (let k = 0; k < 5 && flakes.length < 25; k++) {
+        const f = { x: clamp(x + rnd(-14, 14), 8, box.clientWidth - 8), y: rnd(2, 10), sway: rnd(0, 6), el: el("div", { class: "flake" }) };
+        box.append(f.el); flakes.push(f);
+      }
+    };
+    box.addEventListener("click", (e) => feed(e.clientX - box.getBoundingClientRect().left));
+    box.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); feed(rnd(30, box.clientWidth - 30)); } });
+
+    /* swimming: a pulse of the bell pushes the jelly along its heading, then it slowly sinks */
+    let last = 0;
+    const frame = (t) => {
+      const dt = Math.min(.05, last ? (t - last) / 1000 : 0); last = t;
+      const W = box.clientWidth, H = box.clientHeight, floor = H - 30, ceil = 16;
+      flakes = flakes.filter((f) => {
+        f.y = Math.min(floor + 6, f.y + 11 * dt); f.sway += dt * 2.2;
+        const fx = f.x + Math.sin(f.sway) * 3;
+        f.el.style.transform = `translate(${fx}px, ${f.y}px)`;
+        if (f.y >= floor + 6) { f.rest = (f.rest || 0) + dt; f.el.style.opacity = String(Math.max(0, 1 - f.rest / 3)); if (f.rest > 3) { f.el.remove(); return false; } }
+        const eater = jellies.find((j) => !j.sick && Math.hypot(j.x - fx, j.y + 8 - f.y) < 13 * j.s);
+        if (eater) { eater.yum = .7; f.el.remove(); ate(); return false; }
+        return true;
+      });
+      for (const j of jellies) {
+        const period = j.sick ? 5.5 : clamp(3 - (j.cpu / 100) * 2, 1, 3);
+        j.phase += dt / period;
+        if (j.phase >= 1) { j.phase -= 1; if (Math.random() < .3) { j.tx = rnd(24, W - 24); j.ty = rnd(ceil + 22, floor - 34); } }
+        if (j.sick) { j.ty = floor - 6; }
+        else if (flakes.length) {
+          const f = flakes.reduce((a, b) => Math.hypot(a.x - j.x, a.y - j.y) < Math.hypot(b.x - j.x, b.y - j.y) ? a : b);
+          j.tx = f.x; j.ty = f.y - 4;
+        }
+        const c = j.phase < .28 ? Math.sin(j.phase / .28 * Math.PI) : 0;
+        const want = j.sick ? .05 : clamp(.35 + (j.y - j.ty) / 30, 0, 1.5);
+        const ang = j.r * Math.PI / 180, thrust = 75 * want * c;
+        j.vx += Math.sin(ang) * thrust * dt + (j.tx - j.x) * .1 * dt;
+        j.vy += -Math.cos(ang) * thrust * dt + (j.sick ? 34 : 8) * dt;
+        const drag = Math.exp(-1.6 * dt); j.vx *= drag; j.vy *= drag;
+        j.x += j.vx * dt; j.y += j.vy * dt;
+        if (j.x < 16 || j.x > W - 16) { j.x = clamp(j.x, 16, W - 16); j.vx *= -.3; }
+        if (j.y < ceil || j.y > floor - 6) { j.y = clamp(j.y, ceil, floor - 6); j.vy = 0; }
+        j.r += (clamp((j.tx - j.x) * .3, -22, 22) * (j.sick ? .2 : 1) - j.r) * Math.min(1, 1.5 * dt);
+        j.yum = Math.max(0, j.yum - dt); j.node.classList.toggle("yum", j.yum > 0);
+        j.bell.setAttribute("transform", `translate(20 14) scale(${1 - .16 * c} ${1 + .08 * c}) translate(-20 -14)`);
+        j.tents.setAttribute("transform", `translate(20 20) scale(${1 - .22 * c} ${1 + .05 * c}) translate(-20 -20)`);
+        j.node.style.transform = `translate(${j.x - 20}px, ${j.y - 14}px) rotate(${j.r}deg) scale(${j.s})`;
+      }
+      if (!still) requestAnimationFrame(frame);
+    };
+    sync([{ name: "raspberrypi", ready: true, cpu: 10 }, { name: "pi2", ready: true, cpu: 10 }]);
+    requestAnimationFrame(frame);
+    window.homelabTank = { sync: (l) => { sync(l); if (still) requestAnimationFrame(frame); }, alarm: (n) => { downCount = n; alarm = n > 0; paint(); } };
+    return window.homelabTank;
+  })();
+
   /* ---------- cluster load ---------- */
   const gib = (b) => (b / 1073741824).toFixed(1);
   const bar = (id, pct) => { const i = $(id); i.style.width = Math.min(100, pct).toFixed(1) + "%"; i.classList.toggle("hot", pct >= 80); };
@@ -541,6 +743,7 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
           el("span", { class: "num" }, document.createTextNode("cpu "), el("b", { text: n.cpu.percent.toFixed(0) + "%" })),
           el("span", { class: "num" }, document.createTextNode("mem "), el("b", { text: n.memory.percent.toFixed(0) + "%" }))));
       });
+      if ((j.nodes || []).length) tank.sync(j.nodes.map((n) => ({ name: n.name, ready: n.ready, cpu: n.cpu.percent })));
       $("#updated").textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
     } catch { $("#updated").textContent = "no data"; }
   };
