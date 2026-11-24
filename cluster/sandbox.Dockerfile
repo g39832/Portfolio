@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates curl wget less nano vim-tiny tmux bash-completion locales tzdata \
       git gh openssh-client procps psmisc tree file unzip xz-utils bc man-db \
       iproute2 iputils-ping dnsutils netcat-openbsd traceroute openssl \
-      python3 python3-yaml jq yq shellcheck sqlite3 restic skopeo ansible-core \
+      python3 python3-yaml jq yq shellcheck sqlite3 restic skopeo ansible-core nginx \
     && sed -i 's/# en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen && locale-gen \
     && rm -rf /var/lib/apt/lists/*
 
@@ -44,7 +44,7 @@ RUN set -eux; cd /tmp; \
     curl -fsSL -o fit.js    "https://cdn.jsdelivr.net/npm/@xterm/addon-fit@${XTERM_FIT_VERSION}/lib/addon-fit.js"; \
     python3 /opt/sandbox/inline.py /opt/sandbox/terminal.html xterm.css xterm.js fit.js > /opt/sandbox/index.html; \
     rm -f xterm.js xterm.css fit.js; \
-    chmod +x /opt/sandbox/enter.sh /opt/sandbox/learn /opt/sandbox/envs/*/seed.sh; \
+    chmod +x /opt/sandbox/enter.sh /opt/sandbox/start.sh /opt/sandbox/learn /opt/sandbox/envs/*/seed.sh; \
     ln -s /opt/sandbox/learn /usr/local/bin/learn; \
     useradd -u 1000 -m -s /bin/bash learner; mkdir -p /work && chown 1000:1000 /work
 
@@ -52,6 +52,7 @@ ENV LANG=en_US.UTF-8 TERM=xterm-256color
 USER 1000
 WORKDIR /work
 EXPOSE 7681
-# -W writable, -a lets the page pick a lab with ?arg=git, -I our page. The login comes from
+# start.sh runs ttyd (-W writable, -a so the page picks a lab with ?arg=git, -I our page) on a
+# private socket, and nginx on :7681 in front of it for the login. The login comes from
 # $TTYD_CREDENTIAL (user:password), set from a Kubernetes secret.
-CMD ["sh", "-c", "exec ttyd -W -a -p 7681 -m 6 -t titleFixed=Practice -I /opt/sandbox/index.html -c \"$TTYD_CREDENTIAL\" /opt/sandbox/enter.sh"]
+CMD ["/opt/sandbox/start.sh"]
