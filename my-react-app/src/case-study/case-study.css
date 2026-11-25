@@ -280,3 +280,154 @@ section.cs-section h2::after {
     padding: 0.4rem;
   }
 }
+
+
+/* ---------- homelab case study ---------- */
+.cs-diagram-group rect {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-dasharray: 6 6;
+}
+
+.cs-diagram-group text {
+  font-size: 13px;
+  fill: var(--text-soft);
+}
+
+.cs-video img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cs-lessons {
+  display: grid;
+  gap: 1rem;
+  margin: 1.25rem 0 0;
+}
+
+.cs-lessons div {
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.cs-lessons dt {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.92rem;
+  color: var(--text-strong);
+}
+
+.cs-lessons dd {
+  margin: 0.4rem 0 0;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.cs-tank-figure {
+  margin: 1.75rem 0 0;
+}
+
+.cs-tank-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cs-tank-hint {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+}
+
+.cs-tank-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cs-toggle {
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.cs-toggle:hover {
+  color: var(--text-strong);
+}
+
+.cs-toggle.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #02050f;
+}
+
+.cs-tank {
+  position: relative;
+  height: clamp(260px, 52vw, 470px);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  isolation: isolate;
+  background: #1f5f6e;
+  border: 1px solid var(--border);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.cs-tank canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.cs-tank::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  background: radial-gradient(90% 80% at 50% 40%, rgba(255, 70, 100, 0.1), rgba(255, 40, 80, 0.32));
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.cs-tank.alarm::before {
+  opacity: 1;
+  animation: cs-tank-alarm 2.4s ease-in-out infinite;
+}
+
+@keyframes cs-tank-alarm {
+  50% { opacity: 0.55; }
+}
+
+.cs-tank:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.cs-tank-figure figcaption {
+  margin-top: 0.75rem;
+  color: var(--text-soft);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.cs-tank-figure #tank-mood b {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.cs-tank-fed {
+  float: right;
+}

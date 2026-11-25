@@ -61,6 +61,7 @@ export const projects = [
     impact:
       '15 apps running across both Pis with live monitoring and phone alerts, zero open ports on my home network, attackers blocked before they reach the Pi, and the whole setup can be rebuilt from the repo.',
     github: 'https://github.com/g39832/Portfolio/tree/main/cluster',
+    caseStudy: '/case-studies/homelab/',
   },
   {
     id: 'tumorsim',

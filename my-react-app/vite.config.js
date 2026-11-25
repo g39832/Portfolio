@@ -6,6 +6,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    // the homelab case study imports the start page's tank (../cluster/start/tank.js)
+    fs: { allow: ['..'] },
     // The blog is a separate small service (../blog). In development, run it with
     //   cd ../blog && .venv/Scripts/python -m blogapp serve   (port 5080)
     // and these paths are forwarded to it, like nginx does on the Pi.
@@ -19,6 +21,7 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         dispodex: resolve(import.meta.dirname, 'case-studies/dispodex/index.html'),
+        homelab: resolve(import.meta.dirname, 'case-studies/homelab/index.html'),
       },
     },
   },

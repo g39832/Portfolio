@@ -7,6 +7,8 @@ COPY my-react-app/package.json my-react-app/package-lock.json ./
 # npm install (not npm ci): the lock file lacks a few Linux-only optional packages.
 RUN npm install --no-audit --no-fund
 COPY my-react-app/ ./
+# The homelab case study bundles the start page's axolotl tank from here.
+COPY cluster/start/tank.js /cluster/start/tank.js
 RUN npm run build
 
 FROM nginxinc/nginx-unprivileged:1.28-alpine
