@@ -320,7 +320,7 @@ function HomelabCaseStudy() {
           <p>
             Each axolotl is a chain of spine points that follows its head, with feathery gills, legs that tuck in or
             paddle or walk, and a 3D head with a smile, all drawn on a single canvas. They have their own personalities,
-            explore, nap in their little house (sometimes together), come to the glass to look at you, and react to food.
+            explore, nap in their cave in the corner (sometimes together), come to the glass to look at you, and react to food.
             It pauses when it’s off screen so it costs the Pi nothing.
           </p>
         </Reveal>

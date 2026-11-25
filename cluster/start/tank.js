@@ -72,10 +72,32 @@
   const unprojY = (sy, z) => VY + (sy - VY) / sOf(z);
   const sandY = (x, z) => 182 - (12 * z) / D + 1.4 * Math.sin(x * 0.045 + z * 0.06) + 0.8 * Math.sin(x * 0.12 - z * 0.11);
   let rocks = [];
-  // the little house at the back: cream stone walls, a tiled roof, an arched door, a chimney
+  // the cave in the back-right corner: a rocky dome with an arched mouth facing the glass. Its shape
+  // is one height function, used both to draw it and for collisions, so what you see is what they hit.
+  // (Called "house" in the behaviour code: it's where they go to sleep.)
   let house = null, houseImgs = null;
-  const roofY = (x) => house.top - house.peak * Math.max(0, 1 - Math.abs(x - house.x) / (house.w / 2 + 4));
-  const inHouseBox = (q, pad = 0) => !!house && q.x > house.x0 - 4 - pad && q.x < house.x1 + 4 + pad && q.z > house.zf - 3 - pad && q.z < house.zb + 3 + pad && q.y > roofY(q.x) - pad;
+  const caveQ = (x, z) => ((x - house.cx) / house.rx) ** 2 + ((z - house.cz) / house.rz) ** 2;
+  const caveH = (q, x, z) => (q >= 1 ? 0 : house.h * Math.pow(1 - q, 0.25) * (1 + 0.05 * Math.sin(x * 0.3) * Math.cos(z * 0.25)));
+  const caveTop = (x, z) => { if (!house) return null; const q = caveQ(x, z); return q >= 1 ? null : house.base - caveH(q, x, z); };
+  const roofY = (x, z) => { const t = caveTop(x, z); return t == null ? house.base : t; };
+  const inHouseBox = (q, pad = 0) => {
+    if (!house) return false;
+    const qq = ((q.x - house.cx) / (house.rx + pad)) ** 2 + ((q.z - house.cz) / (house.rz + pad)) ** 2;
+    return qq < 1 && q.y > roofY(q.x, q.z) - pad;
+  };
+  // keep a point inside the hollow: an ellipse a bit smaller than the rock, plus the mouth
+  const clampCave = (n, m) => {
+    // allowed: the hollow (an ellipse a bit smaller than the rock) or the tunnel from the mouth into
+    // it. A point outside both moves to whichever is nearer, so nothing ever jumps across.
+    const ax = house.rx * 0.8 - m, az = house.rz * 0.8 - m, ex = (n.x - house.cx) / ax, ez = (n.z - house.cz) / az, e = Math.hypot(ex, ez);
+    const half = house.door - m, inTunnel = Math.abs(n.x - house.x) <= half && n.z < house.cz;
+    if (e > 1 && !inTunnel) {
+      const px = house.cx + (ex / e) * ax, pz = house.cz + (ez / e) * az;
+      const tx = clamp(n.x, house.x - half, house.x + half), tz = Math.min(n.z, house.cz);
+      if (Math.hypot(tx - n.x, tz - n.z) < Math.hypot(px - n.x, pz - n.z)) { n.x = tx; n.z = tz; } else { n.x = px; n.z = pz; }
+    }
+    n.x = clamp(n.x, 3, WW - 3); n.z = clamp(n.z, 3, D - 3);
+  };
   const night = () => { const h = new Date().getHours(); return h >= 22 || h < 7; };
   const rockH = (r, x, z) => {
     const q = ((x - r.x) / r.rx) ** 2 + ((z - r.z) / r.rz) ** 2;
@@ -114,7 +136,7 @@
       flare: 0, flareT: 0, exert: 0, gulp: 0, lunge: 0, nod: 0, lookYaw: 0, lookPitch: 0, look: null, glance: null, glanceT: rnd(1, 3),
       curl: 0, curlT: 0, wTuck: 0, wFloor: 0, wBrake: 0, brake: 0, creep: 0, onFloor: false, away: false, seed: rnd(0, 100),
       mode: "hover", goal: null, vs: 0, arrive: 4, face: null, align: null,
-      legs: LEGS.map((l) => ({ ...l, adjF: 0, adjL: 0, lift: 0 })), legT: rnd(2, 5), bubbleAt: 0,
+      sep: V(0, 0, 0), legs: LEGS.map((l) => ({ ...l, adjF: 0, adjL: 0, lift: 0 })), legT: rnd(2, 5), bubbleAt: 0,
       cpu: 10, sick: false, b: { kind: "none", t: 0 }, lastKind: "", cd: { float: rnd(15, 40), glass: rnd(8, 25), social: rnd(6, 15), house: rnd(25, 70) }, sleep: false, noticeAt: 0,
       Q: null, RR: null,
     };
@@ -147,10 +169,10 @@
     zone = zone || (Math.random() < 0.6 ? a.pers.zone : pick(["low", "mid", "high"]));
     const y = zone === "low" ? rnd(g - 32, g) : zone === "high" ? rnd(top, top + 40) : rnd(top + 14, g - 10);
     const p = V(x, clamp(y, top, g), z);
-    if (inHouseBox(p, 12)) p.y = roofY(p.x) - 16;
+    if (inHouseBox(p, 12)) p.y = Math.min(p.y, roofY(p.x, p.z) - 16);
     return p;
   };
-  const floorPoint = (a, x, z) => { x = clamp(x, 26, WW - 26); z = clamp(z, 12, D - 14); if (inHouseBox(V(x, ground(x, z), z), 12)) z = house.zf - rnd(16, 26); return V(x, ground(x, z) - a.clear, z); };
+  const floorPoint = (a, x, z) => { x = clamp(x, 26, WW - 26); z = clamp(z, 12, D - 14); if (inHouseBox(V(x, ground(x, z), z), 12)) z = Math.min(z, house.zf - rnd(16, 26)); return V(x, ground(x, z) - a.clear, z); };
   const yawTo = (from, to) => Math.atan2(to.z - from.z, to.x - from.x);
   const ctl = (a, goal, mode, vs, arrive, face) => { a.goal = goal; a.mode = mode; a.vs = vs * a.pers.speed; a.arrive = arrive == null ? 4 : arrive; a.face = face == null ? null : face; };
   const livePellets = () => pellets.filter((p) => !p.gone);
@@ -348,7 +370,7 @@
       start(a) {
         const o = other(a), taken = o.b.kind === "house" ? o.b.slot : null;
         a.b.slot = taken == null ? (Math.random() < 0.5 ? -1 : 1) : -taken;
-        a.b.sx = house.x + a.b.slot * 12.5; a.b.ph = 0;
+        a.b.sx = house.x + a.b.slot * 10; a.b.ph = 0;
         a.b.dur = rnd(25, 50) * (night() ? 2 : 1);
         if (housing(o)) o.b.dur = Math.max(o.b.dur, o.b.t - (o.b.t1 || 0) + rnd(30, 45));
         a.cd.house = clock + rnd(70, 140);
@@ -380,11 +402,14 @@
           return false;
         }
         a.sleep = false;
-        // out of the door, then off to the side so the whole body comes out after the head
-        const outside = a.p.z < H.zf - 8, side = clamp(H.x + a.b.slot * (H.w / 2 + 30), 26, WW - 26);
-        const g = outside ? V(side, ground(side, H.zf - 14) - a.clear, H.zf - 14) : at(H.zf - 14);
+        // out of the mouth, then off to the left (away from the corner) so the whole body follows
+        // (first line up with the middle of the mouth, so it never pushes against the rock)
+        const outside = a.p.z < H.zf - 8, side = clamp(H.x - 48 + a.b.slot * 10, 26, WW - 26);
+        const mid = (z) => V(H.x, ground(H.x, z) - a.clear, z);
+        const g = outside ? V(side, ground(side, H.zf - 16) - a.clear, H.zf - 16)
+          : a.p.z > H.zf - 2 && Math.abs(a.p.x - H.x) > 6 ? mid(H.zf + 8) : mid(H.zf - 16);
         ctl(a, g, "walk", 5, 3);
-        const clear = !a.pts.some((q) => q.x > H.x0 - 2 && q.x < H.x1 + 2 && q.z > H.zf - 1);
+        const clear = !a.pts.some((q) => caveQ(q.x, q.z) < 1.05 || (Math.abs(q.x - H.x) < H.door + 2 && q.z > H.zf - 1));
         return (clear && a.b.t > 1) || a.b.t > 300;
       },
     },
@@ -479,19 +504,26 @@
     if (az > D - 12) uz -= ((az - D + 12) / 12) * 1.6;
     if (ay < SURF + 10) uy += (SURF + 10 - ay) / 10;
     const home = housing(a);
-    if (house && !home && inHouseBox(V(ax, ay, az), 6)) { uy -= 1.4; ux += Math.sign(ax - house.x || 1) * 0.5; }
+    // steer round the cave rock, unless what it wants is right there on top of it (then the collision
+    // below just keeps it on the surface, so it can land and eat)
+    if (house && !home && d > 28 && inHouseBox(V(ax, ay, az), 6)) { uy -= 1.4; ux += Math.sign(ax - house.cx || -1) * 0.5; uz += Math.sign(az - house.cz || -1) * 0.5; }
     // give the other one room (less when they're meant to be close)
     const o = other(a);
-    for (let k = 0; k < NSEG && !(home && housing(o)); k += 3) {
+    let qx = 0, qy = 0, qz = 0;
+    for (let k = 0; k < NSEG; k += 3) {
       const q = o.pts[k]; if (!q) break;
       const ex = p.x - q.x, ey = p.y - q.y, ez = p.z - q.z, e = Math.hypot(ex, ey, ez) || 1;
-      const min = (k < 7 ? 12 : 8) * ((a.size + o.size) / 2) * (a.b.o === o || o.b.o === a ? 0.95 : 1);
+      const min = (k < 7 ? 12 : 8) * ((a.size + o.size) / 2) * (home && housing(o) ? 0.6 : a.b.o === o || o.b.o === a ? 0.95 : 1);
       if (e < min) {
         const f = (min - e) / min;
         ux += (ex / e) * f * 2; uy += (ey / e) * f; uz += (ez / e) * f * 2;
-        p.x += (ex / e) * f * 7 * dt; p.y += (ey / e) * f * 4 * dt; p.z += (ez / e) * f * 7 * dt;
+        qx += (ex / e) * f * 7; qy += (ey / e) * f * 4; qz += (ez / e) * f * 7;
       }
     }
+    // ease apart instead of shoving each frame (two of them shoving each other made heads buzz)
+    const sk = damp(5, dt);
+    a.sep.x += (qx - a.sep.x) * sk; a.sep.y += (qy - a.sep.y) * sk; a.sep.z += (qz - a.sep.z) * sk;
+    p.x += a.sep.x * dt; p.y += a.sep.y * dt; p.z += a.sep.z * dt;
     let wantYaw = Math.atan2(uz, ux);
     let wantPitch = flat ? 0 : clamp(Math.atan2(-uy, Math.hypot(ux, uz)), -0.6, 0.6);
     if (a.onFloor && wantPitch < 0) wantPitch = 0;
@@ -550,8 +582,8 @@
     if (sz > D - 2) p.z -= sz - (D - 2);
     p.x = clamp(p.x, 6, WW - 6); p.z = clamp(p.z, 4, D - 4);
     if (house) {
-      if (home) { if (p.z > house.zf - 3) { p.x = clamp(p.x, house.x0 + 7, house.x1 - 7); p.y = Math.max(p.y, house.top + 8); } p.z = Math.min(p.z, house.zb - 7); }
-      else if (inHouseBox(p, 2)) p.y = Math.max(roofY(p.x) - 5, p.y - 30 * dt);
+      if (home) { if (p.z > house.zf - 3) { clampCave(p, 7); p.y = Math.max(p.y, house.top + 8); } }
+      else if (inHouseBox(p, 2)) p.y = Math.max(roofY(p.x, p.z) - 5, p.y - 30 * dt);
     }
 
     // spine: each point follows the one in front, stiff in the trunk and loose in the tail
@@ -570,16 +602,33 @@
         if (a.curl) { const lt = (side = sidePerp(dir, side)); dir.x += lt.x * a.curl * 0.9 * dt; dir.z += lt.z * a.curl * 0.9 * dt; }
         dir = norm(dir);
       }
+      // bodies stay fairly level, like a real axolotl's: when the head sinks straight down (or rises),
+      // the body eases back toward horizontal instead of hanging vertically behind it
+      if (!home) { dir.y *= Math.exp(-(i < 7 ? 1.6 : 1.1) * dt); dir = norm(dir); }
       // joints only bend so far, so the body never folds or kinks
       const lim = i < 7 ? 0.3 : 0.42, c = dot(dir, prev);
       if (c < Math.cos(lim)) { const perp = norm(madd(dir, prev, -c)); dir = norm(lin(prev, Math.cos(lim), perp, Math.sin(lim))); }
-      const n = madd(o0, dir, SEG * a.size);
-      n.x = clamp(n.x, 3, WW - 3); n.z = clamp(n.z, 3, D - 3);
-      n.y = clamp(n.y, SURF + 2, ground(n.x, n.z) - RAD[i] * a.size * 0.85);
-      if (house) {
-        if (home) { if (n.z > house.zf - 1) { n.x = clamp(n.x, house.x0 + 3, house.x1 - 3); n.z = Math.min(n.z, house.zb - 3); n.y = Math.max(n.y, house.top + RAD[i] * a.size + 2); } }
-        else if (inHouseBox(n)) n.y = Math.min(n.y, roofY(n.x) - RAD[i] * a.size * 0.85);
+      // keep the point out of the glass, sand, rocks and cave. Pushing it up alone would stretch the
+      // body (that's what happened landing on the roof), and pulling it back along the segment can dip
+      // it in again and make it jitter. So it goes to the surface height and then reaches sideways
+      // just enough to stay exactly one segment from the point before it.
+      const r = RAD[i] * a.size, sl = SEG * a.size;
+      const n = madd(o0, dir, sl);
+      const keepIn = () => { n.x = clamp(n.x, 3, WW - 3); n.z = clamp(n.z, 3, D - 3); if (house && home && n.z > house.zf - 1) clampCave(n, 3); };
+      keepIn();
+      let lo = ground(n.x, n.z) - r * 0.85, hi = SURF + 2;
+      if (house && !home && inHouseBox(n)) lo = Math.min(lo, roofY(n.x, n.z) - r * 0.85);
+      if (house && home && n.z > house.zf - 1) hi = Math.max(hi, house.top + r + 2);
+      if (n.y > lo || n.y < hi) {
+        n.y = clamp(n.y, Math.min(hi, lo), lo);
+        const dy = clamp(n.y - o0.y, -sl, sl), hx = n.x - o0.x, hz = n.z - o0.z, h = Math.hypot(hx, hz), want = Math.sqrt(sl * sl - dy * dy);
+        n.y = o0.y + dy;
+        if (h > 1e-4) { n.x = o0.x + (hx / h) * want; n.z = o0.z + (hz / h) * want; }
+        keepIn();
       }
+      // the walls and the cave can still have moved it: put it back at exactly one segment
+      const dd = Math.hypot(n.x - o0.x, n.y - o0.y, n.z - o0.z);
+      if (Math.abs(dd - sl) > 0.01 && dd > 1e-4) { const f = sl / dd; n.x = o0.x + (n.x - o0.x) * f; n.y = o0.y + (n.y - o0.y) * f; n.z = o0.z + (n.z - o0.z) * f; }
       pts[i] = n;
       prev = norm(sub(n, o0));
     }
@@ -629,7 +678,7 @@
   const stepFood = (dt) => {
     pellets = pellets.filter((p) => {
       if (p.gone) return false;
-      const gy = inHouseBox(V(p.x, 1e4, p.z)) ? roofY(p.x) - 1 : ground(p.x, p.z) - 1;
+      const gy = Math.min(ground(p.x, p.z), roofY(p.x, p.z)) - 1;
       if (!p.landed) { p.ph += dt * 2.3; p.y += p.vy * dt; p.x += Math.sin(p.ph) * 2.5 * dt + current(p.x, p.y, clock) * 0.8 * dt; if (p.y >= gy) { p.y = gy; p.landed = clock; } }
       return !(p.landed && clock - p.landed > 30);
     });
@@ -644,17 +693,20 @@
     const R = seeded(1234);
     const rr = (a, b) => a + R() * (b - a);
     rocks = [
-      { x: WW * 0.7, z: 50, rx: 30, rz: 19, h: 17, seed: 3, tone: ["#9a9c9c", "#6a6e70", "#3e4245"] },
+      { x: WW * 0.55, z: 48, rx: 30, rz: 19, h: 17, seed: 3, tone: ["#9a9c9c", "#6a6e70", "#3e4245"] },
       { x: WW * 0.16, z: 90, rx: 21, rz: 12, h: 31, seed: 7, tone: ["#8d8a80", "#5e5c55", "#36352f"] },
       { x: WW * 0.44, z: 22, rx: 7, rz: 5, h: 5, seed: 11, tone: ["#a49a8a", "#766d5f", "#4a443b"] },
     ];
     for (const r of rocks) r.base = sandY(r.x, r.z) + 1.5;
     {
-      const w = 74, d = 36, x = WW * 0.45, z = 80;
-      house = { x, z, w, d, wall: 28, peak: 16, x0: x - w / 2, x1: x + w / 2, zf: z - d / 2, zb: z + d / 2, door: 21 };
-      house.base = sandY(x, house.zf) + 1.5; house.top = house.base - house.wall; house.ridge = house.top - house.peak;
-      const cx = x + 15, cz = house.zb - 7;
-      house.chim = V(cx, roofY(cx) - 10, cz);
+      const cx = WW - 34, cz = 88, rx = 52, rz = 30;
+      house = { cx, cz, rx, rz, h: 44, base: sandY(cx, cz) + 1.5 };
+      const x = cx - 16;
+      house.x = x; house.door = 21; house.doorH = 25;
+      house.zf = cz - rz * Math.sqrt(1 - ((x - cx) / rx) ** 2);   // front of the rock at the mouth, at the sand
+      house.zb = cz + rz * 0.55; house.d = house.zb - house.zf;
+      house.top = house.base - 31;                                // the ceiling inside
+      house.chim = V(x, house.base - house.doorH + 1, house.zf - 2); // sleepy bubbles drift out of the mouth
     }
     const vallis = (x, z, n, h0, h1, w, col, col2) => {
       const blades = [];
@@ -664,7 +716,7 @@
     plants = [
       vallis(0, 104, 0, 0, 0, 0, "", ""),
       vallis(WW * 0.07, 66, 7, 90, 150, 3.2, "#3f9a57", "#4fae64"),
-      vallis(WW * 0.92, 80, 6, 85, 130, 3.0, "#3a8f50", "#47a35c"),
+      vallis(WW * 0.48, 96, 6, 85, 130, 3.0, "#3a8f50", "#47a35c"),
       vallis(WW * 0.37, 60, 7, 12, 22, 1.6, "#5cb867", "#4ea95a"),
       vallis(WW * 0.56, 30, 6, 10, 18, 1.5, "#62bd6c", "#52ad5e"),
       vallis(WW * 0.86, 36, 5, 11, 20, 1.5, "#5cb867", "#4ea95a"),
@@ -817,87 +869,84 @@
     }
   };
 
-  /* the house is drawn once into two sprites: its dark inside (behind a sleeping axolotl) and its
-     front wall and roof (in front of it). Anything inside only shows through the door. */
+  /* the cave is drawn once into two sprites: its dark inside (behind a sleeping axolotl) and the rock
+     with the mouth cut out (in front of it). Anything inside only shows through the mouth. */
   const paintHouse = () => {
     const H = house, P = (x, y, z) => proj(V(x, y, z)), R = seeded(77);
-    const ez0 = H.zf - 3, ez1 = H.zb + 3, ex0 = H.x0 - 4, ex1 = H.x1 + 4, ey = H.top + 1;
-    const pts = [P(ex0, ey, ez0), P(ex1, ey, ez0), P(H.x, H.ridge, ez1), P(H.x, H.ridge - 1, ez0), P(H.x0 - 6, H.base + 3, H.zf - 8), P(H.x1 + 6, H.base + 3, H.zf - 8), P(H.chim.x, H.chim.y - 3, H.chim.z)];
-    const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
-    const bx = Math.min(...xs) - 4, by = Math.min(...ys) - 4, bw = Math.max(...xs) - bx + 4, bh = Math.max(...ys) - by + 4;
-    const sprite = (fn) => { const c = offscreen(bw * k * dpr, bh * k * dpr), g = c.getContext("2d"); g.setTransform(k * dpr, 0, 0, k * dpr, -bx * k * dpr, -by * k * dpr); g.lineCap = g.lineJoin = "round"; fn(g); return { img: c, x: bx, y: by, w: bw, h: bh }; };
-    const door = (g) => {
-      const r = H.door, yb = H.base, ys2 = yb - 6, z = H.zf;
-      let q = P(H.x - r, yb, z); g.moveTo(q[0], q[1]);
-      q = P(H.x - r, ys2, z); g.lineTo(q[0], q[1]);
-      for (let i = 0; i <= 16; i++) { const t = PI + (PI * i) / 16; q = P(H.x + Math.cos(t) * r, ys2 + Math.sin(t) * r, z); g.lineTo(q[0], q[1]); }
-      q = P(H.x + r, yb, z); g.lineTo(q[0], q[1]); g.closePath();
+    // the z of the rock's front face at (x, y): where the dome is exactly that tall
+    const frontZ = (x, y) => {
+      const need = clamp((H.base - y) / H.h, 0, 0.999), q = 1 - need ** 4, dx = ((x - H.cx) / H.rx) ** 2;
+      return H.cz - H.rz * Math.sqrt(Math.max(0, q - dx));
     };
+    const N = 44, top = [], bot = [];
+    for (let i = 0; i <= N; i++) {
+      const u = -1 + (2 * i) / N, x = H.cx + u * H.rx * 0.999, sq = Math.sqrt(Math.max(0, 1 - u * u)), zf = H.cz - H.rz * sq;
+      bot.push(P(x, sandY(x, zf) + 1.2, zf));
+      let best = null;
+      for (let j = 0; j <= 18; j++) { const zz = H.cz + (-1 + j / 9) * H.rz * sq, q = P(x, roofY(x, zz), zz); if (!best || q[1] < best[1]) best = q; }
+      top.push(best);
+    }
+    // the mouth: an arch on the rock's front face
+    const arch = [];
+    { const r = H.door, ys = H.base - (H.doorH - r);
+      arch.push([H.x - r, H.base]); arch.push([H.x - r, ys]);
+      for (let i = 1; i < 18; i++) { const t = PI + (PI * i) / 18; arch.push([H.x + Math.cos(t) * r, ys + Math.sin(t) * r]); }
+      arch.push([H.x + r, ys]); arch.push([H.x + r, H.base]); }
+    const archP = arch.map(([x, y]) => P(x, y, frontZ(x, y) - 0.4));
+    const xs = [...top, ...bot].map((q) => q[0]), ys2 = [...top, ...bot].map((q) => q[1]);
+    const bx = Math.min(...xs) - 4, by = Math.min(...ys2) - 4, bw = Math.max(...xs) - bx + 4, bh = Math.max(...ys2) - by + 6;
+    const sprite = (fn) => { const c = offscreen(bw * k * dpr, bh * k * dpr), g = c.getContext("2d"); g.setTransform(k * dpr, 0, 0, k * dpr, -bx * k * dpr, -by * k * dpr); g.lineCap = g.lineJoin = "round"; fn(g); return { img: c, x: bx, y: by, w: bw, h: bh }; };
+    const mouth = (g) => { g.beginPath(); archP.forEach((q, i) => (i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]))); g.closePath(); };
+    const rock = (g) => { g.beginPath(); bot.forEach((q, i) => (i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]))); for (let i = top.length - 1; i >= 0; i--) g.lineTo(top[i][0], top[i][1]); g.closePath(); };
+
     const inner = sprite((g) => {
-      // soft shadow of the house on the sand
-      const c = P(H.x, H.base, H.z), cs = c[2];
-      g.fillStyle = "rgba(35,26,16,.35)"; g.beginPath(); g.ellipse(c[0], c[1] + 1, (H.w / 2 + 8) * cs, 6 * cs, 0, 0, TAU); g.fill();
-      g.save(); g.beginPath(); door(g); g.clip();
-      const t = P(H.x, H.base - 30, H.zf), b = P(H.x, H.base, H.zf);
-      let gr = g.createLinearGradient(0, t[1], 0, b[1]); gr.addColorStop(0, "#120b07"); gr.addColorStop(1, "#2a1c12");
+      g.save(); mouth(g); g.clip();
+      const t = P(H.x, H.base - H.doorH, H.zf), b = P(H.x, H.base, H.zf);
+      let gr = g.createLinearGradient(0, t[1], 0, b[1]); gr.addColorStop(0, "#0b0a09"); gr.addColorStop(1, "#211a13");
       g.fillStyle = gr; g.fillRect(bx, by, bw, bh);
-      // the floor inside, fading into the dark
-      const f0 = P(H.x0, H.base, H.zf), f1 = P(H.x1, H.base, H.zf), f2 = P(H.x1, H.base, H.zb), f3 = P(H.x0, H.base, H.zb);
-      gr = g.createLinearGradient(0, f2[1], 0, f0[1]); gr.addColorStop(0, "rgba(70,56,38,0)"); gr.addColorStop(1, "rgba(120,98,66,.85)");
+      // sand floor going back into the dark
+      const f0 = P(H.x - H.door, H.base, H.zf), f1 = P(H.x + H.door, H.base, H.zf), f2 = P(H.x + H.door + 10, H.base, H.zb), f3 = P(H.x - H.door - 10, H.base, H.zb);
+      gr = g.createLinearGradient(0, f2[1], 0, f0[1]); gr.addColorStop(0, "rgba(70,56,38,0)"); gr.addColorStop(1, "rgba(128,104,70,.85)");
       g.fillStyle = gr; g.beginPath(); g.moveTo(f0[0], f0[1]); g.lineTo(f1[0], f1[1]); g.lineTo(f2[0], f2[1]); g.lineTo(f3[0], f3[1]); g.fill();
       g.restore();
     });
+
     const outer = sprite((g) => {
-      // stepping stones in front of the door
-      for (let i = 0; i < 3; i++) { const q = P(H.x + (i - 1) * 7 + R() * 2, sandY(H.x, H.zf - 6 - i * 5) + 0.6, H.zf - 6 - i * 5), r = (3 + R() * 1.2) * q[2]; g.fillStyle = "rgba(40,30,20,.35)"; g.beginPath(); g.ellipse(q[0] + 0.3, q[1] + 0.5, r * 1.05, r * 0.38, 0, 0, TAU); g.fill(); g.fillStyle = ["#b9b2a4", "#a89f8f", "#c5beb0"][i]; g.beginPath(); g.ellipse(q[0], q[1], r, r * 0.34, 0, 0, TAU); g.fill(); }
-      // front wall with a gable and the door cut out
-      const fw = [P(H.x0, H.base, H.zf), P(H.x0, H.top, H.zf), P(H.x, H.ridge + 1, H.zf), P(H.x1, H.top, H.zf), P(H.x1, H.base, H.zf)];
-      const wall = () => { g.beginPath(); fw.forEach((q, i) => (i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]))); g.closePath(); door(g); };
-      let gr = g.createLinearGradient(0, fw[2][1], 0, fw[0][1]); gr.addColorStop(0, "#f1e2c4"); gr.addColorStop(1, "#cdb48e");
-      wall(); g.fillStyle = gr; g.fill("evenodd");
-      g.save(); wall(); g.clip("evenodd");
-      // stones and mortar
-      for (let row = 0; row < 9; row++) {
-        const y = H.base - 2 - row * 4.4;
-        let x = H.x0 - (row % 2) * 4;
-        while (x < H.x1) { const w2 = 6 + R() * 4, q0 = P(x + 0.4, y, H.zf), q1 = P(x + w2 - 0.4, y - 3.6, H.zf); g.fillStyle = R() < 0.5 ? "rgba(255,248,230,.35)" : "rgba(120,95,60,.14)"; g.beginPath(); g.roundRect ? g.roundRect(q0[0], q1[1], q1[0] - q0[0], q0[1] - q1[1], 1.2) : g.rect(q0[0], q1[1], q1[0] - q0[0], q0[1] - q1[1]); g.fill(); x += w2; }
-      }
-      // a little moss creeping up from the sand
-      for (let i = 0; i < 26; i++) { const xx = H.x0 + R() * H.w, q = P(xx, H.base - R() * R() * 7, H.zf); if (Math.abs(xx - H.x) < H.door) continue; g.fillStyle = R() < 0.5 ? "rgba(80,140,60,.55)" : "rgba(50,105,45,.55)"; g.beginPath(); g.arc(q[0], q[1], (0.8 + R() * 1.4) * q[2], 0, TAU); g.fill(); }
+      // contact shadow on the sand
+      const c0 = P(H.cx, H.base, H.cz - H.rz * 0.6);
+      g.fillStyle = "rgba(35,26,16,.35)"; g.beginPath(); g.ellipse(c0[0], c0[1] + 2, H.rx * c0[2] * 1.05, 7 * c0[2], 0, 0, TAU); g.fill();
+      rock(g);
+      const tg = g.createLinearGradient(0, by, 0, by + bh); tg.addColorStop(0, "#9a978e"); tg.addColorStop(0.45, "#66645d"); tg.addColorStop(1, "#393834");
+      g.fillStyle = tg; g.fill();
+      g.save(); rock(g); g.clip();
+      // speckles, cracks and lumps
+      for (let i = 0; i < 170; i++) { g.globalAlpha = 0.15 + R() * 0.25; g.fillStyle = R() < 0.5 ? "#26272a" : "#d2cec3"; g.beginPath(); g.ellipse(bx + R() * bw, by + R() * bh, 0.4 + R() * 1.5, 0.3 + R() * 0.8, R() * PI, 0, TAU); g.fill(); }
+      g.globalAlpha = 0.3; g.strokeStyle = "#2a2a2c"; g.lineWidth = 0.5;
+      for (let i = 0; i < 9; i++) { let x = bx + R() * bw, y = by + bh * (0.2 + R() * 0.6); g.beginPath(); g.moveTo(x, y); for (let j = 0; j < 4; j++) { x += (R() - 0.5) * 7; y += R() * 4; g.lineTo(x, y); } g.stroke(); }
+      // lit top, darker base
+      g.globalAlpha = 0.3; g.fillStyle = "#e7ece6"; g.beginPath();
+      top.forEach((q, i) => (i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])));
+      for (let i = N; i >= 0; i--) g.lineTo(top[i][0], top[i][1] + 3 * top[i][2] + 1.4 * Math.sin(i * 0.8));
+      g.fill();
+      g.globalAlpha = 0.32; g.fillStyle = "#151617"; g.beginPath();
+      bot.forEach((q, i) => (i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])));
+      for (let i = N; i >= 0; i--) g.lineTo(bot[i][0], bot[i][1] - 6 * bot[i][2]);
+      g.fill();
+      // moss on top
+      g.globalAlpha = 1;
+      for (let i = 0; i < 46; i++) { const q = top[(R() * (N - 6) + 3) | 0]; g.fillStyle = R() < 0.5 ? "rgba(96,150,70,.7)" : "rgba(58,110,48,.7)"; g.beginPath(); g.arc(q[0] + (R() - 0.5) * 6, q[1] + R() * 5, (0.7 + R() * 1.2) * q[2], 0, TAU); g.fill(); }
+      g.restore(); g.globalAlpha = 1;
+      g.strokeStyle = "rgba(20,22,24,.5)"; g.lineWidth = 0.5; rock(g); g.stroke();
+      // cut the mouth out, then shade its rim so it reads as a hole in the rock
+      g.globalCompositeOperation = "destination-out"; mouth(g); g.fill();
+      g.globalCompositeOperation = "source-over";
+      g.save(); g.beginPath(); rock(g); g.clip();
+      g.strokeStyle = "rgba(18,15,12,.75)"; g.lineWidth = 3 * archP[0][2]; mouth(g); g.stroke();
+      g.strokeStyle = "rgba(230,226,214,.28)"; g.lineWidth = 0.8; g.beginPath();
+      archP.slice(1, -1).forEach((q, i) => (i ? g.lineTo(q[0], q[1] - 1.6) : g.moveTo(q[0], q[1] - 1.6))); g.stroke();
       g.restore();
-      g.strokeStyle = "rgba(90,66,40,.55)"; g.lineWidth = 0.6; wall(); g.stroke();
-      // wooden door frame
-      g.strokeStyle = "#6b4630"; g.lineWidth = 2.2 * fw[0][2]; g.beginPath(); door(g); g.stroke();
-      g.strokeStyle = "rgba(255,220,170,.25)"; g.lineWidth = 0.6; g.beginPath(); door(g); g.stroke();
-      // round window in the gable
-      const wq = P(H.x, H.top - 4.5, H.zf), wr = 3.4 * wq[2];
-      g.fillStyle = "#6b4630"; g.beginPath(); g.arc(wq[0], wq[1], wr + 1, 0, TAU); g.fill();
-      g.fillStyle = "#1d2b30"; g.beginPath(); g.arc(wq[0], wq[1], wr, 0, TAU); g.fill();
-      g.strokeStyle = "#6b4630"; g.lineWidth = 0.7; g.beginPath(); g.moveTo(wq[0] - wr, wq[1]); g.lineTo(wq[0] + wr, wq[1]); g.moveTo(wq[0], wq[1] - wr); g.lineTo(wq[0], wq[1] + wr); g.stroke();
-      g.fillStyle = "rgba(200,240,255,.35)"; g.beginPath(); g.arc(wq[0] - wr * 0.4, wq[1] - wr * 0.4, wr * 0.3, 0, TAU); g.fill();
-      // roof: two tiled slopes, seen a little from above
-      const slope = (ex, light) => {
-        const a0 = P(ex, ey, ez0), a1 = P(H.x, H.ridge, ez0), a2 = P(H.x, H.ridge, ez1), a3 = P(ex, ey, ez1);
-        const sg = g.createLinearGradient(a0[0], a0[1], a1[0], a1[1]); sg.addColorStop(0, light ? "#b9583a" : "#9c4630"); sg.addColorStop(1, light ? "#d0704c" : "#b25a3c");
-        g.fillStyle = sg; g.beginPath(); g.moveTo(a0[0], a0[1]); g.lineTo(a1[0], a1[1]); g.lineTo(a2[0], a2[1]); g.lineTo(a3[0], a3[1]); g.closePath(); g.fill();
-        g.strokeStyle = "rgba(70,25,15,.45)"; g.lineWidth = 0.5;
-        for (let i = 1; i < 5; i++) { const t = i / 5, b0 = P(lerp(ex, H.x, t), lerp(ey, H.ridge, t), ez0), b1 = P(lerp(ex, H.x, t), lerp(ey, H.ridge, t), ez1); g.beginPath(); g.moveTo(b0[0], b0[1]); g.lineTo(b1[0], b1[1]); g.stroke(); }
-        // the scalloped front edge of the tiles
-        g.fillStyle = light ? "#a64e33" : "#8d3f2a";
-        for (let i = 0; i < 6; i++) { const t0 = i / 6, t1 = (i + 1) / 6, q0 = P(lerp(ex, H.x, t0), lerp(ey, H.ridge, t0), ez0), q1 = P(lerp(ex, H.x, t1), lerp(ey, H.ridge, t1), ez0); g.beginPath(); g.moveTo(q0[0], q0[1]); g.quadraticCurveTo((q0[0] + q1[0]) / 2, (q0[1] + q1[1]) / 2 + 1.6 * q0[2], q1[0], q1[1]); g.lineTo(q1[0], q1[1] - 1.2); g.lineTo(q0[0], q0[1] - 1.2); g.fill(); }
-      };
-      slope(ex0, false); slope(ex1, true);
-      const r0 = P(H.x, H.ridge, ez0), r1 = P(H.x, H.ridge, ez1);
-      g.strokeStyle = "#7c3522"; g.lineWidth = 1.6 * r0[2]; g.beginPath(); g.moveTo(r0[0], r0[1]); g.lineTo(r1[0], r1[1]); g.stroke();
-      // moss on the roof edge
-      for (let i = 0; i < 18; i++) { const t = R(), ex = R() < 0.5 ? ex0 : ex1, q = P(lerp(ex, H.x, t * 0.35), lerp(ey, H.ridge, t * 0.35), ez0 + R() * 6); g.fillStyle = R() < 0.5 ? "rgba(96,150,70,.7)" : "rgba(60,112,50,.7)"; g.beginPath(); g.arc(q[0], q[1], (0.7 + R()) * q[2], 0, TAU); g.fill(); }
-      // chimney
-      const c = H.chim, cw2 = 3, cd2 = 2.5, cb = roofY(c.x) + 1;
-      const f0 = P(c.x - cw2, cb, c.z - cd2), f1 = P(c.x + cw2, cb, c.z - cd2), f2 = P(c.x + cw2, c.y, c.z - cd2), f3 = P(c.x - cw2, c.y, c.z - cd2);
-      g.fillStyle = "#c9b38f"; g.beginPath(); g.moveTo(f0[0], f0[1]); g.lineTo(f1[0], f1[1]); g.lineTo(f2[0], f2[1]); g.lineTo(f3[0], f3[1]); g.fill();
-      const t0 = P(c.x - cw2, c.y, c.z - cd2), t1 = P(c.x + cw2, c.y, c.z - cd2), t2 = P(c.x + cw2, c.y, c.z + cd2), t3 = P(c.x - cw2, c.y, c.z + cd2);
-      g.fillStyle = "#3b2a20"; g.beginPath(); g.moveTo(t0[0], t0[1]); g.lineTo(t1[0], t1[1]); g.lineTo(t2[0], t2[1]); g.lineTo(t3[0], t3[1]); g.fill();
-      g.strokeStyle = "#8e7656"; g.lineWidth = 0.6; g.beginPath(); g.moveTo(t0[0], t0[1]); g.lineTo(t1[0], t1[1]); g.lineTo(t2[0], t2[1]); g.lineTo(t3[0], t3[1]); g.closePath(); g.stroke();
+      // a few pebbles at the mouth
+      for (let i = 0; i < 5; i++) { const x = H.x + (R() - 0.5) * H.door * 2.4, z = H.zf - 3 - R() * 8, q = P(x, sandY(x, z) + 0.5, z), r = (1.2 + R() * 1.6) * q[2]; g.fillStyle = ["#8d8a86", "#a39a8c", "#6f6b66"][i % 3]; g.beginPath(); g.ellipse(q[0], q[1], r, r * 0.55, 0, 0, TAU); g.fill(); }
     });
     return [inner, outer];
   };
@@ -1181,7 +1230,7 @@
     bubbler.t -= dt;
     if (bubbler.t <= 0) { bubbler.on = !bubbler.on; bubbler.t = bubbler.on ? rnd(3, 6) : rnd(5, 11); }
     if (house && axos.some((a) => a.sleep) && Math.random() < dt * 0.9) bubbles.push({ x: house.chim.x + rnd(-0.6, 0.6), y: house.chim.y - 1, z: house.chim.z, r: rnd(0.8, 1.5), vy: rnd(9, 13), ph: rnd(0, TAU), t: 0 });
-    if (bubbler.on && Math.random() < dt * 5 && bubbles.length < 30) bubbles.push({ x: WW * 0.885 + rnd(-1, 1), y: sandY(WW * 0.885, 97) - 2, z: 97, r: rnd(0.7, 1.6), vy: rnd(22, 30), ph: rnd(0, TAU), t: 0 });
+    if (bubbler.on && Math.random() < dt * 5 && bubbles.length < 30) bubbles.push({ x: WW * 0.4 + rnd(-1, 1), y: sandY(WW * 0.4, 99) - 2, z: 99, r: rnd(0.7, 1.6), vy: rnd(22, 30), ph: rnd(0, TAU), t: 0 });
     bubbles = bubbles.filter((b) => { b.t += dt; if (b.t < 0) return true; b.ph += dt * 6; b.y -= b.vy * dt; b.x += Math.sin(b.ph) * 4 * dt; b.r = Math.min(b.r * (1 + dt * 0.08), 2.6); return b.y > SURF + 1; });
     for (const m of motes) { m.ph += dt * 0.5; m.x += (current(m.x, m.y, clock) * 1.6 + Math.sin(m.ph) * 0.4) * dt; m.y += (0.35 + Math.cos(m.ph * 1.3) * 0.3) * dt; if (m.x < 0) m.x += WW; if (m.x > WW) m.x -= WW; if (m.y > sandY(m.x, m.z) - 1) { m.y = SURF + 4; } }
   };
@@ -1213,7 +1262,7 @@
     items.push({ key: 104, draw: () => drawBlades(plants[0]) });
     items.push({ key: 97, draw: () => drawBubbles((b) => b.z > 60) });
     rockImgs.forEach((r) => items.push({ key: r.key, draw: () => ctx.drawImage(r.img, r.x, r.y, r.w, r.h) }));
-    if (houseImgs) { const [hi, ho] = houseImgs; items.push({ key: house.zb + 1, draw: () => ctx.drawImage(hi.img, hi.x, hi.y, hi.w, hi.h) }); items.push({ key: house.zf + 2, draw: () => ctx.drawImage(ho.img, ho.x, ho.y, ho.w, ho.h) }); }
+    if (houseImgs) { const [hi, ho] = houseImgs; items.push({ key: house.zf + 4, draw: () => ctx.drawImage(hi.img, hi.x, hi.y, hi.w, hi.h) }); items.push({ key: house.zf + 2, draw: () => ctx.drawImage(ho.img, ho.x, ho.y, ho.w, ho.h) }); }
     for (const pl of plants.slice(1)) {
       if (pl.kind === "vallis") items.push({ key: pl.z, draw: () => drawBlades(pl) });
       else if (pl.kind === "anubias") items.push({ key: pl.z - 0.5, draw: () => drawAnubias(pl) });
@@ -1226,9 +1275,9 @@
     for (const a of axos) {
       if (!a.pts.length) continue;
       let zk = 0; for (const q of a.pts) zk += q.z; zk /= NSEG;
-      // inside the house: between its dark inside and its front wall. Over the roof: in front of it.
+      // inside the cave: between its dark inside and its front. On top of the rock: in front of it.
       if (house && housing(a)) zk = house.zf + 3;
-      else if (house && zk > house.zf && zk < house.zb + 3 && Math.abs(a.p.x - house.x) < house.w / 2 + 20) zk = Math.min(zk, house.zf + 1);
+      else if (house && zk > house.zf && caveQ(a.p.x, a.p.z) < 1.4) zk = Math.min(zk, house.zf + 1);
       items.push({ key: zk + 0.4, draw: () => drawShadow(a) });
       items.push({ key: zk, draw: () => drawAxo(a) });
     }
