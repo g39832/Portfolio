@@ -55,6 +55,9 @@
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
   // lin(v1, k1, v2, k2, ...) = v1*k1 + v2*k2 + ...
   const lin = (...q) => { let x = 0, y = 0, z = 0; for (let i = 0; i < q.length; i += 2) { const v = q[i], k = q[i + 1]; x += v.x * k; y += v.y * k; z += v.z * k; } return V(x, y, z); };
+  // sideways direction for a segment, kept on the same side as the head's so it never flips when the
+  // segment points nearly straight up or down
+  const sidePerp = (f, ref) => { const h = Math.hypot(f.x, f.z); if (h < 1e-3) return ref; let l = V(-f.z / h, 0, f.x / h); if (l.x * ref.x + l.z * ref.z < 0) l = V(-l.x, 0, -l.z); const w = clamp(h / 0.35, 0, 1); return w < 1 ? norm(V(lerp(ref.x, l.x, w), 0, lerp(ref.z, l.z, w))) : l; };
   const flatPerp = (f, fallback) => { const l = Math.hypot(f.x, f.z); return l < 1e-3 ? fallback : V(-f.z / l, 0, f.x / l); };
   const seeded = (seed) => () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const hexRGB = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
@@ -69,9 +72,14 @@
   const unprojY = (sy, z) => VY + (sy - VY) / sOf(z);
   const sandY = (x, z) => 182 - (12 * z) / D + 1.4 * Math.sin(x * 0.045 + z * 0.06) + 0.8 * Math.sin(x * 0.12 - z * 0.11);
   let rocks = [];
+  // the little house at the back: cream stone walls, a tiled roof, an arched door, a chimney
+  let house = null, houseImgs = null;
+  const roofY = (x) => house.top - house.peak * Math.max(0, 1 - Math.abs(x - house.x) / (house.w / 2 + 4));
+  const inHouseBox = (q, pad = 0) => !!house && q.x > house.x0 - 4 - pad && q.x < house.x1 + 4 + pad && q.z > house.zf - 3 - pad && q.z < house.zb + 3 + pad && q.y > roofY(q.x) - pad;
+  const night = () => { const h = new Date().getHours(); return h >= 22 || h < 7; };
   const rockH = (r, x, z) => {
     const q = ((x - r.x) / r.rx) ** 2 + ((z - r.z) / r.rz) ** 2;
-    return q >= 1 ? 0 : r.h * Math.pow(1 - q, 0.42) * (1 + 0.06 * Math.sin(x * 0.31 + r.seed) * Math.cos(z * 0.27 - r.seed));
+    return q >= 1 ? 0 : r.h * sm((1 - q) / 0.55) * (1 + 0.06 * Math.sin(x * 0.31 + r.seed) * Math.cos(z * 0.27 - r.seed));
   };
   const ground = (x, z) => { let y = sandY(x, z); for (const r of rocks) { const h = rockH(r, x, z); if (h > 0) y = Math.min(y, r.base - h); } return y; };
   const current = (x, y, t) => 0.6 * Math.sin(t * 0.21 + y * 0.02) + 0.4 * Math.sin(t * 0.37 + x * 0.015 + 1.3);
@@ -107,7 +115,7 @@
       curl: 0, curlT: 0, wTuck: 0, wFloor: 0, wBrake: 0, brake: 0, creep: 0, onFloor: false, away: false, seed: rnd(0, 100),
       mode: "hover", goal: null, vs: 0, arrive: 4, face: null, align: null,
       legs: LEGS.map((l) => ({ ...l, adjF: 0, adjL: 0, lift: 0 })), legT: rnd(2, 5), bubbleAt: 0,
-      cpu: 10, sick: false, b: { kind: "none", t: 0 }, lastKind: "", cd: { float: rnd(15, 40), glass: rnd(8, 25), social: rnd(6, 15) }, noticeAt: 0,
+      cpu: 10, sick: false, b: { kind: "none", t: 0 }, lastKind: "", cd: { float: rnd(15, 40), glass: rnd(8, 25), social: rnd(6, 15), house: rnd(25, 70) }, sleep: false, noticeAt: 0,
       Q: null, RR: null,
     };
     return a;
@@ -138,12 +146,15 @@
     const x = rnd(30, WW - 30), z = rnd(14, D - 14), g = ground(x, z) - a.clear - 4, top = SURF + 18;
     zone = zone || (Math.random() < 0.6 ? a.pers.zone : pick(["low", "mid", "high"]));
     const y = zone === "low" ? rnd(g - 32, g) : zone === "high" ? rnd(top, top + 40) : rnd(top + 14, g - 10);
-    return V(x, clamp(y, top, g), z);
+    const p = V(x, clamp(y, top, g), z);
+    if (inHouseBox(p, 12)) p.y = roofY(p.x) - 16;
+    return p;
   };
-  const floorPoint = (a, x, z) => { x = clamp(x, 26, WW - 26); z = clamp(z, 12, D - 14); return V(x, ground(x, z) - a.clear, z); };
+  const floorPoint = (a, x, z) => { x = clamp(x, 26, WW - 26); z = clamp(z, 12, D - 14); if (inHouseBox(V(x, ground(x, z), z), 12)) z = house.zf - rnd(16, 26); return V(x, ground(x, z) - a.clear, z); };
   const yawTo = (from, to) => Math.atan2(to.z - from.z, to.x - from.x);
   const ctl = (a, goal, mode, vs, arrive, face) => { a.goal = goal; a.mode = mode; a.vs = vs * a.pers.speed; a.arrive = arrive == null ? 4 : arrive; a.face = face == null ? null : face; };
   const livePellets = () => pellets.filter((p) => !p.gone);
+  const housing = (a) => a.b.kind === "house" && a.b.ph >= 1;
   const onRock = (p) => rocks.length && rockH(rocks[0], p.x, p.z) > 4;
 
   /* ---------- behaviours. start(a, opt) sets up; tick(a, dt) steers and returns true when done ---------- */
@@ -238,6 +249,7 @@
       start(a, opt) { const o = opt || other(a); a.b.o = o; a.b.ph = 0; o.attn = { by: a, until: clock + 10 }; socialCD = clock + rnd(20, 38); a.cd.social = clock + rnd(10, 20); },
       tick(a) {
         const o = a.b.o, hd = headPos(o);
+        if (housing(o)) return true;
         const front = inside(lin(hd, 1, o.F, 19 * o.size, V(0, -1, 0), 3), a);
         if (a.b.ph === 0) {
           ctl(a, front, a.onFloor && o.onFloor ? "walk" : "swim", 11, 6); a.look = hd;
@@ -258,6 +270,7 @@
     follow: {
       start(a, opt) { a.b.o = opt || other(a); a.b.dur = rnd(6, 11); socialCD = clock + rnd(20, 38); a.cd.social = clock + rnd(10, 20); },
       tick(a) {
+        if (housing(a.b.o)) return true;
         const o = a.b.o, tail = o.pts[NSEG - 1], tdir = norm(sub(o.pts[NSEG - 1], o.pts[NSEG - 5]));
         ctl(a, inside(madd(tail, tdir, 9), a), "swim", clamp(o.speed * 1.15 + 3, 8, 30), 5);
         a.look = headPos(o);
@@ -275,6 +288,7 @@
       },
       tick(a) {
         const o = a.b.o;
+        if (housing(o)) return true;
         let g = lin(o.p, 1, o.L, a.b.side * 14 * o.size, o.F, 3, V(0, -1, 0), 9);
         if (g.x < 26 || g.x > WW - 26 || g.z < 14 || g.z > D - 12) { a.b.side *= -1; g = lin(o.p, 1, o.L, a.b.side * 14 * o.size, o.F, 3, V(0, -1, 0), 9); }
         g = inside(g, a);
@@ -329,6 +343,51 @@
       },
       tick(a) { ctl(a, a.b.spot, "swim", 38, 10); return dist(a.p, a.b.spot) < 14 || a.b.t > 3.5; },
     },
+    house: {
+      // go home for a nap: in through the door, turn round, sleep with the head in the doorway
+      start(a) {
+        const o = other(a), taken = o.b.kind === "house" ? o.b.slot : null;
+        a.b.slot = taken == null ? (Math.random() < 0.5 ? -1 : 1) : -taken;
+        a.b.sx = house.x + a.b.slot * 12.5; a.b.ph = 0;
+        a.b.dur = rnd(25, 50) * (night() ? 2 : 1);
+        if (housing(o)) o.b.dur = Math.max(o.b.dur, o.b.t - (o.b.t1 || 0) + rnd(30, 45));
+        a.cd.house = clock + rnd(70, 140);
+      },
+      tick(a) {
+        const H = house, sx = a.b.sx, at = (z) => V(sx, ground(sx, z) - a.clear, z);
+        if (a.b.ph === 0) {
+          const door = at(H.zf - 16), d = dist(a.p, door);
+          ctl(a, d > 22 ? V(door.x, door.y - 8, door.z) : door, a.onFloor && d < 30 ? "walk" : "swim", 10, 4);
+          if (d < 6) a.b.ph = 1;
+          return a.b.t > 40;
+        }
+        if (a.b.ph === 1) { ctl(a, at(H.zb - 8), "walk", 4.5, 2); if (a.p.z > H.zf + H.d * 0.5) { a.b.ph = 2; a.b.t1 = a.b.t; } return false; }
+        if (a.b.ph === 2) {
+          ctl(a, cp(a.p), "rest", 0, 3, -PI / 2);
+          if (Math.abs(wrapA(a.yaw + PI / 2)) < 0.35 || a.b.t - a.b.t1 > 7) {
+            a.b.ph = 3; a.b.t1 = a.b.t; a.curlT = a.b.slot * 0.9;
+            // often the other one comes to join a few seconds later
+            const o = other(a);
+            if (!housing(o) && !o.sick && Math.random() < 0.5 * (0.6 + o.pers.social)) o.joinAt = clock + rnd(3, 10);
+          }
+          return false;
+        }
+        if (a.b.ph === 3) {
+          ctl(a, at(H.zf + 7), "rest", 0, 3, -PI / 2);
+          a.sleep = a.b.t - a.b.t1 > 2.5;
+          a.look = V(sx, ground(sx, H.zf) + 6, H.zf - 40);
+          if (a.b.t - a.b.t1 > a.b.dur && !a.sick) { a.b.ph = 4; a.sleep = false; }
+          return false;
+        }
+        a.sleep = false;
+        // out of the door, then off to the side so the whole body comes out after the head
+        const outside = a.p.z < H.zf - 8, side = clamp(H.x + a.b.slot * (H.w / 2 + 30), 26, WW - 26);
+        const g = outside ? V(side, ground(side, H.zf - 14) - a.clear, H.zf - 14) : at(H.zf - 14);
+        ctl(a, g, "walk", 5, 3);
+        const clear = !a.pts.some((q) => q.x > H.x0 - 2 && q.x < H.x1 + 2 && q.z > H.zf - 1);
+        return (clear && a.b.t > 1) || a.b.t > 300;
+      },
+    },
     sick: {
       start(a) { a.curlT = 0.8; },
       tick(a) { if (!a.onFloor) ctl(a, null, "sink", 0); else ctl(a, a.p, "rest", 0, 3); return false; },
@@ -348,6 +407,7 @@
     w.push(["rest", 2.4 * a.pers.restful * Math.max(0.2, 1.25 - act)]);
     w.push(["hover", 1.2]);
     w.push(["look", 0.8]);
+    if (house && clock > a.cd.house) w.push(["house", (housing(o) ? 3.5 * a.pers.social : 0.9 * a.pers.restful) * (night() ? 3 : 1)]);
     if (clock > a.cd.float) w.push(["float", 0.6]);
     if (clock > a.cd.glass) w.push(["glass", 1.2 * a.pers.curious]);
     if (!o.sick && clock > socialCD && clock > a.cd.social) {
@@ -366,11 +426,18 @@
   /* ---------- thinking: what to look at, when to eat, what to do next ---------- */
   const think = (a, dt) => {
     a.b.t += dt; a.look = null; a.align = null;
-    if (a.sick && a.b.kind !== "sick") startB(a, "sick");
+    const home = housing(a);
+    if (a.sick && home) a.b.dur = 1e9;
+    else if (a.sick && a.b.kind !== "sick") startB(a, "sick");
     else if (!a.sick && a.b.kind === "sick") startB(a, "look");
     else if (!a.sick && a.b.kind !== "eat" && a.b.kind !== "dart" && livePellets().length) {
       if (!a.noticeAt) a.noticeAt = clock + rnd(a.pers.notice[0], a.pers.notice[1]);
-      else if (clock > a.noticeAt) { a.noticeAt = 0; startB(a, "eat"); }
+      else if (clock > a.noticeAt) { if (home) { if (a.b.ph < 4) { a.b.ph = 4; a.sleep = false; } } else { a.noticeAt = 0; startB(a, "eat"); } }
+    }
+    if (a.joinAt && clock > a.joinAt) {
+      a.joinAt = 0;
+      const o = other(a);
+      if (housing(o) && o.b.ph === 3 && !a.sick && !housing(a) && a.b.kind !== "eat" && a.b.kind !== "dart") startB(a, "house");
     }
     if (B[a.b.kind].tick(a, dt)) choose(a);
     if (a.b.kind === "none") choose(a);
@@ -411,9 +478,11 @@
     if (az < 18) uz += ((18 - az) / 18) * 1.6;
     if (az > D - 12) uz -= ((az - D + 12) / 12) * 1.6;
     if (ay < SURF + 10) uy += (SURF + 10 - ay) / 10;
+    const home = housing(a);
+    if (house && !home && inHouseBox(V(ax, ay, az), 6)) { uy -= 1.4; ux += Math.sign(ax - house.x || 1) * 0.5; }
     // give the other one room (less when they're meant to be close)
     const o = other(a);
-    for (let k = 0; k < NSEG; k += 3) {
+    for (let k = 0; k < NSEG && !(home && housing(o)); k += 3) {
       const q = o.pts[k]; if (!q) break;
       const ex = p.x - q.x, ey = p.y - q.y, ez = p.z - q.z, e = Math.hypot(ex, ey, ez) || 1;
       const min = (k < 7 ? 12 : 8) * ((a.size + o.size) / 2) * (a.b.o === o || o.b.o === a ? 0.95 : 1);
@@ -480,12 +549,16 @@
     if (sz < 2) p.z += 2 - sz;
     if (sz > D - 2) p.z -= sz - (D - 2);
     p.x = clamp(p.x, 6, WW - 6); p.z = clamp(p.z, 4, D - 4);
+    if (house) {
+      if (home) { if (p.z > house.zf - 3) { p.x = clamp(p.x, house.x0 + 7, house.x1 - 7); p.y = Math.max(p.y, house.top + 8); } p.z = Math.min(p.z, house.zb - 7); }
+      else if (inHouseBox(p, 2)) p.y = Math.max(roofY(p.x) - 5, p.y - 30 * dt);
+    }
 
     // spine: each point follows the one in front, stiff in the trunk and loose in the tail
     const pts = a.pts, resting = a.mode === "rest" && a.onFloor;
     a.curl += ((resting ? a.curlT : 0) - a.curl) * damp(0.8, dt);
     pts[0] = cp(p);
-    let prev = mul(a.F, -1);
+    let prev = mul(a.F, -1), side = a.L;
     for (let i = 1; i < NSEG; i++) {
       const q = pts[i], o0 = pts[i - 1];
       let dir = sub(q, o0); const l = len(dir);
@@ -494,7 +567,7 @@
       dir = norm(lin(dir, 1 - k, prev, k));
       if (i > 6) {
         dir.y += (1 - a.thrust) * 0.9 * dt * (a.onFloor ? 2 : 0.6);
-        if (a.curl) { const lt = flatPerp(dir, a.L); dir.x += lt.x * a.curl * 0.9 * dt; dir.z += lt.z * a.curl * 0.9 * dt; }
+        if (a.curl) { const lt = (side = sidePerp(dir, side)); dir.x += lt.x * a.curl * 0.9 * dt; dir.z += lt.z * a.curl * 0.9 * dt; }
         dir = norm(dir);
       }
       // joints only bend so far, so the body never folds or kinks
@@ -503,20 +576,24 @@
       const n = madd(o0, dir, SEG * a.size);
       n.x = clamp(n.x, 3, WW - 3); n.z = clamp(n.z, 3, D - 3);
       n.y = clamp(n.y, SURF + 2, ground(n.x, n.z) - RAD[i] * a.size * 0.85);
+      if (house) {
+        if (home) { if (n.z > house.zf - 1) { n.x = clamp(n.x, house.x0 + 3, house.x1 - 3); n.z = Math.min(n.z, house.zb - 3); n.y = Math.max(n.y, house.top + RAD[i] * a.size + 2); } }
+        else if (inHouseBox(n)) n.y = Math.min(n.y, roofY(n.x) - RAD[i] * a.size * 0.85);
+      }
       pts[i] = n;
       prev = norm(sub(n, o0));
     }
 
     // secondary motion
     a.beat += dt * TAU * (0.35 + 2.3 * a.thrust);
-    const ampT = (0.5 + 5 * a.thrust + Math.min(1.5, Math.abs(a.yawV) * 1.2)) * (resting ? 0.45 : 1) * (a.sick ? 0.4 : 1);
+    const ampT = (a.sleep ? 0.35 : 1) * (0.5 + 5 * a.thrust + Math.min(1.5, Math.abs(a.yawV) * 1.2)) * (resting ? 0.45 : 1) * (a.sick ? 0.4 : 1);
     a.amp += (ampT - a.amp) * damp(4, dt);
     const walking = a.onFloor && a.speed > 0.4 && a.thrust < 0.4;
     a.walkAmp += ((walking ? clamp(a.speed / 6, 0, 1) : 0) - a.walkAmp) * damp(4, dt);
     a.gait += (walking ? (a.speed * dt) / (3.2 * a.size) : 0) * PI;
     a.pad += dt * TAU * (a.creep || a.mode === "hover" ? 0.9 : 0.45);
     a.flare += (a.flareT - a.flare) * damp(2, dt);
-    a.gp += dt * TAU * ((a.sick ? 0.3 : 0.5) + 0.45 * a.flare + 0.4 * a.exert);
+    a.gp += dt * TAU * (a.sleep ? 0.45 : 1) * ((a.sick ? 0.3 : 0.5) + 0.45 * a.flare + 0.4 * a.exert);
     a.gulp = Math.max(0, a.gulp - dt * 2.6);
     const tuckT = a.burst > 0 ? 1 : !a.onFloor && a.mode === "swim" && !a.creep ? clamp((a.speed - 7) / 8, 0, 1) : 0;
     const floorT = clamp(1 - (gy2 - p.y) / 6, 0, 1);
@@ -552,7 +629,7 @@
   const stepFood = (dt) => {
     pellets = pellets.filter((p) => {
       if (p.gone) return false;
-      const gy = ground(p.x, p.z) - 1;
+      const gy = inHouseBox(V(p.x, 1e4, p.z)) ? roofY(p.x) - 1 : ground(p.x, p.z) - 1;
       if (!p.landed) { p.ph += dt * 2.3; p.y += p.vy * dt; p.x += Math.sin(p.ph) * 2.5 * dt + current(p.x, p.y, clock) * 0.8 * dt; if (p.y >= gy) { p.y = gy; p.landed = clock; } }
       return !(p.landed && clock - p.landed > 30);
     });
@@ -572,6 +649,13 @@
       { x: WW * 0.44, z: 22, rx: 7, rz: 5, h: 5, seed: 11, tone: ["#a49a8a", "#766d5f", "#4a443b"] },
     ];
     for (const r of rocks) r.base = sandY(r.x, r.z) + 1.5;
+    {
+      const w = 74, d = 36, x = WW * 0.45, z = 80;
+      house = { x, z, w, d, wall: 28, peak: 16, x0: x - w / 2, x1: x + w / 2, zf: z - d / 2, zb: z + d / 2, door: 21 };
+      house.base = sandY(x, house.zf) + 1.5; house.top = house.base - house.wall; house.ridge = house.top - house.peak;
+      const cx = x + 15, cz = house.zb - 7;
+      house.chim = V(cx, roofY(cx) - 10, cz);
+    }
     const vallis = (x, z, n, h0, h1, w, col, col2) => {
       const blades = [];
       for (let i = 0; i < n; i++) blades.push({ dx: rr(-6, 6), h: rr(h0, h1), w: w * rr(0.8, 1.15), ph: rr(0, TAU), lean: rr(-0.25, 0.25), tw: rr(1.2, 2.6), push: 0, pv: 0, col: R() < 0.5 ? col : col2 });
@@ -713,6 +797,8 @@
       return { img: c, x: bx, y: by, w: bw, h: bh, key: r.z + r.rz * 0.5 };
     });
 
+    houseImgs = paintHouse();
+
     // moss ball
     const m = plants.find((p) => p.kind === "moss"), mq = proj(V(m.x, sandY(m.x, m.z) - m.r * 0.85, m.z)), mr = m.r * mq[2];
     moss = { img: offscreen((mr * 2 + 6) * k * dpr, (mr * 2 + 6) * k * dpr), x: mq[0] - mr - 3, y: mq[1] - mr - 3, w: mr * 2 + 6, key: m.z };
@@ -729,6 +815,91 @@
       mg.strokeStyle = R3() < 0.5 ? "rgba(140,200,100,.55)" : "rgba(30,70,25,.6)";
       mg.beginPath(); mg.moveTo(x, y); mg.lineTo(x + Math.cos(b) * l, y + Math.sin(b) * l); mg.stroke();
     }
+  };
+
+  /* the house is drawn once into two sprites: its dark inside (behind a sleeping axolotl) and its
+     front wall and roof (in front of it). Anything inside only shows through the door. */
+  const paintHouse = () => {
+    const H = house, P = (x, y, z) => proj(V(x, y, z)), R = seeded(77);
+    const ez0 = H.zf - 3, ez1 = H.zb + 3, ex0 = H.x0 - 4, ex1 = H.x1 + 4, ey = H.top + 1;
+    const pts = [P(ex0, ey, ez0), P(ex1, ey, ez0), P(H.x, H.ridge, ez1), P(H.x, H.ridge - 1, ez0), P(H.x0 - 6, H.base + 3, H.zf - 8), P(H.x1 + 6, H.base + 3, H.zf - 8), P(H.chim.x, H.chim.y - 3, H.chim.z)];
+    const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+    const bx = Math.min(...xs) - 4, by = Math.min(...ys) - 4, bw = Math.max(...xs) - bx + 4, bh = Math.max(...ys) - by + 4;
+    const sprite = (fn) => { const c = offscreen(bw * k * dpr, bh * k * dpr), g = c.getContext("2d"); g.setTransform(k * dpr, 0, 0, k * dpr, -bx * k * dpr, -by * k * dpr); g.lineCap = g.lineJoin = "round"; fn(g); return { img: c, x: bx, y: by, w: bw, h: bh }; };
+    const door = (g) => {
+      const r = H.door, yb = H.base, ys2 = yb - 6, z = H.zf;
+      let q = P(H.x - r, yb, z); g.moveTo(q[0], q[1]);
+      q = P(H.x - r, ys2, z); g.lineTo(q[0], q[1]);
+      for (let i = 0; i <= 16; i++) { const t = PI + (PI * i) / 16; q = P(H.x + Math.cos(t) * r, ys2 + Math.sin(t) * r, z); g.lineTo(q[0], q[1]); }
+      q = P(H.x + r, yb, z); g.lineTo(q[0], q[1]); g.closePath();
+    };
+    const inner = sprite((g) => {
+      // soft shadow of the house on the sand
+      const c = P(H.x, H.base, H.z), cs = c[2];
+      g.fillStyle = "rgba(35,26,16,.35)"; g.beginPath(); g.ellipse(c[0], c[1] + 1, (H.w / 2 + 8) * cs, 6 * cs, 0, 0, TAU); g.fill();
+      g.save(); g.beginPath(); door(g); g.clip();
+      const t = P(H.x, H.base - 30, H.zf), b = P(H.x, H.base, H.zf);
+      let gr = g.createLinearGradient(0, t[1], 0, b[1]); gr.addColorStop(0, "#120b07"); gr.addColorStop(1, "#2a1c12");
+      g.fillStyle = gr; g.fillRect(bx, by, bw, bh);
+      // the floor inside, fading into the dark
+      const f0 = P(H.x0, H.base, H.zf), f1 = P(H.x1, H.base, H.zf), f2 = P(H.x1, H.base, H.zb), f3 = P(H.x0, H.base, H.zb);
+      gr = g.createLinearGradient(0, f2[1], 0, f0[1]); gr.addColorStop(0, "rgba(70,56,38,0)"); gr.addColorStop(1, "rgba(120,98,66,.85)");
+      g.fillStyle = gr; g.beginPath(); g.moveTo(f0[0], f0[1]); g.lineTo(f1[0], f1[1]); g.lineTo(f2[0], f2[1]); g.lineTo(f3[0], f3[1]); g.fill();
+      g.restore();
+    });
+    const outer = sprite((g) => {
+      // stepping stones in front of the door
+      for (let i = 0; i < 3; i++) { const q = P(H.x + (i - 1) * 7 + R() * 2, sandY(H.x, H.zf - 6 - i * 5) + 0.6, H.zf - 6 - i * 5), r = (3 + R() * 1.2) * q[2]; g.fillStyle = "rgba(40,30,20,.35)"; g.beginPath(); g.ellipse(q[0] + 0.3, q[1] + 0.5, r * 1.05, r * 0.38, 0, 0, TAU); g.fill(); g.fillStyle = ["#b9b2a4", "#a89f8f", "#c5beb0"][i]; g.beginPath(); g.ellipse(q[0], q[1], r, r * 0.34, 0, 0, TAU); g.fill(); }
+      // front wall with a gable and the door cut out
+      const fw = [P(H.x0, H.base, H.zf), P(H.x0, H.top, H.zf), P(H.x, H.ridge + 1, H.zf), P(H.x1, H.top, H.zf), P(H.x1, H.base, H.zf)];
+      const wall = () => { g.beginPath(); fw.forEach((q, i) => (i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]))); g.closePath(); door(g); };
+      let gr = g.createLinearGradient(0, fw[2][1], 0, fw[0][1]); gr.addColorStop(0, "#f1e2c4"); gr.addColorStop(1, "#cdb48e");
+      wall(); g.fillStyle = gr; g.fill("evenodd");
+      g.save(); wall(); g.clip("evenodd");
+      // stones and mortar
+      for (let row = 0; row < 9; row++) {
+        const y = H.base - 2 - row * 4.4;
+        let x = H.x0 - (row % 2) * 4;
+        while (x < H.x1) { const w2 = 6 + R() * 4, q0 = P(x + 0.4, y, H.zf), q1 = P(x + w2 - 0.4, y - 3.6, H.zf); g.fillStyle = R() < 0.5 ? "rgba(255,248,230,.35)" : "rgba(120,95,60,.14)"; g.beginPath(); g.roundRect ? g.roundRect(q0[0], q1[1], q1[0] - q0[0], q0[1] - q1[1], 1.2) : g.rect(q0[0], q1[1], q1[0] - q0[0], q0[1] - q1[1]); g.fill(); x += w2; }
+      }
+      // a little moss creeping up from the sand
+      for (let i = 0; i < 26; i++) { const xx = H.x0 + R() * H.w, q = P(xx, H.base - R() * R() * 7, H.zf); if (Math.abs(xx - H.x) < H.door) continue; g.fillStyle = R() < 0.5 ? "rgba(80,140,60,.55)" : "rgba(50,105,45,.55)"; g.beginPath(); g.arc(q[0], q[1], (0.8 + R() * 1.4) * q[2], 0, TAU); g.fill(); }
+      g.restore();
+      g.strokeStyle = "rgba(90,66,40,.55)"; g.lineWidth = 0.6; wall(); g.stroke();
+      // wooden door frame
+      g.strokeStyle = "#6b4630"; g.lineWidth = 2.2 * fw[0][2]; g.beginPath(); door(g); g.stroke();
+      g.strokeStyle = "rgba(255,220,170,.25)"; g.lineWidth = 0.6; g.beginPath(); door(g); g.stroke();
+      // round window in the gable
+      const wq = P(H.x, H.top - 4.5, H.zf), wr = 3.4 * wq[2];
+      g.fillStyle = "#6b4630"; g.beginPath(); g.arc(wq[0], wq[1], wr + 1, 0, TAU); g.fill();
+      g.fillStyle = "#1d2b30"; g.beginPath(); g.arc(wq[0], wq[1], wr, 0, TAU); g.fill();
+      g.strokeStyle = "#6b4630"; g.lineWidth = 0.7; g.beginPath(); g.moveTo(wq[0] - wr, wq[1]); g.lineTo(wq[0] + wr, wq[1]); g.moveTo(wq[0], wq[1] - wr); g.lineTo(wq[0], wq[1] + wr); g.stroke();
+      g.fillStyle = "rgba(200,240,255,.35)"; g.beginPath(); g.arc(wq[0] - wr * 0.4, wq[1] - wr * 0.4, wr * 0.3, 0, TAU); g.fill();
+      // roof: two tiled slopes, seen a little from above
+      const slope = (ex, light) => {
+        const a0 = P(ex, ey, ez0), a1 = P(H.x, H.ridge, ez0), a2 = P(H.x, H.ridge, ez1), a3 = P(ex, ey, ez1);
+        const sg = g.createLinearGradient(a0[0], a0[1], a1[0], a1[1]); sg.addColorStop(0, light ? "#b9583a" : "#9c4630"); sg.addColorStop(1, light ? "#d0704c" : "#b25a3c");
+        g.fillStyle = sg; g.beginPath(); g.moveTo(a0[0], a0[1]); g.lineTo(a1[0], a1[1]); g.lineTo(a2[0], a2[1]); g.lineTo(a3[0], a3[1]); g.closePath(); g.fill();
+        g.strokeStyle = "rgba(70,25,15,.45)"; g.lineWidth = 0.5;
+        for (let i = 1; i < 5; i++) { const t = i / 5, b0 = P(lerp(ex, H.x, t), lerp(ey, H.ridge, t), ez0), b1 = P(lerp(ex, H.x, t), lerp(ey, H.ridge, t), ez1); g.beginPath(); g.moveTo(b0[0], b0[1]); g.lineTo(b1[0], b1[1]); g.stroke(); }
+        // the scalloped front edge of the tiles
+        g.fillStyle = light ? "#a64e33" : "#8d3f2a";
+        for (let i = 0; i < 6; i++) { const t0 = i / 6, t1 = (i + 1) / 6, q0 = P(lerp(ex, H.x, t0), lerp(ey, H.ridge, t0), ez0), q1 = P(lerp(ex, H.x, t1), lerp(ey, H.ridge, t1), ez0); g.beginPath(); g.moveTo(q0[0], q0[1]); g.quadraticCurveTo((q0[0] + q1[0]) / 2, (q0[1] + q1[1]) / 2 + 1.6 * q0[2], q1[0], q1[1]); g.lineTo(q1[0], q1[1] - 1.2); g.lineTo(q0[0], q0[1] - 1.2); g.fill(); }
+      };
+      slope(ex0, false); slope(ex1, true);
+      const r0 = P(H.x, H.ridge, ez0), r1 = P(H.x, H.ridge, ez1);
+      g.strokeStyle = "#7c3522"; g.lineWidth = 1.6 * r0[2]; g.beginPath(); g.moveTo(r0[0], r0[1]); g.lineTo(r1[0], r1[1]); g.stroke();
+      // moss on the roof edge
+      for (let i = 0; i < 18; i++) { const t = R(), ex = R() < 0.5 ? ex0 : ex1, q = P(lerp(ex, H.x, t * 0.35), lerp(ey, H.ridge, t * 0.35), ez0 + R() * 6); g.fillStyle = R() < 0.5 ? "rgba(96,150,70,.7)" : "rgba(60,112,50,.7)"; g.beginPath(); g.arc(q[0], q[1], (0.7 + R()) * q[2], 0, TAU); g.fill(); }
+      // chimney
+      const c = H.chim, cw2 = 3, cd2 = 2.5, cb = roofY(c.x) + 1;
+      const f0 = P(c.x - cw2, cb, c.z - cd2), f1 = P(c.x + cw2, cb, c.z - cd2), f2 = P(c.x + cw2, c.y, c.z - cd2), f3 = P(c.x - cw2, c.y, c.z - cd2);
+      g.fillStyle = "#c9b38f"; g.beginPath(); g.moveTo(f0[0], f0[1]); g.lineTo(f1[0], f1[1]); g.lineTo(f2[0], f2[1]); g.lineTo(f3[0], f3[1]); g.fill();
+      const t0 = P(c.x - cw2, c.y, c.z - cd2), t1 = P(c.x + cw2, c.y, c.z - cd2), t2 = P(c.x + cw2, c.y, c.z + cd2), t3 = P(c.x - cw2, c.y, c.z + cd2);
+      g.fillStyle = "#3b2a20"; g.beginPath(); g.moveTo(t0[0], t0[1]); g.lineTo(t1[0], t1[1]); g.lineTo(t2[0], t2[1]); g.lineTo(t3[0], t3[1]); g.fill();
+      g.strokeStyle = "#8e7656"; g.lineWidth = 0.6; g.beginPath(); g.moveTo(t0[0], t0[1]); g.lineTo(t1[0], t1[1]); g.lineTo(t2[0], t2[1]); g.lineTo(t3[0], t3[1]); g.closePath(); g.stroke();
+    });
+    return [inner, outer];
   };
 
   const drawBlades = (pl) => {
@@ -804,7 +975,12 @@
     const Rp = [], Fd = [], Ld = [], Ud = [], Q = [], rr = [], Uq = [];
     for (let i = 0; i < n; i++) {
       const p = a.pts[i], prv = a.pts[Math.max(0, i - 1)], nxt = a.pts[Math.min(n - 1, i + 1)];
-      const f = i === 0 ? a.F : norm(sub(prv, nxt)), l = flatPerp(f, a.L), u = cross(f, l);
+      const f = i === 0 ? a.F : norm(sub(prv, nxt));
+      // sideways and up for this segment, kept continuous with last frame so nothing flips for a frame
+      const pl = a.pL && a.pL[i], pu = a.pU && a.pU[i];
+      const l = sidePerp(f, pl || (i === 0 ? a.L : Ld[i - 1]));
+      let u = cross(f, l);
+      if (dot(u, pu || a.U) < 0) u = mul(u, -1);
       const env = 0.06 + 0.94 * Math.pow(i / (n - 1), 1.6);
       const w = a.amp * env * Math.sin(a.beat - i * 0.62) + a.walkAmp * 1.5 * Math.sin(a.gait) * Math.cos(i * 0.42 + 0.3) * (i < 10 ? 1 : 0.5);
       const rp = madd(p, l, w * sz);
@@ -813,7 +989,7 @@
       const q = proj(rp); Q.push(q); rr.push(RAD[i] * sz * q[2]);
       const qu = proj(madd(rp, u, 1)); Uq.push([qu[0] - q[0], qu[1] - q[1]]);
     }
-    a.Q = Q; a.RR = rr;
+    a.Q = Q; a.RR = rr; a.Ld = Ld; a.Fd = Fd; a.pL = Ld; a.pU = Ud;
     const hf = headFrame(a, Rp[0]);
     const nearSide = (vec) => (vec.z < 0 ? 1 : -1);
     const hNear = nearSide(hf.L);
@@ -833,6 +1009,7 @@
         dir = norm(lin(dir, 1, Uh, 0.16 * Math.sin(a.gp * w + sd) * fl - (a.sick ? 0.45 : 0), Fh, -sweep + 0.08 * Math.sin(a.gp * 0.8 * w + sd * 2), Lh, sigma * (a.flare * 0.28 - sweep * 0.3)));
         let bv = sub(mul(Fh, -1), mul(dir, -dot(dir, Fh)));
         bv = len(bv) < 0.05 ? Uh : norm(bv);
+        let pv = cross(dir, Fh); pv = len(pv) < 0.05 ? Uh : norm(pv);
         const gl = [13.5, 12.2, 10.4][kq] * sz * (a.sick ? 0.9 : 1);
         const S = (u) => lin(root, 1, dir, gl * u, bv, gl * 0.25 * u * u, Uh, 0.35 * sz * Math.sin(a.gp * 1.7 * w - u * 3 + sd) * u);
         let q0 = proj(root); sAvg += q0[2];
@@ -842,7 +1019,8 @@
           const u = 0.1 + (0.9 * j) / 11, sb = S(u), qb = proj(sb);
           const wig = Math.sin(a.gp * 2.4 + j * 0.9 + kq * 1.3);
           const flen = sz * (1.3 + 3.0 * Math.sin(Math.min(1, u * 1.05) * PI * 0.88)) * (0.85 + 0.15 * a.flare);
-          const d1 = norm(lin(bv, 0.75, dir, 0.25, Uh, 0.3 * wig * fl)), d2 = norm(lin(bv, -0.6, dir, 0.35, Uh, 0.25 * wig * fl));
+          // fringes fan out on both sides of the stalk, so the gills look feathery from the side and from the front
+          const d1 = norm(lin(bv, 0.55, pv, 0.6, dir, 0.2, Uh, 0.28 * wig * fl)), d2 = norm(lin(bv, 0.25, pv, -0.65, dir, 0.25, Uh, 0.22 * wig * fl));
           const m1 = proj(madd(sb, d1, flen * 0.5)), e1 = proj(madd(sb, d1, flen)), m2 = proj(madd(sb, d2, flen * 0.35)), e2 = proj(madd(sb, d2, flen * 0.7));
           filA.moveTo(qb[0], qb[1]); filA.lineTo(m1[0], m1[1]); filB.moveTo(m1[0], m1[1]); filB.lineTo(e1[0], e1[1]);
           filA.moveTo(qb[0], qb[1]); filA.lineTo(m2[0], m2[1]); filB.moveTo(m2[0], m2[1]); filB.lineTo(e2[0], e2[1]);
@@ -1002,6 +1180,7 @@
     // bubbles from the air stone at the back, in bursts
     bubbler.t -= dt;
     if (bubbler.t <= 0) { bubbler.on = !bubbler.on; bubbler.t = bubbler.on ? rnd(3, 6) : rnd(5, 11); }
+    if (house && axos.some((a) => a.sleep) && Math.random() < dt * 0.9) bubbles.push({ x: house.chim.x + rnd(-0.6, 0.6), y: house.chim.y - 1, z: house.chim.z, r: rnd(0.8, 1.5), vy: rnd(9, 13), ph: rnd(0, TAU), t: 0 });
     if (bubbler.on && Math.random() < dt * 5 && bubbles.length < 30) bubbles.push({ x: WW * 0.885 + rnd(-1, 1), y: sandY(WW * 0.885, 97) - 2, z: 97, r: rnd(0.7, 1.6), vy: rnd(22, 30), ph: rnd(0, TAU), t: 0 });
     bubbles = bubbles.filter((b) => { b.t += dt; if (b.t < 0) return true; b.ph += dt * 6; b.y -= b.vy * dt; b.x += Math.sin(b.ph) * 4 * dt; b.r = Math.min(b.r * (1 + dt * 0.08), 2.6); return b.y > SURF + 1; });
     for (const m of motes) { m.ph += dt * 0.5; m.x += (current(m.x, m.y, clock) * 1.6 + Math.sin(m.ph) * 0.4) * dt; m.y += (0.35 + Math.cos(m.ph * 1.3) * 0.3) * dt; if (m.x < 0) m.x += WW; if (m.x > WW) m.x -= WW; if (m.y > sandY(m.x, m.z) - 1) { m.y = SURF + 4; } }
@@ -1034,6 +1213,7 @@
     items.push({ key: 104, draw: () => drawBlades(plants[0]) });
     items.push({ key: 97, draw: () => drawBubbles((b) => b.z > 60) });
     rockImgs.forEach((r) => items.push({ key: r.key, draw: () => ctx.drawImage(r.img, r.x, r.y, r.w, r.h) }));
+    if (houseImgs) { const [hi, ho] = houseImgs; items.push({ key: house.zb + 1, draw: () => ctx.drawImage(hi.img, hi.x, hi.y, hi.w, hi.h) }); items.push({ key: house.zf + 2, draw: () => ctx.drawImage(ho.img, ho.x, ho.y, ho.w, ho.h) }); }
     for (const pl of plants.slice(1)) {
       if (pl.kind === "vallis") items.push({ key: pl.z, draw: () => drawBlades(pl) });
       else if (pl.kind === "anubias") items.push({ key: pl.z - 0.5, draw: () => drawAnubias(pl) });
@@ -1046,6 +1226,9 @@
     for (const a of axos) {
       if (!a.pts.length) continue;
       let zk = 0; for (const q of a.pts) zk += q.z; zk /= NSEG;
+      // inside the house: between its dark inside and its front wall. Over the roof: in front of it.
+      if (house && housing(a)) zk = house.zf + 3;
+      else if (house && zk > house.zf && zk < house.zb + 3 && Math.abs(a.p.x - house.x) < house.w / 2 + 20) zk = Math.min(zk, house.zf + 1);
       items.push({ key: zk + 0.4, draw: () => drawShadow(a) });
       items.push({ key: zk, draw: () => drawAxo(a) });
     }
@@ -1166,7 +1349,7 @@
     const z = rnd(18, 45), x0 = clamp(unprojX(sx, z), 14, WW - 14), y0 = clamp(unprojY(sy, z), SURF + 2, ground(x0, z) - 6);
     if (livePellets().length >= 9) {
       // they're full: just come and see what the fuss is
-      for (const a of axos) if (!a.sick && a.b.kind !== "eat") { startB(a, "hover"); a.b.hold = inside(V(x0 + rnd(-15, 15), y0, z), a); a.glance = { at: V(x0, y0, z), until: clock + 3 }; }
+      for (const a of axos) if (!a.sick && a.b.kind !== "eat" && !housing(a)) { startB(a, "hover"); a.b.hold = inside(V(x0 + rnd(-15, 15), y0, z), a); a.glance = { at: V(x0, y0, z), until: clock + 3 }; }
       return;
     }
     pinch++;
@@ -1174,6 +1357,7 @@
   };
   box.addEventListener("click", (e) => {
     const [sx, sy] = toWorld(e), a = hit(sx, sy);
+    if (a && housing(a)) { if (a.b.ph < 4) { a.b.ph = 4; a.sleep = false; } tagsUntil = clock + 2; return; }
     if (a && !a.sick && !still) { startB(a, "dart"); tagsUntil = clock + 2; return; }
     feed(sx, sy);
   });
