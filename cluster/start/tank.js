@@ -945,11 +945,19 @@
         pts.push(nn.z < 0.05 ? proj(m) : null);
       }
       const open = a.gulp > 0 ? Math.sin((1 - a.gulp) * PI) : 0;
-      if (open > 0.02) { const mc = lin(C2, 1, Fh, 4.2 * sz, Uh, -1.6 * sz); ctx.fillStyle = P.inner; ctx.beginPath(); ell(projEll(mc, mul(Fh, 0.6 * sz), mul(Lh, 3.2 * sz * open), mul(Uh, 1.7 * sz * open))); ctx.fill(); }
-      ctx.strokeStyle = P.mouth; ctx.lineWidth = 0.62 * s * sz; ctx.beginPath();
-      let pen = false;
-      for (const q of pts) { if (!q) { pen = false; continue; } pen ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); pen = true; }
-      ctx.stroke();
+      // the smile fades out as the mouth opens into a round "O" for the gulp, and comes back after
+      const smileA = clamp(1 - open * 5, 0, 1);
+      if (smileA > 0) {
+        ctx.globalAlpha = smileA; ctx.strokeStyle = P.mouth; ctx.lineWidth = 0.62 * s * sz; ctx.beginPath();
+        let pen = false;
+        for (const q of pts) { if (!q) { pen = false; continue; } pen ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); pen = true; }
+        ctx.stroke(); ctx.globalAlpha = 1;
+      }
+      if (open > 0.02) {
+        const mc = lin(C2, 1, Fh, 4.3 * sz, Uh, -1.2 * sz), me = projEll(mc, mul(Fh, 0.6 * sz), mul(Lh, 2.6 * sz * open), mul(Uh, 1.9 * sz * open));
+        ctx.fillStyle = P.inner; ctx.beginPath(); ell(me); ctx.fill();
+        ctx.strokeStyle = P.mouth; ctx.lineWidth = 0.5 * s * sz; ctx.beginPath(); ell(me, 0.2 * s); ctx.stroke();
+      }
       // eyes: small, black, glossy, and no eyelids
       for (const sg of [1, -1]) {
         const ep = lin(C1, 1, Fh, 2.2 * sz, Lh, sg * 5.6 * sz, Uh, 2.3 * sz), nn = norm(lin(Fh, 0.3, Lh, sg * 0.85, Uh, 0.5)), facing = -nn.z;
