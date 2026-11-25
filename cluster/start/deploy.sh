@@ -9,7 +9,7 @@ kubectl -n homepage rollout restart deployment homepage
 kubectl create namespace start --dry-run=client -o yaml | kubectl apply -f -
 kubectl -n start create configmap start-page --from-file=index.html="$here/index.html" \
   --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n start create configmap start-icons --from-file="$here/icon.svg"   --from-file="$here/apple-touch-icon.png" --from-file="$here/icon-512.png"   --from-file="$here/manifest.webmanifest" --from-file="$here/lessons.js" --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n start create configmap start-icons --from-file="$here/icon.svg"   --from-file="$here/apple-touch-icon.png" --from-file="$here/icon-512.png"   --from-file="$here/manifest.webmanifest" --from-file="$here/lessons.js" --from-file="$here/tank.js" --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -f "$here/../k8s/47-start.yaml"
 kubectl -n start rollout restart deployment start
 kubectl -n start rollout status deployment start --timeout=180s

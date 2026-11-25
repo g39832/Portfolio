@@ -44,6 +44,11 @@ data:
       }
 
       # The full lessons change more often than the icons, so always check for a new copy.
+      location = /i/tank.js {
+        types { text/javascript js; }
+        add_header Cache-Control "no-cache";
+      }
+
       location = /i/lessons.js {
         types { text/javascript js; }
         add_header Cache-Control "no-cache";
