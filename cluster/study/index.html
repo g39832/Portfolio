@@ -210,7 +210,7 @@ footer.note { color: var(--ink-3); font-size: 12.5px; border-top: 1px solid var(
   <div class="content">
     <div class="intro">
       <h2>From a two-Pi cluster to a DevOps job</h2>
-      <p>What to do, read, watch and listen to next, in a sensible order, plus projects to build on raspberrypi and pi2. Every link was checked on 21 November 2026. Check items off as you go; your progress stays in this browser.</p>
+      <p>What to do, read, watch and listen to next, in a sensible order, plus projects to build on raspberrypi and pi2. Everything here is free, and every link and video was checked on 27 November 2026. Check items off as you go; your progress stays in this browser.</p>
       <div class="next" id="next"></div>
     </div>
 
@@ -218,7 +218,6 @@ footer.note { color: var(--ink-3); font-size: 12.5px; border-top: 1px solid var(
       <div class="search"><input id="q" type="search" placeholder="Search resources" aria-label="Search resources"><kbd>/</kbd></div>
       <div class="seg" id="kinds" role="group" aria-label="Kind"></div>
       <div class="switches">
-        <label><input id="free" type="checkbox"> Free only</label>
         <label><input id="hide" type="checkbox"> Hide done</label>
       </div>
       <span class="shown" id="shown"></span>
@@ -226,12 +225,12 @@ footer.note { color: var(--ink-3); font-size: 12.5px; border-top: 1px solid var(
 
     <div id="list" style="display:grid; gap:40px"></div>
 
-    <footer class="note">A few big sites (Cloudflare, Grafana, O'Reilly) block automated link checks but open normally in a browser. Prices and free tiers change, so check before paying. Exams are paid; most of the learning material is free.</footer>
+    <footer class="note">Everything on this page is free. A few sites (TryHackMe, AWS Skill Builder, iximiuz Labs, SadServers) also sell extras you don't need. Some big sites (Cloudflare, Grafana, Reddit) block automated link checks but open normally in a browser.</footer>
   </div>
 </div>
 
 <script>
-const KINDS = { do: "Do", read: "Read", watch: "Watch", listen: "Listen", cert: "Certify", tool: "Tool" };
+const KINDS = { do: "Do", read: "Read", watch: "Watch", listen: "Listen", tool: "Tool" };
 const LVL = { start: "Start here", next: "Next", deep: "Deep dive" };
 
 // [kind, cost, level, title, url, description]
@@ -245,6 +244,7 @@ const TOPICS = [
   ["read","free","next","Kubernetes learning path (techiescamp)","https://github.com/techiescamp/kubernetes-learning-path","A step-by-step Kubernetes path with free resources at each stage, from the DevOpsCube team."],
   ["do","free","next","DevOps Exercises","https://github.com/bregman-arie/devops-exercises","Thousands of interview-style questions and exercises with answers, grouped by tool. Good for checking what you really know."],
   ["read","free","deep","CNCF Landscape","https://landscape.cncf.io","The giant map of cloud-native tools. Use it to see where k3s, Prometheus, Argo CD and friends fit."],
+  ["watch","free","start","What is DevOps? REALLY understand it (TechWorld with Nana)","https://www.youtube.com/watch?v=0yWAtQ6wYNM","Watch this first: what DevOps actually is, the problems it solves, and how it differs from SRE."],
  ]},
  { id: "linux", name: "Linux and the command line", blurb: "Everything else runs on this. Your Pis run Debian, so practise there.", items: [
   ["do","free","start","Linux Journey","https://linuxjourney.com","Short, friendly lessons from \"what is a shell\" to processes, permissions, packages and networking, with quizzes."],
@@ -253,22 +253,30 @@ const TOPICS = [
   ["do","free","start","Linux Upskill Challenge","https://linuxupskillchallenge.org","A free month-long course: one practical lesson a day on a real server. Your Pi 4 works perfectly for it."],
   ["read","free","next","The Linux Command Line (free book)","https://linuxcommand.org/tlcl.php","William Shotts' complete book on the shell and Bash scripting, free as a PDF."],
   ["read","free","next","The Art of Command Line","https://github.com/jlevy/the-art-of-command-line","One long page of practical command-line tricks that experienced admins use every day."],
-  ["do","free","next","SadServers","https://sadservers.com","Broken Linux servers in your browser: find out why and fix them. Feels like a real on-call shift. Free scenarios plus paid extras."],
+  ["do","free","next","SadServers","https://sadservers.com","Broken Linux servers in your browser: find out why and fix them. Feels like a real on-call shift. The free scenarios are plenty."],
   ["do","free","next","CMD Challenge","https://cmdchallenge.com","Solve small tasks with a single shell command, right in the browser."],
-  ["do","free","start","Linux Survival","https://linuxsurvival.com","A gentle beginner tutorial with an in-browser terminal."],
-  ["do","freemium","next","Vim Adventures","https://www.vim-adventures.com","A game that teaches Vim keys. First levels free."],
   ["tool","free","start","explainshell","https://explainshell.com","Paste any command and it explains every flag. Great when a tutorial hands you a scary one-liner."],
   ["tool","free","start","tldr pages","https://tldr.sh","Short, example-first help pages for commands, instead of long man pages."],
   ["tool","free","next","ShellCheck","https://www.shellcheck.net","Finds bugs in Bash scripts. Run it on cluster/setup-pi.sh and the other scripts in your repo."],
   ["read","free","next","Ubuntu tutorials","https://ubuntu.com/tutorials","Official step-by-step tutorials for servers, networking and tools."],
+  ["watch","free","start","Linux in 100 Seconds (Fireship)","https://www.youtube.com/watch?v=rrB13utjYV4","The whole idea of Linux in under two minutes. A good warm-up before Linux Journey."],
+  ["watch","free","start","Linux Directories Explained in 100 Seconds (Fireship)","https://www.youtube.com/watch?v=42iQKuQodW4","What /etc, /var, /home and the rest are for. You'll recognise all of them on the Pis."],
+  ["watch","free","start","Linux for Hackers, episode 1 (NetworkChuck)","https://www.youtube.com/watch?v=VbEx7B_PTOE","The first video of a free, fun beginner Linux series. Follow along in your linux practice lab."],
+  ["watch","free","start","Introduction to Linux: full course (freeCodeCamp)","https://www.youtube.com/watch?v=sWbUDq4S6Y8","A complete beginner course in one video: files, permissions, users, processes, packages and networking. Watch it in chunks with the study timer."],
+  ["watch","free","start","The Missing Semester lectures (MIT)","https://www.youtube.com/playlist?list=PLyzOVJj3bHQuloKGG59rS43e29ro7I57J","The MIT lectures as a YouTube playlist. Lecture 1 (the shell) and 2 (shell tools and scripting) matter most."],
+  ["watch","free","next","Bash Scripting Tutorial for Beginners (freeCodeCamp)","https://www.youtube.com/watch?v=tK9Oc6AEnR4","Variables, if, loops and functions in Bash: what you need to read and fix the scripts in your cluster folder."],
  ]},
  { id: "net", name: "Networking", blurb: "DNS, ports, NAT and TLS explain most of the \"why doesn't it load\" moments you hit with the cluster.", items: [
   ["read","free","start","Cloudflare Learning Center","https://www.cloudflare.com/learning/","Clear explanations of DNS, CDNs, TLS, DDoS and how the internet works. Your site already runs through Cloudflare."],
-  ["watch","free","start","Professor Messer: Network+","https://www.professormesser.com","Complete free video course for CompTIA Network+ (also A+ and Security+). Good structure even if you never take the exam."],
+  ["watch","free","start","Professor Messer: Network+","https://www.professormesser.com","Complete free video courses for Network+, A+ and Security+. Great structure even if you never take an exam."],
   ["read","free","next","Practical Networking","https://www.practicalnetworking.net","Ed Harmoush's free lessons on how packets really move: ARP, routing, NAT, subnetting."],
-  ["read","freemium","next","Wizard Zines (Julia Evans)","https://wizardzines.com","Hand-drawn comics that make networking, DNS, Linux and debugging click. Some free comics; the zines are paid."],
   ["read","free","next","Julia Evans' blog","https://jvns.ca","Years of curious, beginner-friendly posts about DNS, networking, Linux and debugging."],
   ["read","free","start","It's always DNS","https://isitdns.com","A one-question website. Bookmark it for the next time something on the cluster breaks."],
+  ["watch","free","start","DNS Explained in 100 Seconds (Fireship)","https://www.youtube.com/watch?v=UVR9lhUGAyU","How a name like graysoncodes.org becomes an IP address. Pi-hole will make more sense after this."],
+  ["watch","free","start","You SUCK at Subnetting, episode 1 (NetworkChuck)","https://www.youtube.com/watch?v=5WfiTHiU4x8","IP addresses and subnets explained with energy. The series continues on his channel."],
+  ["watch","free","next","Professor Messer Network+ course (playlist)","https://www.youtube.com/playlist?list=PLG49S3nxzAnl_tQe3kvnmeMid0mjF8Le8","Every video of the current Network+ (N10-009) course in order. One or two a day is a good pace."],
+  ["watch","free","next","Computer Networking Course (freeCodeCamp)","https://www.youtube.com/watch?v=qiQR5rTSshw","A full networking course in one video: OSI model, TCP/IP, routing, switching and troubleshooting."],
+  ["watch","free","next","NGINX Explained in 100 Seconds (Fireship)","https://www.youtube.com/watch?v=JKxlsvZXG7c","The web server that serves your portfolio and this page."],
  ]},
  { id: "git", name: "Git and scripting", blurb: "Everything in DevOps lives in a Git repo and gets glued together with scripts.", items: [
   ["do","free","start","Learn Git Branching","https://learngitbranching.js.org","Visual, interactive Git levels: branching, rebasing, cherry-picking. You already have it bookmarked; finish the Remote levels too."],
@@ -276,34 +284,44 @@ const TOPICS = [
   ["do","free","start","Oh My Git!","https://ohmygit.org","A free open-source card game that teaches Git with a live view of the repository."],
   ["do","free","next","Exercism","https://exercism.org","Free coding practice with mentor feedback. The Bash, Python and Go tracks are the most useful for DevOps."],
   ["tool","free","next","pre-commit","https://pre-commit.com","Runs checks (YAML lint, ShellCheck, secret scanning) before every commit. An easy first step towards a CI mindset."],
+  ["watch","free","start","Git Explained in 100 Seconds (Fireship)","https://www.youtube.com/watch?v=hwP7WQkmECE","Commits, branches and merges in under two minutes."],
+  ["watch","free","start","Git and GitHub for Beginners: crash course (freeCodeCamp)","https://www.youtube.com/watch?v=RGOj5yH7evk","Everything from your first commit to pull requests. Pair it with Learn Git Branching."],
  ]},
  { id: "containers", name: "Containers and Docker", blurb: "You already built ARM images for the site, blog and Campaign Ledger. Learn what's happening underneath.", items: [
   ["read","free","start","Docker: Get started","https://docs.docker.com/get-started/","The official tutorial: images, containers, volumes, networks and Compose."],
-  ["do","free","start","Play with Docker","https://labs.play-with-docker.com","Free Docker machines in your browser for a few hours. Try things without touching your Pis."],
-  ["do","freemium","next","iximiuz Labs","https://labs.iximiuz.com","Hands-on playgrounds and challenges for containers, Kubernetes and Linux networking. Many free, some premium."],
+  ["do","free","next","iximiuz Labs","https://labs.iximiuz.com","Hands-on playgrounds and challenges for containers, Kubernetes and Linux networking. Stick to the free challenges (like the Docker 101 ones you're doing); you never need premium."],
   ["read","free","deep","iximiuz.com articles","https://iximiuz.com/en/","Ivan Velichko's in-depth, illustrated posts on how containers really work: namespaces, cgroups, images."],
   ["read","free","next","container.training","https://container.training","Free slide decks from Jérôme Petazzoni's Docker and Kubernetes workshops. Dense but excellent."],
-  ["read","paid","next","Docker Deep Dive (Nigel Poulton)","https://leanpub.com/dockerdeepdive","A clear, regularly updated book on Docker from the ground up."],
   ["tool","free","next","Trivy","https://trivy.dev","Scans images for known vulnerabilities and bad settings. Try it on ghcr.io/g39832/portfolio-web."],
+  ["watch","free","start","Docker in 100 Seconds (Fireship)","https://www.youtube.com/watch?v=Gjnup-PuquQ","Images, containers and Dockerfiles in under two minutes."],
+  ["watch","free","start","Docker Tutorial for Beginners: full course (TechWorld with Nana)","https://www.youtube.com/watch?v=3c-iBn73dDE","A three-hour course: images, containers, Compose, volumes and a real app. Follow along in your docker practice lab."],
+  ["watch","free","start","Docker networking is CRAZY!! (NetworkChuck)","https://www.youtube.com/watch?v=bKFMS5C4CG0","Bridge, host, none and more network types, shown live. Great alongside the iximiuz Docker 101 networking challenges."],
+  ["watch","free","next","Complete Docker Course: beginner to pro (DevOps Directive)","https://www.youtube.com/watch?v=RqTEHSBrYFw","A longer, deeper course that builds and ships a real multi-service app. Watch after Nana's."],
  ]},
  { id: "k8s", name: "Kubernetes", blurb: "Your biggest head start. Pair every lesson here with doing the same thing on raspberrypi and pi2.", items: [
   ["read","free","start","Kubernetes tutorials (official)","https://kubernetes.io/docs/tutorials/","Official hands-on tutorials. Read the Concepts section alongside them."],
-  ["do","free","start","Killercoda","https://killercoda.com","Free real clusters in your browser with guided scenarios, including CKA and CKAD practice. Break these instead of your Pis."],
+  ["do","free","start","Killercoda","https://killercoda.com","Free real clusters in your browser with guided scenarios, including free CKA and CKAD practice. Break these instead of your Pis."],
   ["read","free","start","k3s docs","https://docs.k3s.io","The docs for the exact Kubernetes you run: networking, storage (local-path), upgrades, high availability."],
   ["read","free","next","Kubernetes by Example","https://kubernetesbyexample.com","Short Red Hat lessons: one concept per page with runnable examples."],
   ["read","free","next","Troubleshooting deployments flowchart","https://learnk8s.io/troubleshooting-deployments","The well-known visual flowchart for \"why isn't my pod working\". Print it."],
   ["read","free","deep","Learnk8s articles","https://learnk8s.io/blog","Deep, illustrated articles on scheduling, networking, autoscaling and architecture."],
   ["read","free","next","Kubernetes blog","https://kubernetes.io/blog/","Release notes and deep dives from the project itself."],
   ["do","free","deep","Kubernetes the Hard Way","https://github.com/kelseyhightower/kubernetes-the-hard-way","Build a cluster piece by piece with no installer. Hard, but you'll understand what k3s does for you."],
-  ["do","freemium","next","KodeKloud","https://kodekloud.com","Video courses with browser labs for Kubernetes, Docker, Linux and the CKA, CKAD and CKS exams. Some free content; full access is paid."],
   ["tool","free","start","k9s","https://k9scli.io","A terminal dashboard for Kubernetes. Install it on the Pi 5 and you may never type kubectl get pods again."],
   ["tool","free","next","Helm","https://helm.sh/docs/","The Kubernetes package manager. Most cloud-native apps ship as Helm charts."],
   ["tool","free","next","Kustomize","https://kustomize.io","Built into kubectl: layer changes on YAML without templates. Good for a home and a test version of your cluster files."],
   ["tool","free","next","kind","https://kind.sigs.k8s.io","Kubernetes in Docker on your PC. Spin up throwaway clusters to experiment safely."],
-  ["tool","free","start","minikube","https://minikube.sigs.k8s.io/docs/","Another easy local cluster for learning, with a built-in dashboard."],
-  ["read","paid","next","Kubernetes in Action, 2nd ed. (Manning)","https://www.manning.com/books/kubernetes-in-action-second-edition","A thorough, widely recommended Kubernetes book with lots of diagrams."],
-  ["read","paid","next","Kubernetes: Up and Running (O'Reilly)","https://www.oreilly.com/library/view/kubernetes-up-and/9781098110192/","A shorter, practical book co-written by Kubernetes co-founders."],
   ["read","free","deep","Jeff Geerling's pi-cluster","https://github.com/geerlingguy/pi-cluster","A real Raspberry Pi cluster built with Ansible, with monitoring and benchmarks. Compare it with yours."],
+  ["watch","free","start","Kubernetes Explained in 100 Seconds (Fireship)","https://www.youtube.com/watch?v=PziYflu8cB8","The big picture in under two minutes."],
+  ["watch","free","start","Kubernetes: The Documentary, part 1","https://www.youtube.com/watch?v=BE77h7dmoQU","How Kubernetes started at Google and why it was given away. Fun context for the tool you run every day."],
+  ["watch","free","next","Kubernetes: The Documentary, part 2","https://www.youtube.com/watch?v=318elIq37PE","How it went from a side project to the industry standard."],
+  ["watch","free","start","YAML in 18 minutes (TechWorld with Nana)","https://www.youtube.com/watch?v=1uFVr15xDGg","Every Kubernetes file is YAML. Learn the rules once and stop fighting indentation."],
+  ["watch","free","start","Kubernetes Tutorial for Beginners: full course (TechWorld with Nana)","https://www.youtube.com/watch?v=X48VuDVv0do","A four-hour course: pods, deployments, services, ingress, volumes and more. Try each part on your own cluster."],
+  ["watch","free","next","Kubernetes 101, episode 1 (Jeff Geerling)","https://www.youtube.com/watch?v=IcslsH7OoYo","The start of a free series, taught by someone who also runs Kubernetes on Raspberry Pis."],
+  ["watch","free","next","Raspberry Pi Cluster, episode 1 (Jeff Geerling)","https://www.youtube.com/watch?v=kgVz4-SEhbE","Why people build Pi clusters and what they're good for. Your setup is a cousin of his."],
+  ["watch","free","next","High availability k3s in minutes (Techno Tim)","https://www.youtube.com/watch?v=UoOcLXfa8EU","How k3s clusters with more than one server node stay up when one dies. Ideas for when you add a third Pi or a cloud node."],
+  ["watch","free","next","What is Helm? (TechWorld with Nana)","https://www.youtube.com/watch?v=-ykwb1d0DXU","Charts, values and releases, before you install kube-prometheus-stack."],
+  ["watch","free","deep","Complete Kubernetes Course: beginner to pro (DevOps Directive)","https://www.youtube.com/watch?v=2T86xAtR6Fo","A long, hands-on course that goes further than the beginner ones and deploys a real multi-service app."],
  ]},
  { id: "cicd", name: "CI/CD and GitOps", blurb: "You already build images in GitHub Actions. Next: tests before builds, and a cluster that updates itself.", items: [
   ["read","free","start","GitHub Actions docs","https://docs.github.com/en/actions","Workflows, jobs, caching, matrices and secrets: the tool behind your cluster-images.yml."],
@@ -312,14 +330,19 @@ const TOPICS = [
   ["tool","free","next","Renovate","https://docs.renovatebot.com","A bot that opens pull requests when new versions of your images come out (Jellyfin, Pi-hole, Homepage)."],
   ["read","free","deep","Continuous Delivery","https://continuousdelivery.com","Jez Humble's site on the ideas behind CD: deployment pipelines and small, safe releases."],
   ["read","free","start","The Twelve-Factor App","https://12factor.net","Twelve short rules for building apps that deploy well. Campaign Ledger's hosted mode already follows several."],
+  ["watch","free","start","GitHub Actions Tutorial (TechWorld with Nana)","https://www.youtube.com/watch?v=R8_veQiYBjI","Workflows, jobs and a CI pipeline that builds a Docker image: the same thing your cluster-images.yml does."],
+  ["watch","free","next","What is GitOps? (TechWorld with Nana)","https://www.youtube.com/watch?v=f5EpcWp0THw","Why \"the repo is the truth\" beats running kubectl by hand."],
+  ["watch","free","next","Argo CD Tutorial for Beginners (TechWorld with Nana)","https://www.youtube.com/watch?v=MeU5_k9ssrs","Install Argo CD and connect it to a repo. Watch before the Argo CD project below."],
  ]},
  { id: "iac", name: "Infrastructure as code", blurb: "Describe servers, DNS and config in files, so rebuilding is one command.", items: [
   ["do","free","start","Terraform tutorials","https://developer.hashicorp.com/terraform/tutorials","Official step-by-step tutorials from install to modules and state."],
   ["read","free","next","OpenTofu","https://opentofu.org","The open-source fork of Terraform, run by the Linux Foundation. Same language."],
   ["read","free","next","Cloudflare Terraform provider","https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs","Manage your real DNS records and tunnel routes for graysoncodes.org as code."],
   ["read","free","start","Ansible docs","https://docs.ansible.com","Automate setting up machines over SSH: install packages, copy files, configure services."],
-  ["read","paid","next","Ansible for DevOps (Jeff Geerling)","https://www.ansiblefordevops.com","The go-to Ansible book. Jeff also has a free Ansible 101 video series on his YouTube channel."],
-  ["read","paid","next","Terraform: Up and Running","https://www.terraformupandrunning.com","Yevgeniy Brikman's practical Terraform book, the standard reference."],
+  ["watch","free","start","Terraform in 100 Seconds (Fireship)","https://www.youtube.com/watch?v=tomUWcQ0P3k","What infrastructure as code means, in under two minutes."],
+  ["watch","free","start","Terraform explained in 15 minutes (TechWorld with Nana)","https://www.youtube.com/watch?v=l5k1ai_GBDE","Providers, state, plan and apply. Enough to start the DNS-as-code project."],
+  ["watch","free","start","Ansible in 100 Seconds (Fireship)","https://www.youtube.com/watch?v=xRMPKQweySE","Playbooks, inventories and why Ansible needs nothing installed on the machines it manages."],
+  ["watch","free","start","Ansible 101, episode 1 (Jeff Geerling)","https://www.youtube.com/watch?v=goclfp6a2IQ","The first of his free Ansible 101 series, which follows his Ansible book. The free stand-in for buying it."],
  ]},
  { id: "obs", name: "Monitoring and reliability", blurb: "Knowing it's up, finding out why it went down, and not panicking.", items: [
   ["read","free","start","Prometheus overview","https://prometheus.io/docs/introduction/overview/","How metrics, scraping, PromQL and alerting work. You already run Prometheus on the Pi 5."],
@@ -333,31 +356,30 @@ const TOPICS = [
   ["read","free","deep","charity.wtf","https://charity.wtf","Charity Majors' blog on observability, on-call and engineering careers. Opinionated and fun."],
   ["tool","free","next","Grafana k6","https://grafana.com/docs/k6/latest/","Load testing with small JavaScript scripts. Find out how many visitors your cluster really handles."],
   ["tool","free","deep","Chaos Mesh","https://chaos-mesh.org","Breaks things on purpose (kills pods, adds network lag) to prove your cluster recovers."],
-  ["tool","free","deep","LitmusChaos","https://litmuschaos.io","Another chaos engineering toolkit for Kubernetes, with a web portal."],
-  ["tool","free","next","Velero","https://velero.io","Backs up and restores whole Kubernetes namespaces and volumes to cloud storage."],
+  ["tool","free","next","Velero","https://velero.io","Backs up and restores whole Kubernetes namespaces and volumes to S3-style storage, such as your Backblaze B2 bucket."],
+  ["watch","free","start","How Prometheus monitoring works (TechWorld with Nana)","https://www.youtube.com/watch?v=h4Sl21AKiDg","Targets, scraping, exporters and alerts, explained with diagrams."],
+  ["watch","free","next","DevOps vs SRE (Google Cloud Tech)","https://www.youtube.com/watch?v=uTEL8Ff1Zvk","A short explainer from Google on what SREs do and how it relates to DevOps. Good before the SRE books."],
  ]},
  { id: "cloud", name: "Cloud platforms", blurb: "Most jobs use AWS, Azure or Google Cloud. Your cluster skills carry straight over.", items: [
-  ["do","free","start","GitHub Student Developer Pack","https://education.github.com/pack","Free for verified students: cloud credits, domains, JetBrains IDEs, courses and more. Claim this first."],
-  ["do","free","next","The Cloud Resume Challenge","https://cloudresumechallenge.dev","Build and deploy your resume as a cloud app with CI/CD and IaC. A portfolio project hiring managers recognise."],
-  ["do","freemium","start","AWS Skill Builder","https://skillbuilder.aws","Amazon's own training: hundreds of free courses, including Cloud Practitioner prep."],
-  ["do","free","start","Microsoft Learn","https://learn.microsoft.com/en-us/training/","Free Azure learning paths with sandboxes. AZ-900 is the beginner certification."],
-  ["do","freemium","next","Google Cloud Skills Boost","https://www.cloudskillsboost.google","Google Cloud labs and courses, some free with credits."],
-  ["do","free","next","Oracle Cloud Free Tier","https://www.oracle.com/cloud/free/","Includes always-free ARM virtual machines: a free third node in the cloud to experiment with."],
+  ["do","free","start","GitHub Student Developer Pack","https://education.github.com/pack","Free for verified students: cloud credits, domains, JetBrains IDEs, courses and more. Claim this first, with your school email."],
+  ["do","free","next","The Cloud Resume Challenge","https://cloudresumechallenge.dev","Build and deploy your resume as a cloud app with CI/CD and IaC. The guide is free; host it on Oracle's always-free tier or your own cluster so it costs nothing."],
+  ["do","free","start","AWS Skill Builder","https://skillbuilder.aws","Amazon's own training. A free account gets hundreds of courses, including Cloud Practitioner prep; skip the paid subscription."],
+  ["do","free","start","Microsoft Learn","https://learn.microsoft.com/en-us/training/","Free Azure learning paths, many with free practice sandboxes."],
+  ["do","free","next","Oracle Cloud Free Tier","https://www.oracle.com/cloud/free/","Includes always-free ARM virtual machines: a free third node in the cloud. Sign-up asks for a card to check you're real, but always-free resources cost nothing."],
   ["read","free","next","DigitalOcean tutorials","https://www.digitalocean.com/community/tutorials","Thousands of clear tutorials on Linux, servers, Docker and Kubernetes."],
   ["read","free","next","DevOpsCube","https://devopscube.com","Practical guides on Kubernetes, CI/CD and DevOps careers."],
  ]},
  { id: "sec", name: "Security", blurb: "You run public services now, so this matters for real.", items: [
-  ["do","freemium","start","TryHackMe","https://tryhackme.com","Guided security labs in the browser, from beginner to advanced. Lots of free rooms."],
+  ["do","free","start","TryHackMe","https://tryhackme.com","Guided security labs in the browser. Stick to the free rooms; there are plenty, from beginner to advanced."],
   ["do","free","start","picoCTF","https://picoctf.org","Free capture-the-flag challenges from Carnegie Mellon, made for students."],
-  ["do","freemium","next","Hack The Box","https://www.hackthebox.com","Harder hacking labs and an Academy with structured courses."],
   ["do","free","next","OWASP Juice Shop","https://owasp.org/www-project-juice-shop/","A deliberately insecure web shop to practise attacks legally. You could run it on the cluster."],
   ["do","free","deep","Kubernetes Goat","https://github.com/madhuakula/kubernetes-goat","A purposely vulnerable Kubernetes setup with guided scenarios. Run it in kind, not on your real cluster."],
   ["tool","free","next","Sealed Secrets","https://github.com/bitnami-labs/sealed-secrets","Encrypts Kubernetes secrets so they can live safely in Git, such as your cloudflared token."],
   ["tool","free","next","cert-manager","https://cert-manager.io/docs/","Automatic TLS certificates inside Kubernetes."],
+  ["watch","free","next","Kubernetes security best practices (TechWorld with Nana)","https://www.youtube.com/watch?v=oBf5lrmquYI","RBAC, network policies, secrets and image scanning: a checklist to hold your cluster up against."],
  ]},
  { id: "design", name: "System design", blurb: "How big systems fit together. It comes up in interviews.", items: [
-  ["read","free","next","System Design Primer","https://github.com/donnemartin/system-design-primer","Free guide to scaling, caching, load balancing and databases, with practice questions."],
-  ["read","freemium","next","ByteByteGo","https://bytebytego.com","Alex Xu's system design newsletter with very clear diagrams."],
+  ["read","free","next","System Design Primer","https://github.com/donnemartin/system-design-primer","Free guide to scaling, caching, load balancing and databases, with practice questions. Useful for interviews."],
   ["watch","free","next","ByteByteGo on YouTube","https://www.youtube.com/@ByteByteGo","Short animated explainers on system design topics."],
  ]},
  { id: "watch", name: "YouTube channels", blurb: "For evenings when you'd rather watch than read.", items: [
@@ -368,29 +390,20 @@ const TOPICS = [
   ["watch","free","next","DevOps Toolkit (Viktor Farcic)","https://www.youtube.com/@DevOpsToolkit","Honest reviews and deep dives on DevOps and Kubernetes tools."],
   ["watch","free","start","Learn Linux TV","https://www.youtube.com/@LearnLinuxTV","Calm, thorough Linux and server tutorials and full courses."],
   ["watch","free","next","Christian Lempa","https://www.youtube.com/@christianlempa","Homelab, Docker, Kubernetes and security tutorials."],
-  ["watch","free","next","KodeKloud","https://www.youtube.com/@KodeKloud","Free short lessons and full courses on DevOps tools."],
+  ["watch","free","next","KodeKloud","https://www.youtube.com/@KodeKloud","Free short lessons and some full courses on DevOps tools (the YouTube channel is free; their website is mostly paid)."],
   ["watch","free","start","freeCodeCamp","https://www.youtube.com/@freecodecamp","Free multi-hour courses on Linux, Docker, Kubernetes, Terraform, AWS and more. Search the channel for a topic."],
   ["watch","free","start","Fireship","https://www.youtube.com/@Fireship","Fast, funny \"in 100 seconds\" explainers for almost every tool and language."],
-  ["watch","free","deep","CNCF (KubeCon talks)","https://www.youtube.com/@cncf","Every KubeCon talk, free. Search for any tool you use to see how big companies run it."],
- ]},
- { id: "books", name: "Books worth owning", blurb: "The stories and ideas behind DevOps. The first two are novels and read fast.", items: [
-  ["read","paid","start","The Phoenix Project","https://itrevolution.com/product/the-phoenix-project/","A novel about an IT team in chaos discovering DevOps. Almost everyone in the field has read it."],
-  ["read","paid","next","The Unicorn Project","https://itrevolution.com/product/the-unicorn-project/","The same story told from a developer's side."],
-  ["read","paid","next","The DevOps Handbook, 2nd ed.","https://itrevolution.com/product/the-devops-handbook-second-edition/","The practical companion: how to actually adopt DevOps in an organisation."],
-  ["read","paid","deep","Accelerate","https://itrevolution.com/product/accelerate/","The research behind the DORA metrics: what separates high-performing teams."],
-  ["read","paid","deep","Site Reliability Engineering (O'Reilly)","https://www.oreilly.com/library/view/site-reliability-engineering/9781491929117/","Google's SRE book in print. The same text is free at sre.google."],
+  ["watch","free","deep","CNCF (KubeCon talks)","https://www.youtube.com/@cncf","Every KubeCon talk, free (the conference itself is paid; the recordings aren't). Search for any tool you use to see how big companies run it."],
  ]},
  { id: "news", name: "Newsletters, blogs and podcasts", blurb: "Ten minutes a week keeps you current.", items: [
   ["read","free","start","DevOps Weekly","https://www.devopsweekly.com","A long-running weekly email of the best DevOps articles and tools."],
   ["read","free","next","KubeWeekly","https://www.cncf.io/kubeweekly/","The CNCF's weekly Kubernetes newsletter."],
   ["read","free","next","SRE Weekly","https://sreweekly.com","Weekly roundup of incident write-ups and reliability articles."],
-  ["read","free","next","Last Week in AWS","https://www.lastweekinaws.com","Corey Quinn's sarcastic, useful weekly AWS news."],
   ["read","free","deep","Martin Fowler","https://martinfowler.com","Classic essays on software design, continuous integration and microservices."],
   ["read","free","next","freeCodeCamp DevOps articles","https://www.freecodecamp.org/news/tag/devops/","Free beginner-to-intermediate DevOps tutorials."],
   ["listen","free","start","Kubernetes Podcast from Google","https://kubernetespodcast.com","Weekly news plus interviews with people building Kubernetes."],
   ["listen","free","next","Arrested DevOps","https://www.arresteddevops.com","Conversations about DevOps culture, tools and careers."],
   ["listen","free","next","Ship It! (Changelog)","https://changelog.com/shipit","Episodes about shipping and running software in production."],
-  ["listen","free","deep","Software Engineering Daily","https://softwareengineeringdaily.com","Interviews on infrastructure, cloud and engineering at well-known companies."],
  ]},
  { id: "community", name: "Communities and events", blurb: "Ask questions, see real setups, and meet people who hire.", items: [
   ["read","free","start","r/homelab","https://www.reddit.com/r/homelab/","People's racks, setups and advice. Post yours."],
@@ -399,19 +412,7 @@ const TOPICS = [
   ["read","free","next","r/sysadmin","https://www.reddit.com/r/sysadmin/","The daily life of IT and operations work."],
   ["do","free","next","CNCF Slack","https://cloud-native.slack.com","Chat with the people who build k3s, Argo CD, Prometheus and more. Join through slack.cncf.io."],
   ["do","free","next","DevOps meetups","https://www.meetup.com/topics/devops/","Local and online meetups. A good route to internships and first jobs."],
-  ["do","paid","deep","KubeCon + CloudNativeCon","https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/","The big Kubernetes conference. Look for student scholarships, and watch the talks free on YouTube."],
   ["read","free","next","Awesome-Selfhosted","https://github.com/awesome-selfhosted/awesome-selfhosted","Thousands of apps to run on your cluster: endless practice material."],
- ]},
- { id: "certs", name: "Certifications", blurb: "A path that builds on what you already know. Exams are paid; the study material above is mostly free.", items: [
-  ["cert","paid","start","CompTIA Linux+","https://www.comptia.org/certifications/linux","Vendor-neutral Linux admin certification. Pairs well with your IT background."],
-  ["cert","paid","start","CompTIA Network+","https://www.comptia.org/certifications/network","Networking fundamentals; Professor Messer covers it free."],
-  ["cert","paid","start","KCNA: Kubernetes and Cloud Native Associate","https://training.linuxfoundation.org/certification/kubernetes-cloud-native-associate/","The beginner Kubernetes exam (multiple choice). A good first step after building your cluster."],
-  ["cert","paid","next","CKA: Certified Kubernetes Administrator","https://training.linuxfoundation.org/certification/certified-kubernetes-administrator-cka/","The most respected hands-on Kubernetes exam: fix real clusters in a terminal. Killercoda has free practice."],
-  ["cert","paid","next","CKAD: Certified Kubernetes Application Developer","https://training.linuxfoundation.org/certification/certified-kubernetes-application-developer-ckad/","Hands-on exam focused on deploying and running apps on Kubernetes."],
-  ["cert","paid","deep","CKS: Certified Kubernetes Security Specialist","https://training.linuxfoundation.org/certification/certified-kubernetes-security-specialist/","Advanced security exam; needs a CKA first."],
-  ["cert","paid","next","LFCS: Linux Foundation Certified Sysadmin","https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/","Hands-on Linux admin exam in a real terminal."],
-  ["cert","paid","start","AWS Certified Cloud Practitioner","https://aws.amazon.com/certification/certified-cloud-practitioner/","The entry AWS certification. Skill Builder has free prep."],
-  ["cert","paid","next","HashiCorp Terraform Associate","https://developer.hashicorp.com/certifications/infrastructure-automation","Proves you can use Terraform. Pair it with the Cloudflare-as-code project."],
  ]},
 ];
 
@@ -428,7 +429,7 @@ const PROJECTS = [
  ["Stay up to date automatically","Turn on Renovate for the Portfolio repo so it opens pull requests when Jellyfin, Pi-hole, Homepage or Portainer release new versions.",[["Renovate","https://docs.renovatebot.com"]]],
  ["How many visitors can it take?","Write a k6 script that hits the site on your home network (http://192.168.1.35:30080) with rising traffic. Graph the results in Grafana and blog about where it breaks.",[["k6","https://grafana.com/docs/k6/latest/"]]],
  ["Break it on purpose","Unplug the Pi 4 while the site loads or during a Campaign Ledger session, then try Chaos Mesh pod-kill experiments. Write down what recovered and what didn't.",[["Chaos Mesh","https://chaos-mesh.org"]]],
- ["Backups you've actually tested","Use Velero to back up the ledger and blog namespaces to cloud storage, then restore them into a test namespace.",[["Velero","https://velero.io"]]],
+ ["Backups you've actually tested","Use Velero to back up the ledger and blog namespaces to a new folder in your B2 bucket (the first 10 GB is free), then restore them into a test namespace.",[["Velero","https://velero.io"]]],
  ["Write your first postmortem","Pick a real problem you've hit (a broken route, a crashed pod, an expired token) and write it up without blame: timeline, cause, fix, prevention. Post it on your blog.",[["SRE postmortems","https://sre.google/sre-book/postmortem-culture/"]]],
  ["A cloud node","Create an always-free Oracle Cloud ARM VM and join it to your cluster over Tailscale. Your cluster then spans your room and a data centre.",[["Oracle Free Tier","https://www.oracle.com/cloud/free/"]]],
  ["Practise on a throwaway cluster","Use kind on your PC to rehearse risky changes before they touch the Pis.",[["kind","https://kind.sigs.k8s.io"]]],
@@ -537,8 +538,6 @@ for (const [k, v] of Object.entries(KINDS)) {
 const q = document.getElementById("q");
 q.addEventListener("input", () => { state.q = q.value.trim().toLowerCase(); render(); });
 document.addEventListener("keydown", e => { if (e.key === "/" && document.activeElement !== q && !/input|textarea|select/i.test(document.activeElement.tagName)) { e.preventDefault(); q.focus(); } });
-const free = document.getElementById("free"); free.checked = state.free;
-free.addEventListener("change", () => { state.free = free.checked; store.set("devops-free", state.free); render(); });
 const hide = document.getElementById("hide"); hide.checked = state.hide;
 hide.addEventListener("change", () => { state.hide = hide.checked; store.set("devops-hide", state.hide); render(); });
 document.getElementById("jump").addEventListener("change", e => { const t = document.getElementById(e.target.value); if (t) t.scrollIntoView({ behavior: "smooth" }); e.target.value = ""; });
