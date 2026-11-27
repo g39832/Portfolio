@@ -1,0 +1,133 @@
+id: bash
+title: Bash scripting
+badge: Scripter
+lab: bash
+summary: Turn commands you type into scripts that run the same way every time, and fail loudly.
+lessons:
+  - id: safe
+    title: Scripts that don't bite
+    minutes: 20
+    teach: |
+      Most DevOps automation starts life as a Bash script: deploy scripts, backup jobs, CI steps. Your own `cluster/sandbox/deploy.sh` is one. Bash is forgiving in ways that hurt, though. These habits make scripts safe.
+
+      ### Quote your variables
+      If `$dest` is `my backups`, then `cp file $dest` becomes `cp file my backups`: two arguments. With an empty `$dest` it becomes `cp file`. Always write `"$dest"`. The same goes for `"$@"` (all the arguments, each kept whole).
+
+      ### Strict mode
+      ```
+      #!/bin/bash
+      set -euo pipefail
+      ```
+      - `-e`: stop at the first command that fails, instead of carrying on with half the work done.
+      - `-u`: using a variable that was never set is an error (it catches typos like `$DEST` vs `$dest`).
+      - `-o pipefail`: a pipeline fails if *any* part fails, not just the last one.
+
+      The classic disaster this stops: `cd /some/dir` fails, and the script runs `rm -rf *` in the wrong folder.
+
+      ### Let a linter read it first
+      **ShellCheck** knows hundreds of these traps and explains each one with a code like SC2086 (missing quotes). Run it on every script, and in CI (that's in the CI module).
+
+      ```
+      $ shellcheck scripts/broken.sh
+      $ bash scripts/deploy.sh; echo "exit code: $?"
+      ```
+
+      ### Exit codes
+      Every command ends with a number: `0` means success, anything else means failure, and `$?` holds the last one. `if`, `&&`, `||`, `set -e`, Kubernetes probes and CI systems all read exit codes. So a script should exit with something other than 0 when it fails.
+
+      > Read the ShellCheck wiki page for any warning it prints. They're short, and they teach Bash better than most tutorials.
+    sources:
+      - title: ShellCheck (paste a script, get explanations)
+        url: https://www.shellcheck.net/
+      - title: BashGuide on wooledge.org
+        url: https://mywiki.wooledge.org/BashGuide
+      - title: Bash Pitfalls
+        url: https://mywiki.wooledge.org/BashPitfalls
+    quiz:
+      - q: "`dest=\"\"; rm -rf $dest/*`. What can happen?"
+        choices: ["Nothing, an empty variable is skipped", "It becomes `rm -rf /*` and tries to delete everything", "Bash refuses to run it", "It deletes only the current folder"]
+        answer: 1
+        why: "An empty variable vanishes, leaving `/*`. `set -u` plus checking the value first (`[ -n \"$dest\" ]`) and quoting stop this."
+      - q: Which line makes a script stop at the first failing command?
+        choices: ["set -x", "set -e", "exit 0", "trap EXIT"]
+        answer: 1
+        why: "-e exits on error. (-x prints each command as it runs, which is handy for debugging.)"
+      - q: "With `set -e` but no pipefail, `curl bad-url | grep x` fails in curl. Does the script stop?"
+        choices: ["Yes, always", "Only if grep also fails, because a pipeline's result is the last command's", "No, pipelines never stop scripts", "Only inside a function"]
+        answer: 1
+        why: Without pipefail, only the last command in a pipeline counts. pipefail makes any failure count.
+    tasks:
+      - mission: Make shellcheck happy
+      - mission: Bash strict mode
+      - mission: Exit codes mean something
+
+  - id: tools
+    title: Real scripts, real inputs
+    minutes: 25
+    teach: |
+      A useful script takes input (arguments, files, environment variables), loops over things, and cleans up after itself.
+
+      ### Arguments
+      `$1`, `$2`... are the arguments, `$#` is how many there are, and `"$@"` is all of them. Check them first, and print a usage line to **stderr** when something's missing:
+
+      ```
+      if [ $# -lt 1 ]; then
+        echo "usage: greet.sh NAME" >&2
+        exit 1
+      fi
+      ```
+
+      ### Defaults from the environment
+      Settings often come from environment variables. That's how Kubernetes and Docker hand config to apps. `${VAR:-default}` uses the default when the variable isn't set or is empty:
+
+      ```
+      $ APP_ENV=prod bash -c 'echo "env=${APP_ENV:-dev}"'
+      $ bash -c 'echo "env=${APP_ENV:-dev}"'
+      ```
+
+      ### Reading a file line by line
+      ```
+      while read -r name; do
+        echo "checking $name"
+      done < data/servers.txt
+      ```
+      `-r` keeps backslashes as they are. Don't use `for line in $(cat file)`: it splits on spaces, not on lines.
+
+      ### Clean up, even on errors
+      `trap 'command' EXIT` runs the command whenever the script ends: normally, on an error under `set -e`, or on Ctrl+C. It's perfect for temp files:
+
+      ```
+      tmp=$(mktemp)
+      trap 'rm -f "$tmp"' EXIT
+      ```
+
+      Your backup CronJob uses the same idea. A snapshot goes to a temp folder first, so a half-made backup is never left behind.
+    live:
+      - title: Environment variables your real apps get
+        cmd: "kubectl get deploy -A -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}: {range .spec.template.spec.containers[*].env[*]}{.name} {end}{\"\\n\"}{end}' | grep -v ': $' | head -20"
+        note: Names only. Values can be secrets. Every one of these reaches the app the same way `APP_ENV` reaches your script.
+    sources:
+      - title: Bash manual, shell parameter expansion (${VAR:-default})
+        url: https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
+      - title: BashFAQ 001, how to read a file line by line
+        url: https://mywiki.wooledge.org/BashFAQ/001
+      - title: Bash manual, the trap builtin
+        url: https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html
+    quiz:
+      - q: "What does `echo \"${PORT:-8080}\"` print when PORT is not set?"
+        choices: ["Nothing", "8080", "${PORT:-8080}", "An error"]
+        answer: 1
+        why: ":- uses the default when the variable is unset or empty. (:= would also save it in the variable.)"
+      - q: Why print a usage message with `>&2`?
+        choices: ["It's faster", "It goes to stderr, so it doesn't end up in a pipe or file meant for real output", "It makes the text red", "Bash requires it before exit 1"]
+        answer: 1
+        why: Messages for people go to stderr, and data goes to stdout. That way `script | next-tool` only passes along the data.
+      - q: Your script makes a temp file and then fails halfway under `set -e`. What removes the file?
+        choices: ["Nothing, temp files stay", "trap 'rm -f \"$tmp\"' EXIT, set near the top", "Linux deletes it when the script exits", "set -u"]
+        answer: 1
+        why: An EXIT trap runs however the script ends, including errors and Ctrl+C.
+    tasks:
+      - mission: Loop over a file
+      - mission: Arguments and usage
+      - mission: Defaults from the environment
+      - mission: Clean up after yourself

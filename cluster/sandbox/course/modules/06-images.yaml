@@ -1,0 +1,179 @@
+id: containers
+title: Building images
+badge: Image Smith
+lab: containers
+summary: Write Dockerfiles that are small, safe, cached well, and pinned.
+lessons:
+  - id: inside
+    title: What a container really is
+    minutes: 15
+    teach: |
+      Before you build images, it helps to see there's no magic. A container is a process that the kernel runs with:
+
+      - **namespaces**, which give it its own view of processes (PID 1 is your app), the network, mounts and hostname
+      - **cgroups**, which cap its CPU and memory. That's how Kubernetes limits are enforced.
+      - a **root file system** unpacked from the image's layers
+
+      ```
+      $ cat /proc/1/cmdline | tr '\0' ' '; echo
+      $ ps aux
+      $ cat /sys/fs/cgroup/memory.max
+      ```
+
+      This terminal is itself a container in a pod on your Pi 5. Process 1 is whatever started it, and `memory.max` is the limit from the pod's YAML.
+
+      ### Images are layers
+      Each Dockerfile step that changes files makes a **layer**: a tarball of the differences. Layers are shared between images and cached between builds. An image's name is `registry/repo:tag`, and the tag can move. The **digest** (`@sha256:...`) can't.
+
+      ```
+      $ skopeo inspect --raw docker://ghcr.io/g39832/portfolio-web:latest | jq '.manifests[] | .platform'
+      ```
+
+      Your cluster images are built for `linux/arm64` because the Pis have ARM CPUs. An amd64-only image just won't run on them.
+    live:
+      - title: This very terminal's limits, from its pod spec
+        cmd: "kubectl -n sandbox get pod -l app=sandbox -o jsonpath='{range .items[0].spec.containers[*]}{.name}: requests {.resources.requests} limits {.resources.limits}{\"\\n\"}{end}'; echo; echo -n 'memory.max seen from inside: '; cat /sys/fs/cgroup/memory.max"
+    sources:
+      - title: Docker docs, understanding image layers
+        url: https://docs.docker.com/get-started/docker-concepts/building-images/understanding-image-layers/
+      - title: Julia Evans, what even is a container?
+        url: https://jvns.ca/blog/2016/10/10/what-even-is-a-container/
+      - title: Open Container Initiative, image spec
+        url: https://github.com/opencontainers/image-spec/blob/main/spec.md
+    quiz:
+      - q: Which Linux feature enforces a container's memory limit?
+        choices: ["namespaces", "cgroups", "iptables", "chroot"]
+        answer: 1
+        why: Namespaces control what a process can *see*. cgroups control how much it can *use*.
+      - q: Why do your cluster images have to be built for linux/arm64?
+        choices: ["GitHub requires it", "The Raspberry Pis have ARM CPUs, and containers run on the host's CPU directly", "arm64 images are smaller", "k3s only reads arm64 tags"]
+        answer: 1
+        why: There's no emulation. The binaries in the image run straight on the Pi's CPU.
+      - q: What's the difference between `nginx:1.29` and `nginx@sha256:...`?
+        choices: ["None", "The tag can be moved to a new image, but the digest always means exactly the same bytes", "Digests are only for private images", "Tags are faster to pull"]
+        answer: 1
+        why: Pinning by digest makes builds fully repeatable. Tools like Renovate keep the pins up to date.
+    tasks:
+      - mission: A container is just a process
+      - mission: Look inside a real image
+
+  - id: dockerfile
+    title: Writing good Dockerfiles
+    minutes: 30
+    teach: |
+      A Dockerfile is a recipe: start `FROM` an image, `RUN` commands, `COPY` files in, then say what to run. The difference between a beginner's Dockerfile and a good one is size, speed and safety.
+
+      ### 1. Pin a small base
+      `FROM python:latest` changes under you and is around 1 GB. `FROM python:3.13-slim` is pinned and a fraction of the size. Smaller images pull faster on Pis and carry fewer vulnerable packages.
+
+      ### 2. Order for the cache
+      Docker reuses a layer if that step *and everything before it* didn't change. Put things that rarely change first:
+
+      ```
+      COPY requirements.txt .
+      RUN pip install --no-cache-dir -r requirements.txt
+      COPY . .
+      ```
+      Now editing `app.py` doesn't redo the slow install.
+
+      ### 3. One RUN, cleaned up
+      `apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*`, all in one layer. A cleanup in a later layer doesn't shrink the earlier one.
+
+      ### 4. Don't run as root
+      Add a user and switch to it: `RUN useradd -u 1000 app` then `USER 1000`. If the app is broken into, the attacker isn't root in the container. Your playground namespace enforces rules like this.
+
+      ### 5. Multi-stage builds
+      Build in one stage (with compilers and dev tools), then copy only the result into a clean final stage:
+
+      ```
+      FROM python:3.13-slim AS build
+      COPY requirements.txt .
+      RUN pip install --prefix=/install -r requirements.txt
+      FROM python:3.13-slim
+      COPY --from=build /install /usr/local
+      ```
+
+      **hadolint** checks all of this for you:
+      ```
+      $ cd ~/app && hadolint Dockerfile
+      ```
+    live:
+      - title: How your real sandbox image is built (first lines)
+        cmd: "curl -fsS https://raw.githubusercontent.com/g39832/Portfolio/main/cluster/sandbox.Dockerfile | grep -E '^(FROM|ARG|USER|COPY --from|RUN apt)' | head -15"
+        note: Pinned versions in ARGs, apt in one RUN with cleanup, COPY --from another image, USER 1000.
+    sources:
+      - title: Docker docs, building best practices
+        url: https://docs.docker.com/build/building/best-practices/
+      - title: Docker docs, multi-stage builds
+        url: https://docs.docker.com/build/building/multi-stage/
+      - title: hadolint rules
+        url: https://github.com/hadolint/hadolint#rules
+    quiz:
+      - q: You edit one line of app.py. Why does the whole pip install run again?
+        choices: ["pip has no cache", "`COPY . .` came before `RUN pip install`, so that layer and all after it are rebuilt", "Docker never caches RUN", "The base image changed"]
+        answer: 1
+        why: Copy the requirements file first, install, then copy the rest.
+      - q: "`RUN apt-get install -y big-pkg` then later `RUN rm -rf /var/lib/apt/lists/*`. Is the image smaller?"
+        choices: ["Yes", "No, the files still live in the earlier layer", "Only on arm64", "Only with --squash"]
+        answer: 1
+        why: Layers only add on top. Clean up in the same RUN that made the mess.
+      - q: What does a multi-stage build buy you?
+        choices: ["Parallel builds only", "A final image without the compilers and build tools, so it's smaller with less to attack", "It runs as non-root automatically", "Faster pulls of the base image"]
+        answer: 1
+        why: Only what you COPY --from into the last stage ends up in the image.
+    tasks:
+      - mission: Pin the base image
+      - mission: Make hadolint happy
+      - mission: Cache-friendly order
+      - mission: Don't run as root
+      - mission: Multi-stage builds
+
+  - id: ship
+    title: Build, run, then run it on the cluster
+    minutes: 20
+    teach: |
+      ### Build and run
+      ```
+      $ cd ~/app && docker build -t myapp .
+      $ docker run -d --name myapp -p 8000:8000 myapp
+      $ curl -s localhost:8000
+      ```
+
+      `-t` names (tags) the image. `docker history myapp` shows each layer and its size, so you can see what your Dockerfile choices cost.
+
+      ### How images get to your Pis
+      Your real pipeline: you push to GitHub, GitHub Actions builds the image for arm64 and pushes it to **GHCR** (ghcr.io), then the cluster pulls it when a pod starts. The pull uses `imagePullPolicy: Always` with `:latest`, or a pinned tag.
+
+      ### Same image, now on Kubernetes
+      `kubectl run` is the quick "docker run" of Kubernetes. It makes one pod:
+
+      ```
+      $ kubectl run box --image=busybox:1.36 -- sleep 3600
+      $ kubectl get pod box -o wide
+      $ kubectl exec box -- uname -a
+      ```
+
+      The pod lands on one of your Pis. Note which one in the `-o wide` output. In the next module you'll stop making single pods and let Deployments manage them.
+    live:
+      - title: Where your real images come from
+        cmd: "kubectl get pods -A -o jsonpath='{range .items[*]}{range .spec.containers[*]}{.image}{\"\\n\"}{end}{end}' | sed -E 's#/.*##' | sort | uniq -c | sort -rn"
+        note: "Registries by count. Names with no registry part are Docker Hub's."
+    sources:
+      - title: Docker docs, docker build reference
+        url: https://docs.docker.com/reference/cli/docker/buildx/build/
+      - title: GitHub Docs, working with the Container registry
+        url: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
+      - title: Kubernetes docs, images
+        url: https://kubernetes.io/docs/concepts/containers/images/
+    quiz:
+      - q: Which command shows each layer of an image and its size?
+        choices: ["docker ps", "docker history myapp", "docker logs myapp", "docker network ls"]
+        answer: 1
+        why: history lists the layers from newest to oldest, with the step that made each one.
+      - q: How does a new version of your site's image get onto the Pis?
+        choices: ["You copy it over SSH", "CI builds it and pushes it to GHCR, then pods pull it when they restart", "k3s builds it from the repo", "Docker Hub syncs it"]
+        answer: 1
+        why: That's the build, push, pull flow every container platform uses.
+    tasks:
+      - mission: Build it and run it
+      - mission: Run a container on the cluster

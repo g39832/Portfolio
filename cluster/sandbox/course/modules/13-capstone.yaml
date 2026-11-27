@@ -1,0 +1,186 @@
+id: capstone
+title: "Capstone: your real cluster"
+badge: Homelab Engineer
+lab: pi
+summary: Real projects on your real Pis. The checks look at your live cluster (read-only) to see that you did them.
+intro: |
+  This terminal is the **Real Pi** jump box: `ssh pi5` (or `ssh pi2`) logs you in to the real thing, with full admin rights, so work carefully and read every command before you run it. The checks don't need SSH: they read your cluster the way the other labs do.
+
+  Each project is a real piece of a professional platform. Write down what you did in the Portfolio repo (YAML in `cluster/k8s/`, a README section) and commit it. That's part of the job too.
+lessons:
+  - id: gitops
+    title: "Project: GitOps with Argo CD"
+    minutes: 60
+    teach: |
+      Right now, updating your cluster means SSH, `git pull`, and running a deploy script. **GitOps** flips that around: an agent *inside* the cluster watches your Git repo and makes the cluster match it. Git becomes the only way to change things. Every change is reviewed, logged and easy to undo with `git revert`.
+
+      **Argo CD** is the most popular GitOps tool. An `Application` says "keep namespace X in sync with folder Y of repo Z".
+
+      ### Plan
+      1. Install Argo CD on the cluster (it has arm64 images).
+      2. Log in to its web UI through a port-forward or a NodePort, over Tailscale.
+      3. Make an Application that points at something small first, like your start page manifests, then watch it sync.
+      4. Change something in Git, push, and watch Argo apply it with no SSH at all.
+
+      ```
+      ssh pi5
+      kubectl create namespace argocd
+      kubectl apply -n argocd --server-side -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+      kubectl -n argocd get pods -w
+      kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
+      kubectl -n argocd port-forward --address 0.0.0.0 svc/argocd-server 8443:443
+      ```
+
+      Then open `https://100.120.223.33:8443` (accept the self-signed certificate) and log in as `admin`.
+
+      > Argo CD takes about 500 MB of memory. Check `kubectl top nodes` before and after. Keeping an eye on that is part of running a platform.
+    live:
+      - title: Is Argo CD there yet?
+        lab: k8s
+        cmd: "kubectl get deploy -n argocd 2>&1 | head -10"
+    sources:
+      - title: Argo CD, getting started
+        url: https://argo-cd.readthedocs.io/en/stable/getting_started/
+      - title: OpenGitOps principles
+        url: https://opengitops.dev/
+    tasks:
+      - title: Argo CD is running
+        lab: k8s
+        text: The `argocd-server` Deployment in the `argocd` namespace has at least one ready pod.
+        hints:
+          - kubectl create namespace argocd && kubectl apply -n argocd --server-side -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+          - kubectl -n argocd rollout status deploy/argocd-server
+        check: "[ \"$(kubectl -n argocd get deploy argocd-server -o jsonpath='{.status.readyReplicas}' 2>/dev/null)\" -ge 1 ] 2>/dev/null"
+      - title: Argo CD manages something
+        lab: k8s
+        text: Make at least one Argo CD Application that points at a folder of your Portfolio repo, and let it sync. The check looks for objects carrying Argo CD's tracking label (`app.kubernetes.io/instance`) or annotation outside the argocd namespace.
+        hints:
+          - In the UI, New App → repo https://github.com/g39832/Portfolio, path cluster/k8s, or better a new folder with just one app's YAML
+          - "Or as YAML: kind: Application, spec.source.repoURL / path / targetRevision: main, spec.destination.namespace, spec.syncPolicy.automated: {}"
+        check: "kubectl get deploy,svc,cm -A -o json 2>/dev/null | jq -e '[.items[] | select(.metadata.namespace != \"argocd\") | select((.metadata.annotations // {}) | has(\"argocd.argoproj.io/tracking-id\")) ] | length > 0' >/dev/null || kubectl get deploy -A -l app.kubernetes.io/instance --no-headers 2>/dev/null | grep -v '^argocd ' | grep -q ."
+
+  - id: metrics
+    title: "Project: metrics and dashboards in the cluster"
+    minutes: 60
+    teach: |
+      Your Prometheus and Grafana run in Docker on the Pi 5, outside Kubernetes. Moving monitoring *into* the cluster means it sees every pod and node automatically, and it's set up as code like everything else.
+
+      **kube-prometheus-stack** is the standard Helm chart: Prometheus, Alertmanager, Grafana, node-exporter on every Pi, kube-state-metrics, and dozens of ready-made dashboards and alerts. On Pis, trim it down:
+
+      ```
+      ssh pi5
+      helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+      helm repo update
+      helm install mon prometheus-community/kube-prometheus-stack -n monitoring --create-namespace \
+        --set alertmanager.enabled=false \
+        --set prometheus.prometheusSpec.retention=7d \
+        --set prometheus.prometheusSpec.resources.requests.memory=400Mi \
+        --set grafana.service.type=NodePort --set grafana.service.nodePort=30030
+      kubectl -n monitoring get pods -w
+      ```
+
+      Then open Grafana on `:30030` over Tailscale. The admin password is in the `mon-grafana` Secret. Find the **Kubernetes / Compute Resources / Cluster** dashboard: those are the golden signals for your whole cluster.
+
+      Stretch goal: put the Helm values in a file in the repo and install it with k3s's HelmChart resource, the way CrowdSec is installed (`k8s/80-crowdsec.yaml`).
+    live:
+      - title: Monitoring pods
+        lab: k8s
+        cmd: "kubectl get pods -A -l 'app.kubernetes.io/name in (prometheus,grafana,node-exporter,prometheus-node-exporter)' -o wide 2>&1 | head"
+    sources:
+      - title: kube-prometheus-stack chart
+        url: https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
+      - title: k3s docs, Helm (the HelmChart resource)
+        url: https://docs.k3s.io/helm
+    tasks:
+      - title: Prometheus is running in the cluster
+        lab: k8s
+        text: A Prometheus pod is Running somewhere in your cluster.
+        hints:
+          - helm install mon prometheus-community/kube-prometheus-stack -n monitoring --create-namespace --set alertmanager.enabled=false
+        check: "kubectl get pods -A -l app.kubernetes.io/name=prometheus --field-selector=status.phase=Running --no-headers 2>/dev/null | grep -q ."
+      - title: Grafana is running and reachable
+        lab: k8s
+        text: A Grafana Service exists with a NodePort, so you can open it over Tailscale.
+        hints:
+          - "--set grafana.service.type=NodePort --set grafana.service.nodePort=30030 (helm upgrade with the same values to change it)"
+        check: "kubectl get svc -A -l app.kubernetes.io/name=grafana -o jsonpath='{.items[*].spec.type}' 2>/dev/null | grep -q NodePort"
+
+  - id: sealed
+    title: "Project: secrets that can live in Git"
+    minutes: 40
+    teach: |
+      Your secrets are made by hand-run setup scripts, which works but isn't GitOps: rebuild the cluster and you have to remember every script. **Sealed Secrets** lets you commit secrets safely. A controller in the cluster holds a private key, and you encrypt with its public key using `kubeseal`. Only the cluster can decrypt them, so the encrypted `SealedSecret` YAML is safe in a public repo.
+
+      ```
+      ssh pi5
+      helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
+      helm install sealed-secrets sealed-secrets/sealed-secrets -n kube-system
+      ```
+
+      Install `kubeseal` on the Pi (from the project's GitHub releases, arm64), then:
+
+      ```
+      kubectl create secret generic demo -n playground --from-literal=hello=world --dry-run=client -o yaml \
+        | kubeseal -o yaml > demo-sealed.yaml
+      kubectl apply -f demo-sealed.yaml
+      kubectl -n playground get secret demo
+      ```
+
+      > Back up the controller's key (`kubectl -n kube-system get secret -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml`) somewhere safe, off the Pi. Without it, a rebuilt cluster can't decrypt your sealed secrets. That's the backups lesson again.
+    sources:
+      - title: Sealed Secrets
+        url: https://github.com/bitnami-labs/sealed-secrets
+    tasks:
+      - title: The Sealed Secrets controller is running
+        lab: k8s
+        text: The sealed-secrets controller Deployment has a ready pod.
+        hints:
+          - helm install sealed-secrets sealed-secrets/sealed-secrets -n kube-system
+        check: "kubectl get deploy -A -l app.kubernetes.io/name=sealed-secrets -o jsonpath='{.items[*].status.readyReplicas}' 2>/dev/null | grep -q '[1-9]'"
+      - title: A sealed secret in the playground
+        lab: k8s
+        text: A SealedSecret you applied has been unsealed into a real Secret in the `playground` namespace. (The check looks at who owns the Secret, not at its value.)
+        hints:
+          - kubectl create secret generic demo -n playground --from-literal=hello=world --dry-run=client -o yaml | kubeseal -o yaml | kubectl apply -f -
+        check: "kubectl -n playground get secrets -o json 2>/dev/null | jq -e '[.items[] | select(any(.metadata.ownerReferences[]?; .kind == \"SealedSecret\"))] | length > 0' >/dev/null"
+
+  - id: postmortem
+    title: "Project: break it on purpose, then write the postmortem"
+    minutes: 45
+    teach: |
+      Things will break. What makes someone senior is how they respond, and what they change afterwards. **Chaos engineering** means breaking things on purpose, in a controlled way, to find weak spots before they find you.
+
+      ### The experiment (safe version)
+      1. **Hypothesis**: "If the Pi 4 goes offline, the website stays up, because ___." (Write what you *think* will happen.)
+      2. **Do it**: `ssh pi2`, then `sudo systemctl stop k3s-agent`. Watch with `kubectl get nodes -w` and `kubectl get pods -A -o wide` from the Pi 5, and load your site and the start page on your phone.
+      3. **Bring it back**: `sudo systemctl start k3s-agent`.
+      4. Notice the timing. Kubernetes waits about 5 minutes before it moves pods off a node that's gone quiet. And remember: Pi-hole runs on the Pi 4, and Tailscale DNS points at it.
+
+      ### The postmortem
+      A **blameless postmortem** is about systems, not people. Write `~/postmortem.md` *in this terminal* (before you ssh), with these sections:
+
+      ```
+      # Pi 4 offline drill
+      ## Summary
+      ## Timeline
+      ## Impact
+      ## What went well
+      ## What went wrong
+      ## Action items
+      ```
+
+      The action items are the point. Things like "add a second Pi-hole to Tailscale DNS" or "set PodDisruptionBudgets". Then do one of them.
+    sources:
+      - title: Google SRE book, postmortem culture
+        url: https://sre.google/sre-book/postmortem-culture/
+      - title: Principles of chaos engineering
+        url: https://principlesofchaos.org/
+      - title: Kubernetes docs, taints and tolerations (the 5-minute eviction)
+        url: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/#taint-based-evictions
+    tasks:
+      - title: Write the postmortem
+        lab: pi
+        text: "`~/postmortem.md` in this jump box has Summary, Timeline, Impact, What went well, What went wrong and Action items sections, with at least two action items (list lines starting with `-` under Action items)."
+        hints:
+          - nano ~/postmortem.md
+        check: "f=postmortem.md; [ -f $f ] && for s in Summary Timeline Impact 'What went well' 'What went wrong' 'Action items'; do grep -qi \"^##* *$s\" $f || exit 1; done && [ $(sed -n '/^##* *[Aa]ction items/,/^##* /p' $f | grep -c '^ *[-*] ') -ge 2 ]"

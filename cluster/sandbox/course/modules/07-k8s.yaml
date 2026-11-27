@@ -1,0 +1,242 @@
+id: k8s
+title: Kubernetes
+badge: Cluster Pilot
+lab: k8s
+summary: Deployments, Services, config, rollouts, probes and limits, on your real two-Pi cluster.
+intro: |
+  kubectl in this lab can **read** your whole cluster (not Secrets) and can only **change** the `playground` namespace, so your real apps are safe. `tidy` empties the playground when it fills up (20 pods max).
+lessons:
+  - id: desired
+    title: Desired state
+    minutes: 20
+    teach: |
+      Kubernetes' big idea: you don't give it orders like "start a container on the Pi 4". You write down **what you want** ("3 copies of this image, always"). Controllers then loop forever, comparing what you want with what exists and fixing the difference. That loop is called **reconciliation**.
+
+      ### The pieces
+      - **Node**: a machine (your `raspberrypi` and `pi2`). The **control plane** (API server, scheduler, controllers) runs on the Pi 5 in k3s.
+      - **Pod**: one or more containers that share a network and volumes. It's the smallest thing Kubernetes runs. Pods are cattle, not pets: they get replaced, not repaired.
+      - **Deployment**: "keep N pods of this template running". It manages a **ReplicaSet**, which manages the pods.
+      - **Namespace**: a folder for objects, like `graysoncodes`, `ledger` or `playground`.
+
+      Everything is an object in the API with `apiVersion`, `kind`, `metadata` and a `spec` (what you want). Controllers fill in the `status` (what is).
+
+      ```
+      $ kubectl get nodes
+      $ kubectl get pods -A
+      $ kubectl get deploy -A
+      $ kubectl explain deployment.spec.replicas
+      ```
+
+      ### Make one, then try to break it
+      ```
+      $ kubectl create deployment hello --image=nginxinc/nginx-unprivileged:1.28-alpine --port=8080
+      $ kubectl get pods -w
+      ```
+      Delete a pod and watch a new one appear within seconds. You didn't fix anything: the ReplicaSet saw "want 1, have 0" and made one.
+
+      > `kubectl get X -o yaml` shows the full object, spec and status. It's the best way to learn what a field does.
+    live:
+      - title: Everything running on your cluster
+        cmd: "kubectl get deploy,statefulset,daemonset -A"
+        note: Deployments for normal apps, a DaemonSet for "one per node" (like CrowdSec's agent), StatefulSets for apps that need stable names.
+      - title: Pods per node
+        cmd: "kubectl get pods -A -o wide --no-headers | awk '{print $8}' | sort | uniq -c"
+    sources:
+      - title: Kubernetes docs, overview
+        url: https://kubernetes.io/docs/concepts/overview/
+      - title: Kubernetes docs, Deployments
+        url: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+      - title: Kubernetes docs, controllers (the reconcile loop)
+        url: https://kubernetes.io/docs/concepts/architecture/controller/
+    quiz:
+      - q: You delete a pod that belongs to a Deployment with `replicas 1`. What happens?
+        choices: ["It stays deleted", "Its ReplicaSet makes a new pod right away", "The Deployment is deleted too", "The node reboots"]
+        answer: 1
+        why: Want 1, have 0, so make 1. To really stop it, scale to 0 or delete the Deployment.
+      - q: What's the smallest thing Kubernetes schedules onto a node?
+        choices: ["A container", "A pod", "A Deployment", "A namespace"]
+        answer: 1
+        why: Containers always run inside a pod. A pod's containers share an IP and can share volumes.
+      - q: Which part of an object do YOU write, and which does Kubernetes fill in?
+        choices: ["You write status, it writes spec", "You write spec (desired), controllers write status (actual)", "Both are written by you", "Both are automatic"]
+        answer: 1
+        why: That split is the whole desired-state model.
+    tasks:
+      - mission: Look before you touch
+      - mission: Run a deployment
+      - mission: Scale it out
+
+  - id: services
+    title: Services and config
+    minutes: 25
+    teach: |
+      Pods come and go, and each new one gets a new IP. A **Service** gives a set of pods one stable name and IP, and spreads traffic across the ones that are **ready**. It finds them by **label selector**: `app=hello` means any pod with that label.
+
+      ```
+      $ kubectl expose deployment hello --port=80 --target-port=8080
+      $ kubectl get svc,endpointslices
+      $ curl -s http://hello.playground.svc.cluster.local | head -5
+      ```
+
+      `port` is what clients use, and `targetPort` is where the container really listens. Mixing those two up is the most common Service bug, followed by a selector that matches no pods (which leaves the endpoints list empty).
+
+      ### Config lives outside the image
+      Build one image, then run it anywhere with different settings. That's one of the Twelve-Factor rules.
+
+      - **ConfigMap**: plain settings, given to the pod as environment variables or as files.
+      - **Secret**: the same shape, for passwords and tokens. Secrets are only base64 *encoded*, not encrypted. Access to them is what's locked down (your lab can't read them).
+
+      ```
+      $ kubectl create configmap site-config --from-literal=COLOR=blue
+      $ kubectl set env deployment/hello --from=configmap/site-config
+      $ kubectl exec deploy/hello -- env | grep COLOR
+      ```
+
+      Changing env vars changes the pod template, so the Deployment rolls out new pods. Files mounted from a ConfigMap update in place, but the app has to re-read them.
+    live:
+      - title: Your real Services and the pods behind each one
+        cmd: "kubectl get endpointslices -A -o custom-columns='NAMESPACE:.metadata.namespace,SERVICE:.metadata.labels.kubernetes\\.io/service-name,ADDRESSES:.endpoints[*].addresses[0],READY:.endpoints[*].conditions.ready' | grep -v kube-system"
+        note: Each Service's ready pod IPs. A pod that fails its readiness probe drops out of this list.
+    sources:
+      - title: Kubernetes docs, Service
+        url: https://kubernetes.io/docs/concepts/services-networking/service/
+      - title: Kubernetes docs, ConfigMaps
+        url: https://kubernetes.io/docs/concepts/configuration/configmap/
+      - title: The Twelve-Factor App, config
+        url: https://12factor.net/config
+    quiz:
+      - q: Your Service exists, but curl hangs and `kubectl get endpointslices` shows no addresses. Most likely cause?
+        choices: ["DNS is broken", "The selector doesn't match the pods' labels, or no pod is ready", "The image is wrong", "port and targetPort are equal"]
+        answer: 1
+        why: A Service only sends traffic to ready pods that match its selector. No matches means nowhere to send it.
+      - q: The container listens on 8080 and clients should use port 80. Which is right?
+        choices: ["port 8080, targetPort 80", "port 80, targetPort 8080", "port 80 only", "nodePort 8080"]
+        answer: 1
+        why: targetPort is the container's port. port is what the Service shows to clients.
+      - q: Are Kubernetes Secrets encrypted?
+        choices: ["Yes, always", "No, they're base64. Who can read them (RBAC) is what protects them", "Only in k3s", "Only when mounted as files"]
+        answer: 1
+        why: "Anyone with `get secrets` can decode them. Encryption at rest is extra cluster setup, and tools like Sealed Secrets keep them out of Git."
+    tasks:
+      - mission: Give it a Service
+      - mission: Config from a ConfigMap
+
+  - id: rollouts
+    title: Rollouts, probes and limits
+    minutes: 30
+    teach: |
+      ### Rolling updates
+      Change a Deployment's pod template (a new image, say) and it makes a new ReplicaSet. It brings new pods up and takes old ones down a few at a time, so there's no downtime if the new pods become *ready*. Old ReplicaSets are kept (scaled to 0), so you can go back:
+
+      ```
+      $ kubectl rollout status deployment/hello
+      $ kubectl rollout history deployment/hello
+      $ kubectl rollout undo deployment/hello
+      ```
+
+      ### Probes: how Kubernetes knows a pod is OK
+      - **readiness**: "can I send this pod traffic?" If it fails, the pod is pulled out of the Service and left running. Rollouts wait on it, so a broken new version never gets traffic.
+      - **liveness**: "is it stuck forever?" If it fails, the container is restarted. Keep it simple, and never check a database from it (a database blip would restart every pod at once).
+      - **startup**: gives slow-starting apps time before liveness begins.
+
+      ### Requests and limits
+      - **requests**: what the scheduler reserves on a node. A pod only lands where its requests fit.
+      - **limits**: enforced at run time. Going over the CPU limit gets you *throttled*. Going over the memory limit gets you *killed* (**OOMKilled**).
+
+      On small Pis, set realistic memory requests and limits. Your playground's LimitRange gives every container defaults automatically.
+
+      ```
+      $ kubectl describe node raspberrypi | grep -A8 'Allocated resources'
+      ```
+    live:
+      - title: Probes on your real apps
+        cmd: "kubectl get deploy -A -o custom-columns='NS:.metadata.namespace,NAME:.metadata.name,READINESS:.spec.template.spec.containers[0].readinessProbe.httpGet.path,LIVENESS:.spec.template.spec.containers[0].livenessProbe.httpGet.path,MEM-LIMIT:.spec.template.spec.containers[0].resources.limits.memory'"
+        note: "<none> means no HTTP probe or no limit. Spotting gaps like these is real DevOps work."
+      - title: How full each Pi is (requests vs. what it has)
+        cmd: "for n in $(kubectl get nodes -o name); do echo \"== $n\"; kubectl describe $n | sed -n '/Allocated resources/,/Events/p' | sed -n '4,7p'; done"
+    sources:
+      - title: Kubernetes docs, performing a rolling update
+        url: https://kubernetes.io/docs/tutorials/kubernetes-basics/update/update-intro/
+      - title: Kubernetes docs, configure liveness, readiness and startup probes
+        url: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+      - title: Kubernetes docs, resource management for pods
+        url: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+    quiz:
+      - q: A new image version crashes on start. The Deployment has a readiness probe. What do users see during the rollout?
+        choices: ["An outage", "Nothing: new pods never become ready, so old pods keep serving and the rollout stalls", "Half the requests fail", "The cluster rolls back by itself"]
+        answer: 1
+        why: That's exactly why readiness probes matter. Then `rollout undo` cleans up.
+      - q: A container's memory limit is 64Mi and it tries to use 80Mi. What happens?
+        choices: ["It's slowed down", "It's killed (OOMKilled) and restarted", "The limit grows", "Nothing"]
+        answer: 1
+        why: Memory can't be throttled, so the kernel kills it. CPU over the limit is throttled instead.
+      - q: Why is checking the database in a liveness probe a bad idea?
+        choices: ["It's slow", "A database blip fails every pod's liveness at once, so they all restart together", "Probes can't use the network", "It needs a Secret"]
+        answer: 1
+        why: Liveness should only ask "is this process stuck?". Put dependency checks in readiness, if anywhere.
+    tasks:
+      - mission: Ship, then undo
+      - mission: Add a readiness probe
+      - mission: Set a memory limit
+
+  - id: debug
+    title: Debugging, Jobs, RBAC and Helm
+    minutes: 30
+    teach: |
+      ### The debugging loop
+      When something's wrong, go from the outside in:
+
+      1. `kubectl get pods`: what's the STATUS? `Pending`, `ErrImagePull`/`ImagePullBackOff`, `CrashLoopBackOff`, `OOMKilled`?
+      2. `kubectl describe pod X`: the **Events** at the bottom say *why* (no node fits, image not found, probe failing).
+      3. `kubectl logs X` (add `--previous` for the crash before the last one).
+      4. `kubectl exec -it X -- sh` to look around inside.
+
+      ```
+      $ kubectl get events --sort-by=.lastTimestamp | tail -15
+      ```
+
+      ### Jobs and CronJobs
+      A **Job** runs pods until they *finish* successfully. A **CronJob** makes a Job on a schedule. Your nightly B2 backups are CronJobs (`offsite-backup` at 4:30 and 4:40).
+
+      ### RBAC: who can do what
+      Every request to the API is checked: can this user (or ServiceAccount) do this *verb* on this *resource* in this *namespace*? Roles list the permissions, and RoleBindings give them to someone. Your lab's ServiceAccount has `view` everywhere and `edit` only in `playground`. That's least privilege, set in `k8s/55-sandbox.yaml`.
+
+      ```
+      $ kubectl auth can-i --list | head -20
+      ```
+
+      ### Helm: packages for Kubernetes
+      A **chart** is a folder of templated YAML plus default `values.yaml`. `helm install name chart --set key=value` renders and applies it, and Helm tracks it as a *release* you can upgrade or roll back. Your CrowdSec install is a Helm chart, applied by k3s's HelmChart controller.
+    live:
+      - title: Recent events on your cluster
+        cmd: "kubectl get events -A --sort-by=.lastTimestamp 2>/dev/null | tail -15"
+        note: Warnings here are the first place to look when something seems off.
+      - title: Your real CronJobs and when they last ran
+        cmd: kubectl get cronjobs -A
+    sources:
+      - title: Kubernetes docs, debug running pods
+        url: https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/
+      - title: Kubernetes docs, Jobs
+        url: https://kubernetes.io/docs/concepts/workloads/controllers/job/
+      - title: Kubernetes docs, using RBAC authorization
+        url: https://kubernetes.io/docs/reference/access-authn-authz/rbac/
+      - title: Helm docs, quickstart
+        url: https://helm.sh/docs/intro/quickstart/
+    quiz:
+      - q: A pod is stuck in `Pending`. Where's the first place to look?
+        choices: ["kubectl logs", "The Events in kubectl describe pod (often no node has enough resources)", "The image registry", "kubectl exec"]
+        answer: 1
+        why: A Pending pod hasn't started, so it has no logs yet. The scheduler explains why in the events.
+      - q: Your app crashed and restarted. How do you see the logs from before the restart?
+        choices: ["kubectl logs pod --previous", "kubectl describe", "They're gone", "kubectl get events"]
+        answer: 0
+        why: --previous shows the last terminated container's logs.
+      - q: What does a RoleBinding do?
+        choices: ["Makes a new user", "Gives a Role's permissions to a user, group or ServiceAccount in a namespace", "Binds a pod to a node", "Encrypts a Secret"]
+        answer: 1
+        why: A Role says what's allowed, and a binding says who gets it. ClusterRoleBindings do the same across the whole cluster.
+    tasks:
+      - mission: Read the events
+      - mission: A Job that runs once
+      - mission: Who can do what?
+      - mission: Install with Helm

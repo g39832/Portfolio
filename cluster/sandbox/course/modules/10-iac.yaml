@@ -1,0 +1,122 @@
+id: iac
+title: Infrastructure as Code
+badge: Infra Coder
+lab: iac
+summary: Ansible to set up machines, OpenTofu to manage resources. Describe it once, apply it forever.
+lessons:
+  - id: ansible
+    title: Ansible, idempotence and playbooks
+    minutes: 25
+    teach: |
+      Setting up a server by hand works once. The second time, you forget a step. **Infrastructure as code** writes the setup down as files that a tool applies the same way every time. They're reviewed in Git like any code.
+
+      ### Ansible
+      Ansible connects to machines over SSH (or works locally) and runs **tasks** made from **modules**: `apt`, `copy`, `file`, `service`, `user`... A **playbook** is a YAML list of tasks for a group of hosts in the **inventory**.
+
+      ```
+      - name: Set up the box
+        hosts: all
+        tasks:
+          - name: A message of the day
+            ansible.builtin.copy:
+              dest: ~/managed/motd
+              content: "managed by ansible\n"
+          - name: App folders
+            ansible.builtin.file:
+              path: "~/managed/apps/{{ item }}"
+              state: directory
+            loop: [web, blog, ledger]
+      ```
+
+      ### Idempotence: the key idea
+      Modules describe an **end state** ("this file exists with this content"), not an action ("append this line"). Run the playbook twice and the second run reports `changed=0`. That makes it safe to run again and again, which is how you'd keep both Pis matching.
+
+      ```
+      $ cd ~/ansible && ansible-playbook site.yml
+      $ ansible-playbook site.yml --check --diff
+      ```
+
+      `--check --diff` is a dry run: what *would* change, and how.
+
+      > Your `setup-docker.sh` does by hand what an Ansible role would do. Rewriting it as a playbook for both Pis is a great capstone project.
+    sources:
+      - title: Ansible docs, getting started
+        url: https://docs.ansible.com/ansible/latest/getting_started/index.html
+      - title: Ansible docs, loops
+        url: https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_loops.html
+      - title: Ansible docs, check mode and diff mode
+        url: https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_checkmode.html
+    quiz:
+      - q: You run a correct playbook twice in a row. What should the second run say?
+        choices: ["changed=all tasks", "changed=0", "failed=1", "It refuses to run"]
+        answer: 1
+        why: That's idempotence. Nothing is different from the described end state, so there's nothing to change.
+      - q: Which task is NOT idempotent?
+        choices: ["copy with content:", "file with state: directory", "shell: echo hi >> ~/log.txt", "apt with state: present"]
+        answer: 2
+        why: Appending adds another line every run. Modules that describe an end state are safe to run again.
+      - q: What does `--check --diff` do?
+        choices: ["Runs twice", "Shows what would change, and how, without changing anything", "Checks the YAML syntax only", "Compares two hosts"]
+        answer: 1
+        why: It's a dry run with a preview of the changes.
+    tasks:
+      - mission: Run your first playbook
+      - mission: Add a task
+      - mission: Loops
+
+  - id: tofu
+    title: OpenTofu, plan and apply
+    minutes: 25
+    teach: |
+      **OpenTofu** (the open-source fork of Terraform) manages *resources*: DNS records, cloud servers, buckets, Cloudflare settings, or here, local files. You declare them in `.tf` files, and Tofu works out the steps.
+
+      ```
+      resource "local_file" "hello" {
+        filename = "${path.module}/out/hello.txt"
+        content  = var.greeting
+      }
+      ```
+
+      ### The workflow
+      ```
+      $ cd ~/tofu && tofu init
+      $ tofu plan
+      $ tofu apply
+      ```
+
+      - `init` downloads **providers** (the plugins that talk to Cloudflare, AWS, local files...).
+      - `plan` compares your code, the **state file** (what Tofu made last time) and reality, then prints exactly what it will add, change or destroy. **Always read the plan**, especially any `destroy`.
+      - `apply` does it.
+
+      ### State and drift
+      The **state** (`terraform.tfstate`) is Tofu's memory of what it manages. If someone changes a resource by hand (in a dashboard, say), reality **drifts** from the code. The next plan shows it and offers to put it back. That's how IaC keeps hand-made changes from piling up.
+
+      Some changes can be made in place. Others force a **replacement** (destroy, then create), and the plan marks those with `-/+`. Know which is which before you apply to anything real.
+
+      ### Variables and outputs
+      `variable` blocks are inputs (`-var greeting=hi`, or a `.tfvars` file). `output` blocks print useful values after apply, like an IP or a URL.
+    sources:
+      - title: OpenTofu docs, the core workflow
+        url: https://opentofu.org/docs/intro/core-workflow/
+      - title: OpenTofu docs, state
+        url: https://opentofu.org/docs/language/state/
+      - title: Cloudflare provider (manage your real DNS as code)
+        url: https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs
+    quiz:
+      - q: What is the state file for?
+        choices: ["It holds your passwords", "It's Tofu's record of what it created, so it can tell what changed", "A backup of your .tf files", "Logs of every apply"]
+        answer: 1
+        why: Without state, Tofu couldn't map a resource in your code to the real thing it made. (It can hold secrets too, so protect it.)
+      - q: Someone edited a DNS record in the Cloudflare dashboard. What does the next `tofu plan` do?
+        choices: ["Nothing", "It shows the drift and plans to change the record back to what the code says", "It updates your .tf files", "It fails"]
+        answer: 1
+        why: The code is the source of truth. To keep the hand change, put it in the code.
+      - q: In a plan, what does `-/+` next to a resource mean?
+        choices: ["An in-place update", "It will be destroyed and re-created (replaced)", "It's being imported", "No change"]
+        answer: 1
+        why: Replacement can mean downtime or lost data. Always look for it.
+    tasks:
+      - mission: Plan, then apply
+      - mission: Change a variable
+      - mission: Drift
+      - mission: Outputs

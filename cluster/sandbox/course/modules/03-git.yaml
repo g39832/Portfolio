@@ -1,0 +1,163 @@
+id: git
+title: Git & GitHub
+badge: Version Keeper
+lab: git
+summary: History you can trust. Commits, branches, merges, undo, and how GitHub fits in.
+lessons:
+  - id: commits
+    title: Commits and history
+    minutes: 15
+    teach: |
+      Git is the source of truth for everything in DevOps: app code, Dockerfiles, Kubernetes YAML, CI workflows. Your whole Pi cluster is rebuilt from the `cluster/` folder of one repo. If it isn't in Git, it doesn't really exist.
+
+      ### Three places
+      1. The **working tree**: the files you're editing.
+      2. The **staging area** (index): what will go in the next commit. `git add` puts changes here.
+      3. The **repository**: commits, each a full snapshot with an author, a message and a pointer to its parent.
+
+      ```
+      $ cd ~/repo && git status
+      $ git log --oneline --graph --all
+      $ git diff
+      ```
+
+      A commit's ID (like `2ee706b`) is a hash of its content *and its parent*. Change anything in history and every later ID changes. That's why you can trust history, and why rewriting shared history causes trouble.
+
+      ### What not to commit
+      `.gitignore` lists patterns Git should pretend it can't see: logs, build output, `node_modules`, and **secrets** like `.env` files. It only affects files Git isn't tracking yet. A file that's already committed has to be removed with `git rm --cached`.
+
+      ### Who changed this, and why?
+      `git blame file` shows the last commit to touch each line. `git log -p file` shows every change to the file. Good commit messages are a gift to the person debugging at 2am, which is usually future you.
+
+      > A good message says *why*: "Pin nginx to 1.29 so the probe path stays stable" beats "update yaml".
+    live:
+      - title: The latest commits in your Portfolio repo (from GitHub)
+        cmd: "curl -fsS 'https://api.github.com/repos/g39832/Portfolio/commits?per_page=6' | jq -r '.[] | \"\\(.sha[0:7])  \\(.commit.author.date[0:10])  \\(.commit.message | split(\"\\n\")[0])\"'"
+        note: The repo your whole cluster is built from. Pulled from GitHub's public API.
+    sources:
+      - title: Pro Git book, Git basics (free)
+        url: https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository
+      - title: gitignore documentation
+        url: https://git-scm.com/docs/gitignore
+      - title: Learn Git Branching (interactive, works on a phone)
+        url: https://learngitbranching.js.org/
+    quiz:
+      - q: You ran `git add app.py`, then edited app.py again. What will `git commit` save?
+        choices: ["Both versions", "The version from when you ran git add", "The newest version", "Nothing until you add again"]
+        answer: 1
+        why: git add copies the file into the staging area as it was then. Run git add again to stage the newer changes.
+      - q: You added `*.env` to .gitignore, but `secrets.env` still shows in `git status` as modified. Why?
+        choices: ["The pattern is wrong", "It was already tracked, and .gitignore only hides untracked files", "You need to restart Git", ".gitignore only works on folders"]
+        answer: 1
+        why: "Untrack it with `git rm --cached secrets.env`. And if it had real secrets, rotate them: they're still in history."
+      - q: Why does changing an old commit change the IDs of every commit after it?
+        choices: ["Git renumbers commits every day", "Each commit's ID is a hash that includes its parent's ID", "IDs are random", "GitHub does it on push"]
+        answer: 1
+        why: It's a chain of hashes, so history can't be changed quietly.
+    tasks:
+      - mission: Count the commits
+      - mission: Ignore the logs
+      - mission: Find who changed a line
+
+  - id: branches
+    title: Branches, merges and conflicts
+    minutes: 25
+    teach: |
+      A **branch** is just a movable label pointing at a commit. Making one is instant. You work on `feature/about` while `main` stays deployable, then merge it back.
+
+      ```
+      $ git switch -c feature/demo
+      $ git branch -a
+      $ git switch main
+      ```
+
+      ### Merging
+      If main hasn't moved since you branched, Git just slides the label forward (a *fast-forward*). If both sides have new commits, Git makes a **merge commit** with two parents. When both sides changed the same lines, Git can't guess and stops with a **conflict**:
+
+      ```
+      <<<<<<< HEAD
+      <footer>Made on a Pi</footer>
+      =======
+      <footer>© Grayson</footer>
+      >>>>>>> feature/footer
+      ```
+
+      Edit the file into what it *should* be, delete the marker lines, then `git add` the file and `git commit`. `git merge --abort` gets you out if you panic.
+
+      ### Pull requests
+      On GitHub, a **pull request** is a proposal to merge a branch. CI runs on it, someone reviews it, then it's merged. Trunk-based development (short-lived branches merged often into main) is what most DevOps teams aim for. Long-lived branches mean big, painful merges.
+
+      ### Releases
+      A **tag** names a commit forever: `v1.0.0`. Annotated tags (`-a`) store who tagged it, when and why. CI pipelines often build and publish a release when a `v*` tag is pushed.
+    sources:
+      - title: Pro Git, basic branching and merging
+        url: https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging
+      - title: GitHub Docs, about pull requests
+        url: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests
+      - title: Trunk-based development
+        url: https://trunkbaseddevelopment.com/
+    quiz:
+      - q: What is a Git branch, really?
+        choices: ["A full copy of the repository", "A movable pointer to a commit", "A folder on GitHub", "A list of changed files"]
+        answer: 1
+        why: That's why making branches is instant and cheap.
+      - q: You're halfway through a messy merge conflict and want to go back to before you started. What do you run?
+        choices: ["git reset --hard origin/main", "git merge --abort", "rm -rf .git", "git revert"]
+        answer: 1
+        why: merge --abort puts everything back the way it was before the merge.
+      - q: Why do teams prefer short-lived branches?
+        choices: ["GitHub charges per branch", "Small, frequent merges mean fewer and smaller conflicts, and changes reach production sooner", "Long branches get deleted automatically", "Git slows down with many branches"]
+        answer: 1
+        why: That's the main idea of trunk-based development and continuous integration.
+    tasks:
+      - mission: Work on a branch
+      - mission: Merge and fix a conflict
+      - mission: Tag a release
+
+  - id: undo
+    title: Undo without fear
+    minutes: 15
+    teach: |
+      Everyone commits something wrong. What matters is undoing it without wrecking anyone else's history.
+
+      - **`git revert <commit>`** makes a *new* commit that does the opposite. History stays honest and nothing is rewritten, so it's safe on `main` and anything already pushed. It's the DevOps way to roll back a bad change: the rollback is itself reviewed, logged and deployed.
+      - **`git reset`** moves your branch label back. `--soft` keeps the changes staged, and `--hard` throws them away. Only use it on commits you haven't pushed.
+      - **`git restore file`** throws away uncommitted edits to a file.
+      - **`git stash`** puts unfinished work on a shelf so you can switch branches. `git stash pop` brings it back.
+
+      ```
+      $ git log --oneline -5
+      $ git stash list
+      $ git reflog | head
+      ```
+
+      ### The safety net: reflog
+      `git reflog` records every place `HEAD` has been, even after a `reset --hard`. If you "lost" a commit, it's almost certainly still there for at least 30 days. Find it in the reflog and `git switch -c rescue <id>`.
+
+      ### GitHub from the terminal
+      The `gh` tool does pull requests, issues and CI runs from the shell: `gh pr create`, `gh run list`, `gh run watch`. You'll use it in the CI module.
+
+      > If a secret ever gets committed, reverting isn't enough: it's still in history. **Rotate the secret first** (make a new one, kill the old one). Cleaning history comes second.
+    sources:
+      - title: Pro Git, undoing things
+        url: https://git-scm.com/book/en/v2/Git-Basics-Undoing-Things
+      - title: git revert documentation
+        url: https://git-scm.com/docs/git-revert
+      - title: GitHub CLI manual
+        url: https://cli.github.com/manual/
+    quiz:
+      - q: A bad commit is already pushed to main and deployed. What's the safe undo?
+        choices: ["git reset --hard HEAD~1 and force-push", "git revert <commit> and push", "Delete the repo", "Edit the files back by hand without committing"]
+        answer: 1
+        why: revert adds a new commit, so everyone else's copy stays valid and the rollback shows up in history.
+      - q: You ran `git reset --hard` and lost a commit. Where can you find it?
+        choices: ["It's gone forever", "git reflog", "git stash list", "GitHub's trash"]
+        answer: 1
+        why: The reflog remembers where HEAD has been, so you can branch from the lost commit.
+      - q: You committed an API key. Which step comes first?
+        choices: ["Rewrite history to remove it", "Revoke or rotate the key", "Add the file to .gitignore", "Make the repo private"]
+        answer: 1
+        why: Assume it's already copied. Bots scan public GitHub for keys within minutes.
+    tasks:
+      - mission: Undo a bad commit safely
+      - mission: Stash unfinished work

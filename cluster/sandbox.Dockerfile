@@ -50,7 +50,7 @@ RUN set -eux; cd /tmp; \
     curl -fsSL -o fit.js    "https://cdn.jsdelivr.net/npm/@xterm/addon-fit@${XTERM_FIT_VERSION}/lib/addon-fit.js"; \
     python3 /opt/sandbox/inline.py /opt/sandbox/terminal.html xterm.css xterm.js fit.js > /opt/sandbox/index.html; \
     rm -f xterm.js xterm.css fit.js; \
-    chmod +x /opt/sandbox/enter.sh /opt/sandbox/start.sh /opt/sandbox/learn /opt/sandbox/envs/*/seed.sh; \
+    chmod +x /opt/sandbox/enter.sh /opt/sandbox/prep.sh /opt/sandbox/start.sh /opt/sandbox/learn /opt/sandbox/course/server.py /opt/sandbox/envs/*/seed.sh; \
     ln -s /opt/sandbox/learn /usr/local/bin/learn; \
     useradd -u 1000 -m -s /bin/bash learner; mkdir -p /work && chown 1000:1000 /work
 

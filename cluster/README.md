@@ -148,7 +148,7 @@ docker run -d --name pfweb --network pftest -p 18080:8080 -e BLOG_UPSTREAM=http:
 | Pi-hole backup | `k8s/51-pihole-pi5.yaml` | http://100.120.223.33:30881/admin | Second Pi-hole on the Pi 5 (`192.168.1.35`). See **Pi-hole for the whole house** below. |
 | IT-Tools | `k8s/48-it-tools.yaml` | http://100.120.223.33:30481 | ~80 developer/IT tools. Private on purpose (no Cloudflare route). |
 | Network Labs | `k8s/49-labs.yaml` + `labs/` | http://100.120.223.33:30403 | Guide for the router labs. Page update: `bash labs/deploy.sh`. The labs run in Docker on the Pi 5 via Containerlab (`labs/lab.sh`), not in k3s. |
-| Practice labs | `k8s/55-sandbox.yaml` + `sandbox/` | http://100.120.223.33:30410 | Web terminals (phone friendly) with missions for Linux, Bash, Git & GitHub, Kubernetes, Networking, Containers, Security, Backups, CI/CD, IaC, plus an SSH jump to the Pis. See **Practice labs** below. |
+| Course + practice labs | `k8s/55-sandbox.yaml` + `sandbox/` | http://100.120.223.33:30410 | The DevOps Path course (lessons, quizzes, auto-checked tasks, progress) and web terminals (phone friendly) with missions for Linux, Bash, Git & GitHub, Kubernetes, Networking, Containers, Security, Backups, CI/CD, IaC, plus an SSH jump to the Pis. See **Practice labs** below. |
 | Jellyfin | `k8s/60-jellyfin.yaml` | http://100.120.223.33:8096 | Media server on the Pi 5. Full guide: `media/README.md` |
 | CrowdSec | `k8s/80-crowdsec.yaml` | (no web page) | Watches the public site's logs for attackers; `81-crowdsec-cloudflare.yaml` blocks them at Cloudflare. See **Security (CrowdSec)** below. |
 
@@ -161,6 +161,25 @@ Health report for a Pi (read-only):
 ```powershell
 Get-Content -Raw "$HOME\Desktop\Portfolio\cluster\inspect-pi.sh" | ssh grayson@raspberrypi.local "tr -d '\r' | bash -s"
 ```
+
+## The course (DevOps Path)
+
+http://100.120.223.33:30410 opens the course: 13 modules in order (Linux → Bash → Git → Networking →
+Docker → images → Kubernetes → Observability → CI/CD → IaC → Security → Backups → a capstone on the real
+cluster). Each lesson has a short read, "on your cluster, right now" panels (read-only commands run live
+against the Pis), links to the docs it's based on, a quiz, and hands-on tasks with a **Check my work**
+button that looks at what you really did in the lab. Progress, XP, streaks, badges and a Review queue of
+missed questions are saved on the labs' volume (`/work/.course/progress.json`), so phone and PC match.
+On a phone the lesson and its terminal are two tabs; on a wide screen the terminal sits on the right.
+
+- Server: `sandbox/course/server.py` (Python standard library + PyYAML) on 127.0.0.1:7700 in the same
+  container as the terminals; nginx (`sandbox/nginx.conf`) sends `/` to it and `/term/` to ttyd. Old
+  `:30410/?arg=<lab>` links still work (they redirect to `/term/`).
+- Content: `sandbox/course/modules/NN-<id>.yaml`, one file per module, in file-name order. See
+  `sandbox/course/README.md` for the format. A task can reuse a lab mission by title (`mission: Count the 404s`)
+  so `learn` and the course share one check.
+- Checks and live panels only run commands from those files, as the terminal's user with that lab's
+  environment (`sandbox/prep.sh` sets a lab up the same way opening its terminal does).
 
 ## Practice labs
 

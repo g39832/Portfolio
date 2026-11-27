@@ -13,31 +13,6 @@ case " $LABS " in
     [ -n "$lab" ] || exit 0 ;;
 esac
 export LAB="$lab" HOME="/work/$lab" SANDBOX=/opt/sandbox KUBECONFIG=/work/.kube/config
-mkdir -p "$HOME" /work/.kube
-# kubectl uses this pod's own account: read-only on the whole cluster (no Secrets),
-# full control only in the "playground" namespace, which is where it starts.
-if [ -n "${KUBERNETES_SERVICE_HOST:-}" ]; then
-  cat > "$KUBECONFIG" <<KC
-apiVersion: v1
-kind: Config
-clusters:
-- name: pi
-  cluster:
-    server: https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}
-    certificate-authority: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-users:
-- name: learner
-  user:
-    tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-contexts:
-- name: playground
-  context: {cluster: pi, user: learner, namespace: playground}
-current-context: playground
-KC
-fi
+"$SANDBOX/prep.sh" "$lab" || exit 1
 cd "$HOME" || exit 1
-if [ ! -f "$HOME/.seeded" ]; then
-  echo "Setting up the $lab lab for the first time..."
-  "$SANDBOX/envs/$lab/seed.sh" && touch "$HOME/.seeded"
-fi
 exec tmux -L "$lab" -f "$SANDBOX/tmux.conf" new-session -A -s "$lab" "bash --rcfile $SANDBOX/bashrc -i"

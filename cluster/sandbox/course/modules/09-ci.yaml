@@ -1,0 +1,141 @@
+id: ci
+title: CI/CD
+badge: Pipeline Builder
+lab: ci
+summary: YAML, GitHub Actions, jq and yq. Let machines build, test and ship every push.
+lessons:
+  - id: yaml
+    title: YAML and JSON, the languages of config
+    minutes: 20
+    teach: |
+      Almost every DevOps tool is set up with YAML (Kubernetes, Actions, Compose, Ansible) or speaks JSON (APIs, `kubectl -o json`). Read them fluently, and edit them with tools instead of by hand.
+
+      ### YAML in one minute
+      ```
+      name: web            # a key and a value
+      replicas: 2          # a number
+      tag: "1.10"          # quoted: without quotes, 1.10 becomes the number 1.1!
+      ports:               # a list
+        - 80
+        - 443
+      env:                 # a map inside a map
+        APP_ENV: prod
+      ```
+      Indentation is the structure. Use spaces only, never tabs. Quote anything that *looks* like a number or a boolean but isn't: versions, `"on"`, `"no"`, `"08"`.
+
+      ### jq: ask JSON questions
+      ```
+      $ jq '.' data/services.json
+      $ jq -r '.[] | select(.public) | .name' data/services.json
+      $ kubectl get pods -A -o json | jq -r '.items[] | .metadata.name' | head
+      ```
+
+      ### yq: the same for YAML, and it can edit
+      ```
+      $ yq '.spec.replicas' data/app.yaml
+      $ yq -i '.spec.replicas = 3' data/app.yaml
+      ```
+
+      Editing with a tool is safe in scripts and CI. A `sed` on YAML breaks the first time the file's layout changes.
+
+      ### Versions aren't plain text
+      `sort` puts `1.10.0` before `1.9.7`. Use `sort -V` (version sort), and filter out pre-releases like `-rc1` when you want "newest stable".
+    live:
+      - title: Your cluster, asked with jq
+        cmd: "kubectl get pods -A -o json | jq -r '[.items[] | {ns: .metadata.namespace, node: .spec.nodeName}] | group_by(.node) | map({node: .[0].node, pods: length, namespaces: (map(.ns) | unique | length)})'"
+    sources:
+      - title: YAML spec, 1.2.2
+        url: https://yaml.org/spec/1.2.2/
+      - title: jq manual
+        url: https://jqlang.org/manual/
+      - title: yq docs
+        url: https://mikefarah.gitbook.io/yq
+    quiz:
+      - q: "In YAML, what does `version: 1.10` turn into?"
+        choices: ["The string 1.10", "The number 1.1", "An error", "The list [1, 10]"]
+        answer: 1
+        why: Unquoted, it's a float. Write "1.10".
+      - q: Which jq filter prints only the names of items whose `public` is true?
+        choices: [".name | public", ".[] | select(.public) | .name", "select(.name)", ".public[] | .name"]
+        answer: 1
+        why: .[] walks the array, select() keeps the matches, and .name takes the field.
+      - q: Why use `sort -V` for version lists?
+        choices: ["It's faster", "It knows 1.10 comes after 1.9", "It removes -rc versions", "It sorts newest first"]
+        answer: 1
+        why: Plain sort compares character by character, and "1" < "9".
+    tasks:
+      - mission: Query JSON with jq
+      - mission: Edit YAML with yq
+      - mission: Newest version
+
+  - id: actions
+    title: GitHub Actions
+    minutes: 30
+    teach: |
+      **Continuous integration** means every push is built and tested automatically, so problems show up in minutes, not at release time. **Continuous delivery** means every good build *could* be deployed. **Continuous deployment** means it *is*.
+
+      ### Anatomy of a workflow
+      Workflows live in `.github/workflows/*.yml`:
+
+      ```
+      name: Lint
+      on: [push, pull_request]        # when it runs
+      jobs:
+        shellcheck:                   # a job runs on one fresh machine
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v5          # a ready-made action
+            - run: shellcheck scripts/*.sh       # a shell command
+      ```
+
+      - **Jobs** run in parallel unless one `needs:` another.
+      - A **matrix** runs the same job with different values. Your `cluster-images.yml` builds every image (web, blog, sandbox...) from one job definition this way.
+      - **Secrets** (`${{ secrets.X }}`) are masked in logs. `GITHUB_TOKEN` is made fresh for each run.
+
+      ### Security gotcha: injection
+      `run: echo "${{ github.event.head_commit.message }}"` pastes text that *anyone who can push* controls straight into a shell script. Pass it through an environment variable instead:
+
+      ```
+      env:
+        MSG: ${{ github.event.head_commit.message }}
+      run: echo "$MSG"
+      ```
+
+      ### Lint it before you push
+      `actionlint` catches typos, bad runner names, injection risks and type errors locally, so you don't learn about them from a red X.
+
+      ```
+      $ actionlint workflows/broken.yml
+      $ less real/cluster-images.yml
+      ```
+    live:
+      - title: Your Portfolio repo's latest CI runs (from GitHub)
+        cmd: "curl -fsS 'https://api.github.com/repos/g39832/Portfolio/actions/runs?per_page=6' | jq -r '.workflow_runs[] | \"\\(.conclusion // .status)\\t\\(.name)\\t\\(.head_sha[0:7])\\t\\(.created_at[0:16])\"' | column -t -s $'\\t'"
+        note: Every push to main builds your cluster images for arm64 and pushes them to GHCR.
+    sources:
+      - title: GitHub Docs, understanding GitHub Actions
+        url: https://docs.github.com/en/actions/get-started/understand-github-actions
+      - title: GitHub Docs, security hardening (script injection)
+        url: https://docs.github.com/en/actions/reference/security/secure-use
+      - title: actionlint
+        url: https://github.com/rhysd/actionlint
+      - title: Martin Fowler, Continuous Integration
+        url: https://martinfowler.com/articles/continuousIntegration.html
+    quiz:
+      - q: Two jobs in one workflow, no `needs:`. How do they run?
+        choices: ["One after the other, in file order", "At the same time, on separate machines", "On the same machine", "Only the first runs"]
+        answer: 1
+        why: Jobs run in parallel by default. Use needs to order them.
+      - q: 'Why is `run: echo "${{ github.event.pull_request.title }}"` dangerous?'
+        choices: ["Titles can be long", "The title is pasted into the shell script before it runs, so a crafted title can run commands", "It leaks GITHUB_TOKEN", "It's not, it's quoted"]
+        answer: 1
+        why: The quotes don't help, because the template is filled in before Bash parses the script. Pass it through env instead.
+      - q: What's the difference between continuous delivery and continuous deployment?
+        choices: ["None", "Delivery: every good build is ready to deploy. Deployment: it really goes out automatically", "Delivery is for apps, deployment for infrastructure", "Deployment needs Kubernetes"]
+        answer: 1
+        why: The difference is whether a person presses the last button.
+    tasks:
+      - mission: Read the real workflow
+      - mission: Fix the broken workflow
+      - mission: Write a workflow
+      - mission: Read a real run

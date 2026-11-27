@@ -1,0 +1,196 @@
+# Module files: one per module, run in file-name order. See course/README.md for every field.
+id: linux
+title: Linux & the shell
+badge: Shell Native
+lab: linux
+summary: Files, paths, pipes, permissions and processes. Everything else in DevOps sits on this.
+lessons:
+  - id: around
+    title: Finding your way around
+    minutes: 15
+    teach: |
+      Every server you'll ever run, including both your Pis and every container in your cluster, is Linux. The shell is how you talk to it. It feels slow at first. Then it turns out to be the fastest tool you have, because everything can be typed, saved in a script and repeated.
+
+      ### The file system is one tree
+      There are no drive letters. Everything hangs off `/` (the *root*). A few places you'll keep visiting:
+
+      - `/etc`: configuration (nginx, ssh, your network)
+      - `/var/log`: logs
+      - `/home/grayson`, also written `~`: your own files
+      - `/proc`: not real files at all. The kernel shows its live state here (CPU, memory, processes)
+
+      A path that starts with `/` is **absolute**. Anything else is **relative** to the folder you're in. `.` means "here" and `..` means "one folder up".
+
+      ```
+      $ pwd
+      $ ls -la
+      $ tree -L 2
+      $ cd practice && ls && cd ..
+      ```
+
+      `ls -la` shows hidden files (names starting with `.`) and the long format: permissions, owner, size and date. `tree` draws the folders below you.
+
+      ### Making and finding things
+      `mkdir -p a/b/c` makes every missing folder on the way. `find` walks a tree and matches names, sizes or ages:
+
+      ```
+      $ find practice -name '*.log'
+      $ find practice -type f -size +1k
+      ```
+
+      Quote the pattern (`'*.log'`). Without quotes the shell expands the `*` itself before `find` ever sees it.
+
+      ### Links
+      A **symbolic link** is a signpost to another path: `ln -s target linkname`. Kubernetes uses them all over the place. ConfigMaps mounted as files are symlinks, which is how they can update without restarting the pod.
+
+      > Lost? `pwd` tells you where you are, `cd` alone takes you home, and `man ls` (or `ls --help`) explains any command. Press `q` to leave `man`.
+    live:
+      - title: Your Pis, as Kubernetes sees them
+        cmd: kubectl get nodes -o wide
+        note: Both are Linux machines. Look at the OS-IMAGE and KERNEL-VERSION columns.
+      - title: This lab's own Linux
+        cmd: "cat /etc/os-release | head -4; echo; uname -a"
+    sources:
+      - title: The Linux command line for beginners (Ubuntu tutorial)
+        url: https://ubuntu.com/tutorials/command-line-for-beginners
+      - title: Filesystem Hierarchy Standard (what /etc, /var... are for)
+        url: https://refspecs.linuxfoundation.org/FHS_3.0/fhs/index.html
+      - title: The Linux Command Line, free book by William Shotts
+        url: https://linuxcommand.org/tlcl.php
+    quiz:
+      - q: You're in `/home/grayson/projects`. Where does `cd ../logs` take you?
+        choices: ["/logs", "/home/grayson/projects/logs", "/home/grayson/logs", "/home/logs"]
+        answer: 2
+        why: "`..` is one folder up (`/home/grayson`), then into `logs`."
+      - q: Why write `find . -name '*.conf'` with quotes around the pattern?
+        choices: ["find needs quotes for every argument", "So the shell doesn't expand `*.conf` itself before find runs", "Quotes make it search hidden files", "They make the search case-insensitive"]
+        answer: 1
+        why: Without quotes, the shell swaps `*.conf` for any matching files in the current folder, and find only gets those names.
+      - q: What's in `/proc`?
+        choices: ["Program files", "Live information from the kernel, shown as files", "Backups of /etc", "Processes waiting to start"]
+        answer: 1
+        why: /proc is a virtual file system. `/proc/loadavg`, `/proc/meminfo` and `/proc/<pid>/` are made up on the spot by the kernel when you read them.
+    tasks:
+      - mission: Who am I, where am I?
+      - mission: Make a folder for your projects
+      - mission: Find every .conf file
+      - mission: A shortcut to the log
+
+  - id: pipes
+    title: Text, pipes and logs
+    minutes: 20
+    teach: |
+      The big idea of Unix: small programs that each do one thing, joined together with **pipes**. Logs, configs and command output are all plain text, so these few tools can answer almost any question about a server.
+
+      ### Redirects and pipes
+      - `cmd > file` writes the output to a file (replacing it). `>>` adds to the end.
+      - `cmd 2> errors.txt` saves the error output (stream 2, *stderr*) on its own.
+      - `a | b` feeds a's output into b's input.
+
+      ### The toolkit
+      - `grep pattern file`: lines that match. `-c` counts them, `-v` flips it, `-i` ignores case.
+      - `awk '{print $1}'`: pull out a column (here the first word of each line).
+      - `sort`, `uniq -c` (count repeats, needs sorted input), `sort -rn` (biggest number first), `head` and `tail`.
+      - `wc -l`: count lines. `cut -d' ' -f1`: split on a character and take a field.
+
+      Real question: *"Which IP hits my site the most?"*
+
+      ```
+      $ awk '{print $1}' practice/logs/access.log | sort | uniq -c | sort -rn | head -5
+      ```
+
+      Read it left to right: take the first column, sort it so repeats sit together, count each one, put the biggest count first, show the top five. Build pipelines like this one step at a time: run the first part, look, then add the next `|`.
+
+      ### Logs in the real world
+      On your Pis, `journalctl -u k3s` shows the k3s service's log and `kubectl logs` shows a pod's. Same skills: `kubectl -n graysoncodes logs deploy/web | grep ' 404 ' | wc -l` counts 404s on your real site.
+
+      > `tail -f file` keeps printing new lines as they arrive. Ctrl+C stops it. On a phone, use the Ctrl key on the key bar.
+    live:
+      - title: The last few requests to your real website
+        cmd: "kubectl -n graysoncodes logs deploy/web --tail=200 2>/dev/null | awk '$9 ~ /^[0-9][0-9][0-9]$/ {print $9}' | sort | uniq -c | sort -rn | head; echo '(status code counts from the last 200 log lines)'"
+        note: The same pipeline as in the lesson, pointed at your real nginx. Column 9 of nginx's log line is the status code.
+    sources:
+      - title: GNU grep manual
+        url: https://www.gnu.org/software/grep/manual/grep.html
+      - title: The GNU Awk User's Guide, getting started
+        url: https://www.gnu.org/software/gawk/manual/html_node/Getting-Started.html
+      - title: Bash manual, redirections
+        url: https://www.gnu.org/software/bash/manual/html_node/Redirections.html
+    quiz:
+      - q: Why does `uniq -c` usually come right after `sort`?
+        choices: ["uniq only collapses repeated lines that sit next to each other", "sort makes the counts bigger", "uniq crashes on unsorted input", "It doesn't need to, it's only for neatness"]
+        answer: 0
+        why: uniq only compares each line with the one before it, so the same IP scattered through the file would be counted in pieces.
+      - q: "What does `grep -c ' 404 ' access.log > n.txt` do?"
+        choices: ["Prints every 404 line and saves them", "Saves the number of lines containing ' 404 ' into n.txt", "Deletes the 404 lines", "Adds the count to the end of n.txt"]
+        answer: 1
+        why: "-c prints only a count, and `>` writes it to the file (replacing what was there; `>>` would add to it)."
+      - q: A command prints errors you want to keep apart from its normal output. Which redirect?
+        choices: ["> errors.txt", "| errors.txt", "2> errors.txt", "< errors.txt"]
+        answer: 2
+        why: Stream 1 is normal output (stdout), stream 2 is errors (stderr). `2>` sends only stderr to the file.
+    tasks:
+      - mission: Count the 404s
+      - mission: Who visits the most?
+      - mission: Who's probing for secrets?
+
+  - id: perms
+    title: Permissions, scripts and processes
+    minutes: 20
+    teach: |
+      ### Who can do what
+      Every file has an owner, a group and three sets of permission bits: for the **u**ser (owner), the **g**roup and **o**thers. Each set is **r**ead (4), **w**rite (2) and e**x**ecute (1). Add them up for each set:
+
+      - `644` = `rw-r--r--`: you can edit, everyone can read. Normal files.
+      - `600` = `rw-------`: only you. Private keys, password files.
+      - `755` = `rwxr-xr-x`: you can edit, everyone can run. Scripts and folders.
+
+      ```
+      $ ls -l practice/secret.key
+      $ chmod 600 practice/secret.key && ls -l practice/secret.key
+      ```
+
+      On folders, `x` means "can go inside". SSH and many other tools **refuse** to use secret files that others can read. That's a feature, not a bug.
+
+      ### Your own commands
+      A script is a text file whose first line, the *shebang*, says which program runs it (`#!/bin/bash`). Make it executable with `chmod +x`. Typing a bare name runs it if the file is in a folder on your `$PATH`:
+
+      ```
+      $ echo $PATH
+      ```
+
+      ### Processes and load
+      Every running program is a process with a number (PID). `ps aux` lists them, `top` shows them live, and `kill PID` asks one to stop. Containers are just processes with their own view of the system. That's why this lab shows only a handful.
+
+      The **load average** in `/proc/loadavg` (and in `uptime`) is how many processes, on average, wanted the CPU over the last 1, 5 and 15 minutes. Compare it with `nproc`: a load of 4 on a 4-core Pi means it's fully busy, and more than that means work is waiting.
+    live:
+      - title: How busy your Pis are
+        cmd: kubectl top nodes
+        note: CPU in millicores (1000m = one core) and memory. The Pi 5 and Pi 4 both have 4 cores.
+      - title: Who runs as which user in your cluster
+        cmd: "kubectl get pods -A -o custom-columns='NS:.metadata.namespace,POD:.metadata.name,RUN-AS-USER:.spec.securityContext.runAsUser' | head -25"
+        note: "<none> means the image's own default user, which is often root."
+    sources:
+      - title: chmod, GNU coreutils manual
+        url: https://www.gnu.org/software/coreutils/manual/html_node/chmod-invocation.html
+      - title: proc(5) man page (loadavg and friends)
+        url: https://man7.org/linux/man-pages/man5/proc.5.html
+      - title: Linux Journey (free, short lessons)
+        url: https://linuxjourney.com/
+    quiz:
+      - q: What does `chmod 640 file` give?
+        choices: ["Owner read+write, group read, others nothing", "Owner read, group write, others nothing", "Everyone read", "Owner everything, group read"]
+        answer: 0
+        why: "6 = 4+2 = read+write for the owner, 4 = read for the group, 0 = nothing for others."
+      - q: The load average on your 4-core Pi 5 is 7.5. What does that mean?
+        choices: ["7.5% CPU used", "About 3.5 processes are waiting for a CPU on average", "7.5 GB of memory in use", "The Pi has 7.5 cores available"]
+        answer: 1
+        why: Load counts processes running or waiting. With 4 cores, anything above 4 is waiting in line.
+      - q: You made `~/bin/deploy` but typing `deploy` says "Permission denied". What's missing?
+        choices: ["The execute bit: chmod +x ~/bin/deploy", "sudo", "A .sh extension", "Restarting the shell"]
+        answer: 0
+        why: Linux doesn't care about extensions. A file only runs if it has the x bit (and a shebang line says how to run it).
+    tasks:
+      - mission: Lock down the key
+      - mission: Your first command
+      - mission: Read the load average

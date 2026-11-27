@@ -1,0 +1,131 @@
+id: observe
+title: Observability
+badge: Watchkeeper
+lab: k8s
+summary: Logs, metrics and alerts. Know something's wrong before someone tells you.
+lessons:
+  - id: signals
+    title: Logs, metrics and traces
+    minutes: 20
+    teach: |
+      **Monitoring** answers "is it up?". **Observability** answers "*why* is it acting like this?" from the outside, without adding new code. Both come from three kinds of signal:
+
+      - **Logs**: events as text ("GET /blog 200 12ms"). Rich but heavy. In Kubernetes, apps print to stdout and `kubectl logs` reads them. Tools like **Loki** collect them from every pod so you can search across all of them.
+      - **Metrics**: numbers over time (CPU %, requests per second, error rate). Cheap to store, great for graphs and alerts. **Prometheus** scrapes them, and **Grafana** draws them. Your Pi 5 already runs both in Docker.
+      - **Traces**: one request followed through every service it touches. Most useful with many services, and less so for a homelab.
+
+      ### What to watch: the four golden signals
+      From Google's SRE book. For anything that serves users, watch:
+
+      1. **Latency**: how long requests take (and watch the slow ones, not just the average)
+      2. **Traffic**: how many requests are coming in
+      3. **Errors**: how many fail (5xx)
+      4. **Saturation**: how full it is (CPU, memory, disk)
+
+      ```
+      $ kubectl top pods -A --sort-by=memory | head
+      $ kubectl -n graysoncodes logs deploy/web --tail=20
+      $ kubectl get pods -A --sort-by='.status.containerStatuses[0].restartCount' | tail -5
+      ```
+
+      Restart counts are a quiet signal: a pod that's restarted 40 times is crashing, even if it *looks* fine right now.
+    live:
+      - title: Saturation right now (memory, top 10 pods)
+        cmd: kubectl top pods -A --sort-by=memory | head -11
+      - title: Restart counts (the quiet warning sign)
+        cmd: "kubectl get pods -A -o custom-columns='NS:.metadata.namespace,POD:.metadata.name,RESTARTS:.status.containerStatuses[*].restartCount,AGE:.metadata.creationTimestamp' --sort-by='.status.containerStatuses[0].restartCount' | tail -8"
+      - title: "Errors: 5xx responses in your site's last 500 log lines"
+        cmd: "kubectl -n graysoncodes logs deploy/web --tail=500 2>/dev/null | awk '$9 ~ /^5/' | wc -l"
+    sources:
+      - title: Google SRE book, monitoring distributed systems (golden signals)
+        url: https://sre.google/sre-book/monitoring-distributed-systems/
+      - title: Prometheus docs, overview
+        url: https://prometheus.io/docs/introduction/overview/
+      - title: Grafana Loki docs, overview
+        url: https://grafana.com/docs/loki/latest/get-started/overview/
+    quiz:
+      - q: Which signal is best for alerting "error rate above 5%"?
+        choices: ["Logs", "Metrics", "Traces", "Events"]
+        answer: 1
+        why: Metrics are numbers over time, which makes them cheap to query and alert on. Logs are where you go next to find out why.
+      - q: Which of these is NOT one of the four golden signals?
+        choices: ["Latency", "Errors", "Uptime percentage of the node", "Saturation"]
+        answer: 2
+        why: "The four are latency, traffic, errors and saturation, all seen from the user's side of the service."
+      - q: A pod shows Running, but RESTARTS is 37. What does that tell you?
+        choices: ["It's healthy", "It keeps crashing or getting OOMKilled and coming back", "It was updated 37 times", "37 users are connected"]
+        answer: 1
+        why: "Check `kubectl describe` for the last state (OOMKilled? Error?) and `kubectl logs --previous`."
+    tasks:
+      - title: Find the hungriest pod
+        text: |
+          Using `kubectl top`, find the pod using the most **memory** in your whole cluster right now. Save just its name to `~/answers/hungry.txt`.
+        hints:
+          - kubectl top pods -A --sort-by=memory | head -3
+          - "kubectl top pods -A --sort-by=memory --no-headers | awk 'NR==1{print $2}' > ~/answers/hungry.txt"
+        check: "mkdir -p answers; a=$(tr -d ' \\n' < answers/hungry.txt 2>/dev/null); [ -n \"$a\" ] && kubectl top pods -A --sort-by=memory --no-headers 2>/dev/null | head -5 | awk '{print $2}' | grep -qx \"$a\""
+      - title: Count your site's visitors
+        text: |
+          How many requests are in the **last 200 lines** of your real website's log (namespace `graysoncodes`, deployment `web`) that got a **200** status? Save the number to `~/answers/ok200.txt`. It moves as people visit, so anything close counts.
+        hints:
+          - kubectl -n graysoncodes logs deploy/web --tail=200 | head -3     (field 9 is the status)
+          - "kubectl -n graysoncodes logs deploy/web --tail=200 | awk '$9 == 200' | wc -l > ~/answers/ok200.txt"
+        check: "n=$(tr -d ' \\n' < answers/ok200.txt 2>/dev/null); r=$(kubectl -n graysoncodes logs deploy/web --tail=200 2>/dev/null | awk '$9 == 200' | wc -l); [ -n \"$n\" ] && [ \"$n\" -ge 0 ] 2>/dev/null && [ $(( n > r ? n - r : r - n )) -le 20 ]"
+
+  - id: alerts
+    title: Alerts that mean something
+    minutes: 15
+    teach: |
+      An alert should mean **"a person needs to act now"**. If an alert fires and the right answer is "ignore it", that alert is teaching you to ignore alerts. That's alert fatigue, and it's how real outages get missed.
+
+      ### Good alerts
+      - Alert on **symptoms users feel** (site down, error rate high, backup failed), not on every cause (CPU at 80% for a minute is usually fine).
+      - Every alert says what's wrong and what to do. Many teams link a **runbook**.
+      - **Burn rate** alerts on an error budget ("at this rate we'll miss our 99.9% this month") are where SRE teams end up.
+
+      ### What you already run
+      - **Uptime Kuma** checks your site, blog and Jellyfin, and pings Discord when one is down. That's a symptom alert.
+      - **CrowdSec** posts bans to Discord. That's a security signal.
+      - Your **backup CronJobs** post to Discord when they *fail*. Silence means success, which is good alert design.
+
+      ### SLOs in one paragraph
+      A **Service Level Objective** is a target like "99.5% of requests to graysoncodes.org succeed over 30 days". The other 0.5% is your **error budget**: room to ship changes and have small failures. If you burn through it, you slow down and fix reliability first.
+
+      ```
+      $ kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded
+      ```
+
+      That one-liner is the start of a homelab health check: anything not running (or not finished) is worth a look.
+    live:
+      - title: Anything not healthy right now?
+        cmd: "kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded 2>&1; echo; echo 'Nodes:'; kubectl get nodes"
+        note: '"No resources found" here is the good answer.'
+    sources:
+      - title: Google SRE workbook, alerting on SLOs
+        url: https://sre.google/workbook/alerting-on-slos/
+      - title: "Rob Ewaschuk, My Philosophy on Alerting"
+        url: https://docs.google.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q/edit
+      - title: Uptime Kuma
+        url: https://github.com/louislam/uptime-kuma
+    quiz:
+      - q: Which is the better alert?
+        choices: ["CPU above 70% on pi2 for 1 minute", "graysoncodes.org failing health checks for 3 minutes", "A pod restarted once", "Disk 40% full"]
+        answer: 1
+        why: It's a symptom users feel, and someone should act on it. The others are causes that might matter later, which makes them dashboard material.
+      - q: Your SLO is 99.5% success over 30 days. What's the error budget?
+        choices: ["99.5%", "0.5% of requests can fail", "30 days", "5 errors"]
+        answer: 1
+        why: The budget is what you're allowed to fail. Spend it on shipping changes, and don't waste it on avoidable outages.
+      - q: An alert fires every night and everyone ignores it. What's the right fix?
+        choices: ["Keep it, alerts are always good", "Fix the cause, or change or delete the alert so it only fires when action is needed", "Mute Discord", "Add a second alert"]
+        answer: 1
+        why: An alert that people ignore teaches them to ignore alerts.
+    tasks:
+      - title: Health check script
+        text: |
+          Write `~/bin/health` (make it executable) that prints the pods across the cluster that are **not** Running or Succeeded, and **exits 1** if there are any (0 if all is well). Run it and look at its exit code with `echo $?`. Scripts like this one are what monitoring tools run for you.
+        hints:
+          - "mkdir -p ~/bin; nano ~/bin/health   then: #!/bin/bash   bad=$(kubectl get pods -A --no-headers --field-selector=status.phase!=Running,status.phase!=Succeeded 2>/dev/null)"
+          - "[ -z \"$bad\" ] && { echo all good; exit 0; }; echo \"$bad\"; exit 1"
+          - chmod +x ~/bin/health && health; echo $?
+        check: "test -x bin/health && grep -q kubectl bin/health && bad=$(kubectl get pods -A --no-headers --field-selector=status.phase!=Running,status.phase!=Succeeded 2>/dev/null); bin/health >/dev/null 2>&1; c=$?; if [ -z \"$bad\" ]; then [ $c -eq 0 ]; else [ $c -ne 0 ]; fi"

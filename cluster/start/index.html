@@ -357,7 +357,7 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
 
     <section class="labs" id="labs" aria-labelledby="labs-title">
       <div class="group-head"><h3 id="labs-title">Practice labs</h3><span class="num">terminals on the Pi 5 · :30410</span></div>
-      <p class="note">A real terminal in your browser, phone included. Each lab has missions: type <b>learn</b> to see them. Your work is saved between visits.</p>
+      <p class="note">A real terminal in your browser, phone included. Each lab has missions: type <b>learn</b> to see them. Your work is saved between visits. For lessons, quizzes and your progress in order, open the <a id="course-link" href="#" target="practice"><b>DevOps Path course</b></a>.</p>
       <div class="lab-grid" id="lab-grid"></div>
     </section>
 
@@ -703,7 +703,8 @@ a.lab small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
     ["pi", "Real Pi (SSH)", "Log in to the Pi 5 or Pi 4", "pi"],
   ];
   const LAB_NAME = Object.fromEntries(LABS.map((l) => [l[0], l[1]]));
-  const labUrl = (lab, cmd) => `${location.protocol}//${location.hostname}:30410/?arg=${lab}` + (cmd ? `&cmd=${encodeURIComponent(cmd)}` : "");
+  const labUrl = (lab, cmd) => `${location.protocol}//${location.hostname}:30410/term/?arg=${lab}` + (cmd ? `&cmd=${encodeURIComponent(cmd)}` : "");
+  $("#course-link").href = `${location.protocol}//${location.hostname}:30410/`;
   $("#lab-grid").replaceChildren(...LABS.map(([id, name, desc, mark]) =>
     el("a", { class: "lab", href: labUrl(id), target: "practice" },
       el("div", { class: "icon" }, el("span", { text: mark })), el("b", { text: name }), el("small", { text: desc }))));

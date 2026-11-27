@@ -39,11 +39,14 @@ header b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflo
 #reconnect { display: none; position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); padding: 12px 20px; border-radius: 10px;
   border: 1px solid var(--accent); background: var(--panel); color: var(--ink); font: 600 15px var(--sans); }
 @media (hover: hover) { .keys { display: none; } }
+/* Inside the course page (?embed=1): the course has its own header. */
+.embed header { display: none; }
+body.embed { grid-template-rows: minmax(0, 1fr) auto auto; }
 </style>
 </head>
 <body>
 <header>
-  <a href="#" id="home">← Start page</a>
+  <a href="/" id="home">← Course</a>
   <b id="title">Practice terminal</b>
   <span id="state">connecting</span>
 </header>
@@ -80,12 +83,11 @@ header b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflo
   const params = new URLSearchParams(location.search);
   const lab = params.get("arg") || "";
   const NAMES = { linux: "Linux & the shell", bash: "Bash scripting", git: "Git & GitHub", k8s: "Kubernetes", net: "Networking",
-    containers: "Containers", security: "Security", backups: "Backups", ci: "CI/CD & YAML", iac: "Ansible & OpenTofu", pi: "Real Pi (SSH)" };
+    containers: "Containers", docker: "Docker & networking", security: "Security", backups: "Backups", ci: "CI/CD & YAML", iac: "Ansible & OpenTofu", pi: "Real Pi (SSH)" };
   const name = NAMES[lab] || "Practice terminal";
   document.title = name + " · Practice";
   document.getElementById("title").textContent = name;
-  // Back to the start page on whichever address this was opened with (Tailscale or home Wi-Fi).
-  document.getElementById("home").href = `${location.protocol}//${location.hostname}:30300/`;
+  if (params.get("embed")) document.body.classList.add("embed");
   if (params.get("cmd")) document.getElementById("line").value = params.get("cmd");
 
   const term = new Terminal({ cursorBlink: true, fontSize: window.innerWidth < 600 ? 13 : 14, scrollback: 5000,
@@ -98,7 +100,7 @@ header b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflo
 
   const enc = new TextEncoder(), dec = new TextDecoder();
   const state = document.getElementById("state"), again = document.getElementById("reconnect");
-  let ws = null, ctrl = false, closedByUs = false;
+  let ws = null, ctrl = false, closedByUs = false, pending = [];
   const setState = (t, c) => { state.textContent = t; state.className = c; };
 
   const send = (s) => { if (ws && ws.readyState === 1) ws.send(enc.encode("0" + s)); };
@@ -112,7 +114,8 @@ header b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflo
     const base = location.pathname.replace(/[^/]*$/, "");
     ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}${base}ws${location.search}`, ["tty"]);
     ws.binaryType = "arraybuffer";
-    ws.onopen = () => { ws.send(enc.encode(JSON.stringify({ AuthToken: token, columns: term.cols, rows: term.rows }))); setState("connected", "on"); term.focus(); };
+    ws.onopen = () => { ws.send(enc.encode(JSON.stringify({ AuthToken: token, columns: term.cols, rows: term.rows }))); setState("connected", "on"); if (!document.body.classList.contains("embed")) term.focus();
+      setTimeout(() => { pending.splice(0).forEach(send); }, 600); };
     ws.onmessage = (e) => {
       const d = new Uint8Array(e.data), cmd = String.fromCharCode(d[0]);
       if (cmd === "0") term.write(d.subarray(1));
@@ -148,6 +151,16 @@ header b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflo
     send(line.value.replace(/\n/g, " ") + "\r");
     line.value = "";
   });
+
+  // The course page (same address) types commands in here: {send: "text", enter: true}.
+  window.addEventListener("message", (e) => {
+    if (e.origin !== location.origin || !e.data || typeof e.data.send !== "string") return;
+    const text = e.data.send.replace(/\n/g, " ") + (e.data.enter ? "\r" : "");
+    if (ws && ws.readyState === 1) send(text);
+    else { pending.push(text); if (!ws || ws.readyState > 1) connect(); }
+    if (!e.data.noFocus) term.focus();
+  });
+  window.addEventListener("focus", () => term.focus());
 
   again.addEventListener("click", connect);
   // Phones drop the connection when you switch apps; the lab lives on in tmux, so just reconnect.

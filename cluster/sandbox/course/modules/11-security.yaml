@@ -1,0 +1,172 @@
+id: security
+title: Security
+badge: Gatekeeper
+lab: security
+summary: Secrets, least privilege, keys, hashes and leaks. Small habits that stop big incidents.
+lessons:
+  - id: secrets
+    title: Secrets and leaks
+    minutes: 20
+    teach: |
+      Most real breaches aren't clever hacks. They're a key in a Git repo, a token in a log, or an account that could do far more than it needed to.
+
+      ### Secrets aren't safe just because they're "Secrets"
+      A Kubernetes Secret is base64, which is an *encoding*, not encryption. Anyone who can `get` it can read it:
+
+      ```
+      $ cat files/secret.yaml
+      $ echo 'aHVudGVyMg==' | base64 -d; echo
+      ```
+
+      So the rules are:
+
+      - Secrets **never** go in Git as plain YAML. Use a tool like Sealed Secrets or SOPS, or make them by hand with a script (that's what your `setup.sh` scripts do).
+      - Only the things that need a Secret can read it (RBAC).
+      - Logs and CI output must never print them.
+
+      ### Finding leaks
+      Keys have shapes. AWS access keys start with `AKIA`, GitHub tokens with `ghp_` or `github_pat_`. Tools like **gitleaks** and **trufflehog** scan files and the *whole Git history*. GitHub's push protection blocks many of them for you.
+
+      ```
+      $ grep -rn 'AKIA[0-9A-Z]\{16\}' project/
+      ```
+
+      ### When one leaks
+      1. **Revoke or rotate it at once.** Assume it's already been copied.
+      2. Check the provider's logs for use.
+      3. Then clean up the code and history.
+    live:
+      - title: Can this lab read your real Secrets?
+        cmd: "for ns in ledger graysoncodes crowdsec; do printf '%-14s get secrets: ' $ns; kubectl auth can-i get secrets -n $ns; done"
+        note: '"no" is the right answer. This lab is a learner, not an admin.'
+    sources:
+      - title: Kubernetes docs, good practices for Secrets
+        url: https://kubernetes.io/docs/concepts/security/secrets-good-practices/
+      - title: OWASP Secrets Management cheat sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+      - title: gitleaks
+        url: https://github.com/gitleaks/gitleaks
+    quiz:
+      - q: "Is `cGFzc3dvcmQ=` in a Secret's YAML protected?"
+        choices: ["Yes, it's encrypted", "No, it's base64, and anyone can decode it", "Only on arm64", "Yes, if the repo is private"]
+        answer: 1
+        why: base64 just makes binary data safe for text. It hides nothing.
+      - q: You find an AWS key committed last week. First step?
+        choices: ["Delete the file and push", "Revoke the key and make a new one", "Rewrite Git history", "Make the repo private"]
+        answer: 1
+        why: History rewrites don't un-leak anything. Kill the key first.
+      - q: Where should a Kubernetes Secret's real value come from?
+        choices: ["A YAML file in the repo", "A sealed or encrypted file, or a setup script that asks for it, never plain text in Git", "An environment variable in the Dockerfile", "The image itself"]
+        answer: 1
+        why: Keep the plain value out of Git and out of images.
+    tasks:
+      - mission: Secrets are only base64
+      - mission: Find the leaked key
+      - mission: Least privilege, for real
+
+  - id: keys
+    title: Keys, hashes and passwords
+    minutes: 20
+    teach: |
+      ### SSH keys
+      An SSH key is a pair. The **private** key never leaves your machine. The **public** key (`.pub`) goes on servers (in `~/.ssh/authorized_keys`) and on GitHub. Keys beat passwords: they can't be guessed, and a stolen server can't replay them.
+
+      ```
+      $ ssh-keygen -t ed25519 -C sandbox -f ~/.ssh/id_ed25519
+      $ cat ~/.ssh/id_ed25519.pub
+      ```
+
+      Use **ed25519**, which is modern, short and fast. SSH refuses private keys that other users can read, so `~/.ssh` should be `700` and the key `600`.
+
+      ### Hashes check downloads
+      A **hash** (SHA-256) is a fingerprint of a file's bytes. Change one bit and the hash is completely different. Projects publish hashes so you can check that a download wasn't corrupted or swapped:
+
+      ```
+      $ sha256sum files/release.tar.gz
+      ```
+
+      Your Dockerfiles download tools like ttyd and kubectl. Checking their hashes there would make the build stronger still.
+
+      ### Passwords
+      Machines should make passwords, not people. Use plenty of random bytes:
+
+      ```
+      $ openssl rand -base64 32
+      ```
+
+      Store them in a password manager. Your sandbox `deploy.sh` makes its login exactly this way.
+    sources:
+      - title: GitHub Docs, generating a new SSH key
+        url: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
+      - title: OpenSSH manual, ssh-keygen
+        url: https://man.openbsd.org/ssh-keygen
+      - title: OWASP Password Storage cheat sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+    quiz:
+      - q: Which half of an SSH key do you put on GitHub?
+        choices: ["id_ed25519", "id_ed25519.pub", "Both", "Neither, GitHub uses passwords"]
+        answer: 1
+        why: The .pub file is the public half. The private key never leaves your machine.
+      - q: "ssh says \"UNPROTECTED PRIVATE KEY FILE!\" What's the fix?"
+        choices: ["chmod 600 ~/.ssh/id_ed25519", "chmod 777 ~/.ssh", "Make a new key", "Use a password instead"]
+        answer: 0
+        why: SSH refuses a key that other users could read. 600 means only you.
+      - q: What does matching a published SHA-256 prove?
+        choices: ["That the software is safe", "That you got exactly the bytes the publisher hashed", "That it's the newest version", "That it's signed"]
+        answer: 1
+        why: It proves the file is intact and unchanged, not that it's trustworthy. Signatures prove who made it.
+    tasks:
+      - mission: Make an SSH key
+      - mission: SSH folder permissions
+      - mission: Verify a download
+      - mission: A strong random password
+
+  - id: least
+    title: Least privilege and defense in depth
+    minutes: 15
+    teach: |
+      **Least privilege**: everything (people, ServiceAccounts, containers) gets only the access it needs. **Defense in depth**: several layers, so one failure isn't a breach.
+
+      Your cluster already has layers. Look at how many:
+
+      1. **Cloudflare tunnel**: no ports open on your router at all.
+      2. **CrowdSec** reads nginx logs and bans bad IPs at Cloudflare's edge with a captcha.
+      3. **Tailscale** keeps admin tools (Portainer, Pi-hole admin, this course) off the internet completely.
+      4. **RBAC**: this lab's ServiceAccount can only change `playground`.
+      5. **Pod Security "baseline"** on the playground: no privileged pods, no host paths.
+      6. **Non-root containers** with `allowPrivilegeEscalation: false` and all capabilities dropped.
+
+      ```
+      $ id
+      $ kubectl get pod -n start -o yaml | grep -A6 securityContext
+      ```
+
+      ### Containers shouldn't be root
+      If an app running as root inside a container is broken into, the attacker is root *in the container*, and a kernel bug or a bad mount away from the host. Running as UID 1000 with no capabilities shrinks that a lot.
+
+      > The one privileged container on your cluster is this lab's Docker engine. That's why it lives in its own `sandbox` namespace, with a socket only and no network port.
+    live:
+      - title: Which pods run privileged or as root?
+        cmd: "kubectl get pods -A -o json | jq -r '.items[] | .metadata.namespace as $ns | .metadata.name as $p | (.spec.securityContext.runAsUser // \"-\") as $pu | .spec.containers[] | [$ns, $p, .name, (.securityContext.runAsUser // $pu | tostring), ((.securityContext.privileged // false) | tostring)] | @tsv' | column -t -N NS,POD,CONTAINER,RUN-AS,PRIVILEGED | head -30"
+        note: "\"-\" means it uses the image's default user, often root. Worth looking at: could that app run as non-root?"
+      - title: CrowdSec, your watchman
+        cmd: kubectl get pods -n crowdsec -o wide
+    sources:
+      - title: Kubernetes docs, Pod Security Standards
+        url: https://kubernetes.io/docs/concepts/security/pod-security-standards/
+      - title: Kubernetes docs, security context
+        url: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+      - title: CrowdSec docs
+        url: https://docs.crowdsec.net/
+    quiz:
+      - q: Which of these is least privilege?
+        choices: ["Give the CI token admin so it never fails", "The backup job's key can only write to its one bucket", "Everyone shares one login", "Turn off RBAC on a homelab"]
+        answer: 1
+        why: Your B2 key is bucket-scoped for exactly this reason.
+      - q: Why does it help that your public site goes through a Cloudflare tunnel?
+        choices: ["It's faster", "No inbound ports are open on your home router, so there's nothing at home to scan or attack directly", "It encrypts the database", "It replaces RBAC"]
+        answer: 1
+        why: The tunnel connects out to Cloudflare. That's one less layer for an attacker to get through.
+    tasks:
+      - mission: Not root
+      - mission: Find the watchman

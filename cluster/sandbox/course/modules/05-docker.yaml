@@ -1,0 +1,183 @@
+id: docker
+title: Docker
+badge: Container Captain
+lab: docker
+summary: Run containers, publish ports, wire up networks and keep data, on a real Docker engine of your own.
+intro: |
+  This lab has its own private Docker engine (Docker-in-Docker next to the terminal), not the Pi 5's real one, so break whatever you like. `docker system prune -a --volumes` wipes it clean.
+lessons:
+  - id: run
+    title: Your first containers
+    minutes: 20
+    teach: |
+      A **container** is a normal Linux process that the kernel fences off. It gets its own file system, process list and network, plus limits on CPU and memory. It isn't a virtual machine: there's no second kernel, which is why containers start in milliseconds.
+
+      An **image** is the read-only starting file system plus some settings (which command to run, which port). A container is a running (or stopped) copy of an image with a thin writable layer on top.
+
+      ```
+      $ docker run hello-world
+      $ docker ps -a
+      $ docker images
+      ```
+
+      ### The flags you'll use every day
+      - `-d`: run in the background (detached)
+      - `--name web`: a name to use instead of a random one
+      - `-p 8080:80`: publish container port 80 on the host's port 8080 (**host:container**)
+      - `-it`: interactive with a terminal, for shells
+      - `--rm`: delete the container when it exits
+      - `-e KEY=value`: set an environment variable
+
+      ### Looking inside
+      ```
+      $ docker logs web
+      $ docker exec -it web sh
+      $ docker inspect web | less
+      ```
+
+      `logs` is whatever the app prints. Containers are expected to log to stdout instead of to files, so the platform can collect it. `exec` runs another command in a running container. `inspect` is the full truth about a container, as JSON.
+
+      > Ctrl+C vs. `exit`: Ctrl+C sends a signal to the program in the foreground. Leaving a shell started with `-it` is `exit` or Ctrl+D.
+    live:
+      - title: The images your real cluster runs
+        cmd: "kubectl get pods -A -o jsonpath='{range .items[*]}{range .spec.containers[*]}{.image}{\"\\n\"}{end}{end}' | sort | uniq -c | sort -rn"
+        note: Kubernetes uses the same images as Docker. k3s just runs them with containerd instead of the Docker engine.
+    sources:
+      - title: Docker docs, what is a container?
+        url: https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-a-container/
+      - title: Docker docs, docker container run reference
+        url: https://docs.docker.com/reference/cli/docker/container/run/
+      - title: iximiuz Labs, Docker 101 challenges
+        url: https://labs.iximiuz.com/challenges
+    quiz:
+      - q: "`docker run -p 8080:80 nginx`. Which port do you curl from the host?"
+        choices: ["80", "8080", "Either one", "Neither, you need the container IP"]
+        answer: 1
+        why: It's host:container. The host's 8080 forwards to the container's 80.
+      - q: What's the main difference between a container and a virtual machine?
+        choices: ["Containers are always smaller files", "Containers share the host's kernel, while VMs run their own", "VMs can't run Linux", "Containers can't use the network"]
+        answer: 1
+        why: A container is an isolated process on the same kernel. That's why it starts instantly and why it can't run a different OS kernel.
+      - q: Where should an app in a container write its logs?
+        choices: ["/var/log inside the container", "stdout/stderr, so `docker logs` and Kubernetes can collect them", "A volume", "Nowhere"]
+        answer: 1
+        why: That's one of the Twelve-Factor ideas. Files inside a container disappear with the container, and nobody tails them.
+    tasks:
+      - mission: Hello World
+      - mission: Nginx in the foreground
+      - mission: An interactive shell
+      - mission: Run it in the background, with a port
+      - mission: Logs, exec and inspect
+
+  - id: networks
+    title: Container networking
+    minutes: 25
+    teach: |
+      Docker networks are the same ideas as the Networking module (IPs, DNS, routes), packed into one machine.
+
+      ### The default bridge
+      Out of the box, containers join `bridge`. They each get an IP (like `172.17.0.2`) and can reach each other **by IP only**. There's no DNS for names on the default bridge.
+
+      ### Your own networks get DNS
+      ```
+      $ docker network create labnet
+      $ docker run -d --name api --network labnet nginx
+      $ docker run --rm --network labnet busybox wget -qO- http://api
+      ```
+
+      On a user-defined network, Docker runs a tiny DNS server at `127.0.0.11` that turns container names into IPs. This is how Compose services find each other, and it's the same idea as Kubernetes Service names.
+
+      A container can be on **several networks** at once (`docker network connect`). That's how you put a proxy between a public network and a private one.
+
+      ### The special ones
+      - `--network none`: only loopback. Good for jobs that must not touch the network.
+      - `--network host`: no fencing at all. The container uses the host's network directly, so `-p` does nothing. It's fast but shares everything.
+
+      ```
+      $ docker network ls
+      $ docker network inspect labnet | less
+      ```
+    sources:
+      - title: Docker docs, networking overview
+        url: https://docs.docker.com/engine/network/
+      - title: Docker docs, bridge network driver
+        url: https://docs.docker.com/engine/network/drivers/bridge/
+      - title: iximiuz, container networking from scratch
+        url: https://labs.iximiuz.com/tutorials/container-networking-from-scratch
+    quiz:
+      - q: Two containers on the default `bridge` network. Can one reach the other by container name?
+        choices: ["Yes, always", "No, the default bridge only works by IP", "Only with -p", "Only if both use --network host"]
+        answer: 1
+        why: Name lookups only work on user-defined networks, which have Docker's embedded DNS.
+      - q: What does `--network none` give a container?
+        choices: ["The host's network", "Only a loopback interface", "A random network", "Internet but no LAN"]
+        answer: 1
+        why: Just `lo`. Nothing can get in or out.
+      - q: With `--network host`, what happens to `-p 8080:80`?
+        choices: ["It works as usual", "It's ignored: the app listens on the host's ports directly", "Docker refuses to start", "It maps to 8080 inside"]
+        answer: 1
+        why: Host networking skips Docker's port mapping completely.
+    tasks:
+      - mission: The default bridge has no names
+      - mission: Your own network gets DNS
+      - mission: One container, two networks
+      - mission: No network at all
+      - mission: The host's network
+
+  - id: data
+    title: Data and Compose
+    minutes: 25
+    teach: |
+      ### Containers are disposable, data isn't
+      When you remove a container, its writable layer goes with it. Anything worth keeping lives *outside* the container:
+
+      - a **volume** (`-v notes:/data`), which Docker manages. It's the best fit for databases.
+      - a **bind mount** (`-v ~/site:/usr/share/nginx/html:ro`), which is a folder from the host. Great for config and for editing files live. `:ro` makes it read-only inside.
+
+      Your cluster does the same thing with PersistentVolumeClaims. The ledger's SQLite database lives on a volume, so restarting the pod loses nothing.
+
+      ### Compose: a whole stack in one file
+      Typing long `docker run` commands doesn't scale. **Compose** describes services, networks and volumes in `compose.yaml`:
+
+      ```
+      services:
+        web:
+          image: nginx:1.29-alpine
+          ports: ["8081:80"]
+        api:
+          image: traefik/whoami:v1.11
+          deploy: { replicas: 2 }
+      ```
+
+      ```
+      $ cd ~/stack && docker compose up -d
+      $ docker compose ps
+      $ docker compose logs -f
+      $ docker compose down
+      ```
+
+      Compose makes a network for the project, so services reach each other by **service name**. With `replicas: 2`, the name `api` answers with both containers' IPs. That's the same load-spreading you'll see with Kubernetes Services.
+    sources:
+      - title: Docker docs, volumes
+        url: https://docs.docker.com/engine/storage/volumes/
+      - title: Docker docs, bind mounts
+        url: https://docs.docker.com/engine/storage/bind-mounts/
+      - title: Docker docs, Compose file reference (services)
+        url: https://docs.docker.com/reference/compose-file/services/
+    quiz:
+      - q: You `docker rm` a Postgres container that stored data in its own file system (no volume). What happens to the data?
+        choices: ["It's kept in the image", "It's gone", "Docker backs it up first", "It moves to /var/lib/docker/backups"]
+        answer: 1
+        why: The writable layer is deleted with the container. Use a volume.
+      - q: In a Compose file, how does the `web` service reach the `api` service?
+        choices: ["By the IP you hard-code", "http://api, because the service name is a DNS name on the project network", "Only through localhost", "With docker link"]
+        answer: 1
+        why: Compose puts the services on a shared user-defined network with DNS.
+      - q: Which is better for live-editing a website's files without rebuilding?
+        choices: ["A named volume", "A bind mount of your folder", "COPY in a Dockerfile", "docker commit"]
+        answer: 1
+        why: A bind mount shows the host folder inside the container, so edits show up right away.
+    tasks:
+      - mission: Data that outlives a container
+      - mission: Bind-mount your own web page
+      - mission: Compose a little stack

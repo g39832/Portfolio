@@ -1,0 +1,108 @@
+id: backups
+title: Backups & recovery
+badge: Restorer
+lab: backups
+summary: restic, retention, safe database copies and real restores, the same tools as your nightly B2 backups.
+lessons:
+  - id: restic
+    title: How backups really work
+    minutes: 25
+    teach: |
+      Nobody cares about backups. They care about **restores**. A backup you've never restored from is a hope, not a plan.
+
+      ### The 3-2-1 rule
+      **3** copies of your data, on **2** kinds of storage, **1** of them off-site. For your cluster: the live data on the Pi, plus restic snapshots in Backblaze B2 every night. That's the off-site copy, and since Supabase's free plan keeps no backups, B2 is the only extra layer your other projects have too.
+
+      ### restic in five commands
+      ```
+      $ restic -r ~/old-backups snapshots
+      $ restic -r ~/old-backups ls latest | head
+      $ restic -r ~/backup-repo init
+      $ restic -r ~/backup-repo backup ~/data
+      $ restic -r ~/backup-repo restore latest --target /tmp/r --include /data/files/lost.txt
+      ```
+
+      restic splits files into chunks and stores each chunk **once** (deduplication), so a nightly backup of a mostly unchanged folder takes seconds and almost no space. Everything is **encrypted** with your repository password. Lose the password and the backups are noise. Keep it off the Pi.
+
+      ### Retention
+      You don't want every snapshot forever. A policy like "7 daily, 4 weekly, 12 monthly" keeps recent detail and long history:
+
+      ```
+      $ restic -r ~/backup-repo forget --keep-last 2 --prune
+      ```
+
+      `forget` removes snapshot records, and `--prune` frees the data nothing uses any more. Your real CronJob runs `--keep-daily 7 --keep-weekly 4 --keep-monthly 12`.
+    live:
+      - title: Your real backup jobs
+        cmd: "kubectl get cronjobs -A -o custom-columns='NS:.metadata.namespace,NAME:.metadata.name,SCHEDULE:.spec.schedule,TZ:.spec.timeZone,LAST-RUN:.status.lastScheduleTime,LAST-OK:.status.lastSuccessfulTime'"
+        note: LAST-OK should be from last night. If it isn't, Discord should already have told you.
+    sources:
+      - title: restic docs, getting started
+        url: https://restic.readthedocs.io/en/stable/020_installation.html
+      - title: restic docs, removing snapshots (forget and prune)
+        url: https://restic.readthedocs.io/en/stable/060_forget.html
+      - title: Backblaze, the 3-2-1 backup strategy
+        url: https://www.backblaze.com/blog/the-3-2-1-backup-strategy/
+    quiz:
+      - q: Why can restic back up a 10 GB folder every night without using 10 GB each time?
+        choices: ["It compresses to 1%", "Deduplication: chunks it already has aren't stored again", "It only keeps one snapshot", "B2 does it"]
+        answer: 1
+        why: Only new or changed chunks are uploaded and stored.
+      - q: You lose the restic repository password. What happens?
+        choices: ["Reset it with restic reset", "The backups can't be read: they're encrypted with it", "B2 support can help", "Only the newest snapshot is lost"]
+        answer: 1
+        why: That's why the password is saved somewhere off the Pi.
+      - q: What does `forget` without `--prune` do?
+        choices: ["Deletes all data", "Removes the snapshot records, but the space isn't freed until prune", "Nothing", "Checks the repo"]
+        answer: 1
+        why: prune is the step that throws away chunks no snapshot uses any more.
+    tasks:
+      - mission: Look at an old backup
+      - mission: Restore a lost file
+      - mission: Make your own backup repo
+      - mission: Back up three times
+      - mission: Keep only what you need
+
+  - id: verify
+    title: Live databases and trusting your backups
+    minutes: 20
+    teach: |
+      ### Don't copy a database that's being written to
+      Copying a SQLite (or any database) file while the app writes to it can catch it halfway through a change. The copy looks fine until the day you need it. Use the database's own backup method:
+
+      ```
+      $ sqlite3 data/app.db ".backup data/app-copy.db"
+      $ sqlite3 data/app-copy.db "PRAGMA integrity_check;"
+      ```
+
+      That's exactly what your real CronJob does. An init container runs `snapshot.py` (SQLite's backup API plus an integrity check), and restic backs up that clean snapshot, not the live files.
+
+      For Postgres it's `pg_dump`, for MySQL `mysqldump`. Same idea.
+
+      ### Verify, on a schedule
+      - `restic check` makes sure the repository's structure is sound. `--read-data` reads every byte (slow, but run it now and then).
+      - **Test restores**: restore to a scratch folder and *open* the data. Your `restore.sh` restores the ledger and runs integrity checks, and you ran it once when you set it up. Doing that monthly is a good habit.
+
+      ### RPO and RTO
+      - **RPO** (recovery point objective): how much data you can afford to lose. Nightly backups mean up to about 24 hours of it.
+      - **RTO** (recovery time objective): how long the restore may take. Practice it once, so you know the real number.
+    sources:
+      - title: SQLite, the online backup API
+        url: https://www.sqlite.org/backup.html
+      - title: restic docs, checking integrity
+        url: https://restic.readthedocs.io/en/stable/045_working_with_repos.html#checking-integrity-and-consistency
+      - title: Google SRE book, data integrity
+        url: https://sre.google/sre-book/data-integrity/
+    quiz:
+      - q: Why use `sqlite3 db ".backup copy.db"` and not `cp db copy.db`?
+        choices: ["It's faster", "It makes a consistent copy even while the app is writing", "cp can't copy .db files", "It compresses the file"]
+        answer: 1
+        why: A plain copy can catch the file halfway through a write.
+      - q: Backups run nightly at 4:30. The disk dies at 4:00. What's your data loss (RPO in practice)?
+        choices: ["None", "About 23.5 hours of changes", "4 hours", "Everything"]
+        answer: 1
+        why: Everything since the last good backup is lost. Need less? Back up more often.
+    tasks:
+      - mission: Copy a live database safely
+      - mission: Trust, but verify
+      - mission: How many notes?

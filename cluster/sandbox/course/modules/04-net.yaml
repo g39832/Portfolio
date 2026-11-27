@@ -1,0 +1,185 @@
+id: net
+title: Networking
+badge: Packet Tracer
+lab: net
+summary: DNS, IPs, routes, HTTP and TLS, traced through your real site, your Pi-hole and your cluster.
+lessons:
+  - id: dns
+    title: Names to addresses (DNS)
+    minutes: 20
+    teach: |
+      "It's always DNS" is a DevOps joke because it's true. Before anything connects anywhere, a name has to turn into an IP address.
+
+      ### How a lookup works
+      Your device asks its **resolver** (on your Tailscale devices, that's your Pi-hole at `100.68.50.51`). The resolver either knows the answer (it's cached for the record's **TTL**) or asks the internet's DNS servers in turn: the root, then `.org`, then the server in charge of `graysoncodes.org` (Cloudflare).
+
+      ```
+      $ dig graysoncodes.org
+      $ dig +short graysoncodes.org
+      $ dig @1.1.1.1 doubleclick.net +short
+      ```
+
+      In `dig`'s full output, the ANSWER SECTION shows the records and their TTLs. The most common record types:
+
+      - **A** / **AAAA**: name to IPv4 / IPv6 address
+      - **CNAME**: this name is another name (like `dnd` pointing at your Cloudflare tunnel)
+      - **MX**: where email goes. **TXT**: free text, used to prove you own a domain.
+
+      ### Pi-hole is just a DNS server that lies (nicely)
+      Ask your Pi-hole for an ad domain and it answers `0.0.0.0`, so the ad never loads. Ask 1.1.1.1 for the same name and you get the real address. That's the whole trick.
+
+      ### DNS inside the cluster
+      Kubernetes runs its own DNS server (CoreDNS). Every Service gets a name: `web.graysoncodes.svc.cluster.local` is the `web` Service in the `graysoncodes` namespace. The **search domains** in `/etc/resolv.conf` are why a short name like `web.graysoncodes` works from a pod.
+
+      ```
+      $ cat /etc/resolv.conf
+      ```
+    live:
+      - title: Your Pi-hole vs. the internet, asked right now
+        cmd: "echo 'Pi-hole (pi2):'; dig @192.168.1.36 doubleclick.net +short +time=3 +tries=1; echo; echo '1.1.1.1:'; dig @1.1.1.1 doubleclick.net +short +time=3 +tries=1 | head -3"
+      - title: Cluster DNS for your site's Service
+        cmd: "dig +short web.graysoncodes.svc.cluster.local; kubectl -n graysoncodes get svc web"
+        note: The IP DNS gives back is the Service's CLUSTER-IP.
+    sources:
+      - title: Cloudflare Learning, what is DNS?
+        url: https://www.cloudflare.com/learning/dns/what-is-dns/
+      - title: Kubernetes docs, DNS for Services and Pods
+        url: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
+      - title: How DNS works (a free comic)
+        url: https://howdns.works/
+    quiz:
+      - q: You changed a DNS record, but some devices still go to the old IP for an hour. Most likely cause?
+        choices: ["The DNS change failed", "Resolvers cached the old answer for its TTL", "The devices need new IPs", "HTTPS is caching it"]
+        answer: 1
+        why: Answers are cached for the record's TTL. Lower the TTL before planned changes.
+      - q: From a pod in namespace `ledger`, which name reaches the `web` Service in `graysoncodes`?
+        choices: ["web", "web.graysoncodes", "graysoncodes.web", "web.cluster"]
+        answer: 1
+        why: Plain `web` only works inside graysoncodes. The search domains finish `web.graysoncodes` off as `web.graysoncodes.svc.cluster.local`.
+      - q: What does your Pi-hole answer for a blocked ad domain?
+        choices: ["The real IP, but slowly", "0.0.0.0 (nowhere)", "An error page", "Cloudflare's IP"]
+        answer: 1
+        why: The browser tries to connect to 0.0.0.0, gets nothing, and the ad is gone.
+    tasks:
+      - mission: Look up a name
+      - mission: Cluster DNS
+      - mission: Watch Pi-hole block an ad
+
+  - id: routes
+    title: IPs, routes and ports
+    minutes: 20
+    teach: |
+      ### Addresses and networks
+      An IPv4 address like `192.168.1.35` belongs to a network written in **CIDR**, like `192.168.1.0/24`. The `/24` means the first 24 bits name the network, which leaves 256 addresses for devices. Your home network, your Tailscale network (`100.x`) and your cluster's pod network (`10.42.0.0/16`) are three separate address spaces.
+
+      ### Routes
+      Every machine has a routing table: "for this range, send packets *there*". Anything that matches nothing goes to the **default gateway**. On your PC that's the Orbi router. In a pod, it's the `cni0` bridge on the Pi it runs on.
+
+      ```
+      $ ip addr
+      $ ip route
+      $ traceroute -n 1.1.1.1
+      ```
+
+      `traceroute` shows every router (hop) on the way. Each one is a place where things can go slow or break.
+
+      ### Ports
+      An IP gets you to a machine. A **port** gets you to one program on it: 22 SSH, 53 DNS, 80 HTTP, 443 HTTPS. `ss -tlnp` lists what's listening. In Kubernetes:
+
+      - a **ClusterIP** Service is a stable inside-only address in front of some pods
+      - a **NodePort** opens the same port (30000-32767) on *every* node, which is why your start page answers on `:30300` on both Pis
+      - your public site doesn't open any port at all: the Cloudflare tunnel connects *out* from the cluster
+
+      ```
+      $ kubectl get svc -A
+      ```
+    live:
+      - title: Every Service on your cluster and its ports
+        cmd: "kubectl get svc -A -o custom-columns='NAMESPACE:.metadata.namespace,NAME:.metadata.name,TYPE:.spec.type,PORTS:.spec.ports[*].port,NODEPORT:.spec.ports[*].nodePort'"
+        note: Anything with a NODEPORT is reachable at http://<either Pi>:<that port>.
+      - title: This pod's routes
+        cmd: ip route
+    sources:
+      - title: Cloudflare Learning, what is a subnet?
+        url: https://www.cloudflare.com/learning/network-layer/what-is-a-subnet/
+      - title: Kubernetes docs, Service types
+        url: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+      - title: Julia Evans, networking zines (free posts)
+        url: https://jvns.ca/categories/networking/
+    quiz:
+      - q: How many addresses does a /24 network have?
+        choices: ["24", "256", "65,536", "1,024"]
+        answer: 1
+        why: 32 - 24 = 8 bits left for hosts, and 2^8 = 256 (two of them are the network and broadcast addresses).
+      - q: Why does your start page answer on port 30300 on BOTH Pis, even though its pod runs on only one?
+        choices: ["It runs two copies", "A NodePort Service opens the port on every node and forwards to the pod wherever it is", "Tailscale copies it", "DNS round-robin"]
+        answer: 1
+        why: kube-proxy sets up the same port on each node.
+      - q: A packet is going to an IP that matches no route in the table. Where does it go?
+        choices: ["It's dropped", "To the default gateway", "Back to the sender", "To 127.0.0.1"]
+        answer: 1
+        why: That's what the default route is for.
+    tasks:
+      - mission: Your way out
+      - mission: NodePorts
+      - mission: How far is the internet?
+        lab: net
+        check: "true"
+        title: How far is the internet? (look and learn)
+        text: "Trace the route to 1.1.1.1 and count the hops. Then ping your Pi 4 (192.168.1.36) and the internet and compare the times. Nothing to save: press Check when you've looked."
+
+  - id: http
+    title: HTTP and TLS
+    minutes: 20
+    teach: |
+      ### HTTP is just text
+      A browser opens a connection and sends lines like `GET / HTTP/1.1` and `Host: graysoncodes.org`. The server replies with a **status line**, some **headers**, a blank line, then the body. You can do it by hand with `nc`.
+
+      Status codes come in families:
+
+      - **2xx** success (200 OK)
+      - **3xx** go somewhere else (301/302 redirects)
+      - **4xx** *your* mistake (404 not found, 401 not logged in, 403 not allowed)
+      - **5xx** *the server's* mistake (500 crashed, 502 bad gateway: the proxy couldn't reach the app, 503 nothing ready to answer)
+
+      ```
+      $ curl -sI https://graysoncodes.org
+      $ curl -s -o /dev/null -w '%{http_code} in %{time_total}s\n' https://graysoncodes.org
+      ```
+
+      A 502 from your site would mean Cloudflare or nginx is fine but couldn't reach what's behind it. Knowing which layer answered is half of debugging.
+
+      ### TLS (the S in HTTPS)
+      TLS encrypts the connection and proves the server is who it says it is, with a **certificate** signed by a trusted **certificate authority**. Certificates expire, and an expired one is a classic outage. Your public site's certificate comes from Cloudflare at the edge, and the tunnel carries the traffic to your cluster.
+
+      ```
+      $ openssl s_client -connect graysoncodes.org:443 -servername graysoncodes.org </dev/null 2>/dev/null | openssl x509 -noout -subject -issuer -dates
+      ```
+    live:
+      - title: Your public site from the outside
+        cmd: "curl -s -o /dev/null -w 'status %{http_code}, %{time_total}s total, from %{remote_ip}\\n' https://graysoncodes.org; curl -sI https://graysoncodes.org | grep -iE '^(server|cf-ray|content-type|cache-control):'"
+    sources:
+      - title: MDN, an overview of HTTP
+        url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview
+      - title: MDN, HTTP response status codes
+        url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status
+      - title: Cloudflare Learning, what is TLS?
+        url: https://www.cloudflare.com/learning/ssl/transport-layer-security-tls/
+    quiz:
+      - q: Your site returns 502 Bad Gateway. What does that usually mean?
+        choices: ["Your browser sent a bad request", "A proxy in front (Cloudflare, nginx) couldn't get a good answer from the app behind it", "The page doesn't exist", "TLS expired"]
+        answer: 1
+        why: The proxy is up and talking. The thing behind it is down, crashing or unreachable.
+      - q: Which family of status codes means the client did something wrong?
+        choices: ["2xx", "3xx", "4xx", "5xx"]
+        answer: 2
+        why: "4xx: bad path, not logged in, not allowed. 5xx is the server's fault."
+      - q: What does a TLS certificate prove?
+        choices: ["That the site is safe to use", "That the server owns the name you connected to, vouched for by a certificate authority", "That the site is fast", "That the site uses Cloudflare"]
+        answer: 1
+        why: It proves identity and lets the connection be encrypted. It says nothing about whether the site is trustworthy.
+    tasks:
+      - mission: HTTP status codes
+      - mission: Read the headers
+      - mission: Who signed the certificate?
+      - mission: Talk to a port by hand
