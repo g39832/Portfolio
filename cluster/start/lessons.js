@@ -1,7 +1,7 @@
 /* Full lessons for the start page's daily DevOps snippet, keyed by the snippet's title.
    Each one: lab (which practice terminal to open), more (paragraphs after the snippet's own
    text), steps ([what to do, command]: every command works in that lab), quiz ([question, answer]).
-   Labs: linux bash git k8s net containers security backups ci iac pi (see cluster/sandbox/).
+   Labs: linux bash git k8s net containers docker security backups ci iac pi (see cluster/sandbox/).
    In the k8s lab kubectl can read the whole cluster (not Secrets) and change only "playground". */
 window.LESSONS = {
 "Deployments keep your pods alive": { lab: "k8s",

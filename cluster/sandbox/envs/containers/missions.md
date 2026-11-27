@@ -1,5 +1,5 @@
 # Containers
-There's no Docker engine in here (that would need root on the Pi), so this lab is about the parts you can do anywhere: writing good Dockerfiles, reading images in a registry, and running containers on the cluster with kubectl. ~/app has a Dockerfile with lots of beginner mistakes.
+This lab has a real Docker engine of its own (a private one, not the Pi 5's), so you can write good Dockerfiles, build and run them, read images in a registry, and run containers on the cluster with kubectl. For docker run, ports and networks, see the docker lab. ~/app has a Dockerfile with lots of beginner mistakes.
 
 ## A container is just a process
 Look at process 1 in this container: cat /proc/1/cmdline | tr '\0' ' '. Save the program name (first word, without a path) to ~/answers/pid1.txt. Compare with ps aux: a container is a normal Linux process with its own view of the system.
@@ -34,6 +34,13 @@ Write ~/app/Dockerfile.multi with two stages: a "build" stage that runs pip inst
 hint: FROM python:3.13-slim AS build ... RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 hint: FROM python:3.13-slim ... COPY --from=build /install /usr/local
 check: [ "$(grep -c '^FROM' app/Dockerfile.multi)" -ge 2 ] && grep -q -- '--from=' app/Dockerfile.multi
+
+## Build it and run it
+Build ~/app into an image called myapp, run it in the background with its port 8000 published on 8000, and curl it.
+hint: docker build -t myapp ~/app
+hint: docker run -d --name myapp -p 8000:8000 myapp && curl -s localhost:8000
+hint: docker history myapp     (one line per layer: see what the cache-friendly order saves you)
+check: [ "$(docker inspect -f '{{.State.Running}}' myapp 2>/dev/null)" = true ] && curl -fs localhost:8000 | grep -q 'hello from a container'
 
 ## Look inside a real image
 skopeo reads images straight from a registry. How many layers does ghcr.io/g39832/portfolio-web:latest (arm64) have? Save the number to ~/answers/layers.txt.

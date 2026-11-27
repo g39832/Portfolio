@@ -179,6 +179,28 @@ for one mission, `learn reset` to start over, and in the Kubernetes lab `tidy` t
   real Pi password. Work is kept on a 2Gi volume on the Pi 5, and each lab runs in tmux, so a dropped phone
   connection picks up where it left off.
 - Full lessons live in `start/lessons.js` (served at `/i/lessons.js` by the start page).
+- Docker: **every lab** has `docker`, `docker compose` and `docker buildx`. They talk to a private Docker
+  engine (Docker-in-Docker, a second container in the sandbox pod), not to the Pi 5's own Docker, so lab
+  experiments can't touch Uptime Kuma, Containerlab or anything real. `-p 8080:80` publishes on the pod, so
+  `curl localhost:8080` works; bind mounts work for anything under your lab home. Images are kept in
+  `/var/lib/sandbox-docker` on the Pi 5 (wipe with `docker system prune -a --volumes` in any lab).
+  The `docker` lab has missions for docker run, ports, networks, DNS, volumes and compose.
+
+## Docker on the Pis themselves
+
+`docker/setup-docker.sh` installs and checks everything Docker on a real Pi: Engine, compose, buildx,
+rootless extras, tab completion, your user in the `docker` group, log rotation, and networking tools
+(tcpdump, bridge, nsenter, conntrack, dig). It keeps an existing Docker (the Pi 5's) and only tops it up,
+and sets `ip-forward-no-drop` so Docker never sets the FORWARD policy to DROP (which could cut pod traffic
+between the Pis). Run it on each Pi, then log out and back in once:
+
+    ssh grayson@192.168.1.35
+    cd ~/Portfolio && git pull && bash cluster/docker/setup-docker.sh
+
+    ssh grayson@192.168.1.36
+    curl -fsSL https://raw.githubusercontent.com/g39832/Portfolio/main/cluster/docker/setup-docker.sh | bash
+
+`bash setup-docker.sh --check` only runs the checks. The `pi` practice lab (SSH) then has full Docker on both Pis.
 
 ## Pi-hole for the whole house
 

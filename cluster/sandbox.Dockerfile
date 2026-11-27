@@ -1,5 +1,5 @@
 # Practice terminals: one web terminal (ttyd) with a lab for each learning topic
-# (Linux, Bash, Git & GitHub, Kubernetes, Networking, Containers, Security, Backups, CI/CD, IaC)
+# (Linux, Bash, Git & GitHub, Kubernetes, Networking, Containers, Docker, Security, Backups, CI/CD, IaC)
 # plus an SSH jump to the real Pis. The page is cluster/sandbox/terminal.html, which has a key bar
 # for phones. Build from the repo root:  docker build -f cluster/sandbox.Dockerfile -t portfolio-sandbox .
 FROM debian:trixie-slim
@@ -34,6 +34,12 @@ RUN set -eux; \
     chmod +x /usr/local/bin/*; \
     kubectl completion bash > /etc/bash_completion.d/kubectl; \
     helm completion bash > /etc/bash_completion.d/helm
+
+# The docker command with compose and buildx. It talks to the pod's own Docker engine (a second
+# container in the pod, see k8s/55-sandbox.yaml) through $DOCKER_HOST.
+COPY --from=docker:29.10.1-cli /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=docker:29.10.1-cli /usr/local/libexec/docker/cli-plugins/ /usr/local/libexec/docker/cli-plugins/
+RUN docker completion bash > /etc/bash_completion.d/docker     && ln -s /usr/local/libexec/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
 COPY cluster/sandbox/ /opt/sandbox/
 

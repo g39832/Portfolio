@@ -1,6 +1,6 @@
 # Practice terminals: a web terminal with a lab per learning topic, for phone or PC.
 #   http://100.120.223.33:30410   (Tailscale, from anywhere)   http://192.168.1.35:30410 at home
-#   Open a lab straight away with ?arg=git (linux bash git k8s net containers security backups ci iac pi).
+#   Open a lab straight away with ?arg=git (linux bash git k8s net containers docker security backups ci iac pi).
 # Image: cluster/sandbox.Dockerfile -> ghcr.io/g39832/portfolio-sandbox. Labs: cluster/sandbox/envs/.
 # Put it up or update it with:  bash ~/Portfolio/cluster/sandbox/deploy.sh
 # (that makes the login secret the first time and prints the password).
@@ -9,6 +9,14 @@
 # leaves out Secrets) and can only CHANGE the "playground" namespace. Playground pods are held to
 # Pod Security "baseline" (no hostPath, privileged or host network), small default limits, and a
 # quota. The "pi" lab is only an SSH client: it needs your real Pi password.
+#
+# Docker: every lab has a real `docker` command (plus compose and buildx). It talks to a private
+# Docker engine (Docker-in-Docker) that runs next to the terminal in this pod, NOT to the Pi 5's
+# own Docker, so nothing you do here can stop Uptime Kuma, Containerlab or the other real
+# containers. That engine has to be privileged, which is why this pod sits in "sandbox" and not
+# in "playground". It only listens on a socket inside the pod (no network port). Its images live
+# in /var/lib/sandbox-docker on the Pi 5. `-p 8080:80` publishes on this pod, so
+# `curl localhost:8080` works from the terminal. Wipe it all with `docker system prune -a`.
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -150,8 +158,11 @@ spec:
                 fieldRef: {fieldPath: status.hostIP}
             - name: TZ
               value: America/Chicago
+            - name: DOCKER_HOST                  # the private Docker engine below
+              value: unix:///run/docker/docker.sock
           volumeMounts:
             - {name: work, mountPath: /work}
+            - {name: docker-sock, mountPath: /run/docker}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities: {drop: [ALL]}
@@ -161,10 +172,56 @@ spec:
           resources:
             requests: {cpu: 50m, memory: 96Mi}
             limits: {memory: 1Gi}
+        # The labs' own Docker engine. It matches its network MTU to the pod's (flannel is smaller
+        # than 1500, and a bigger MTU makes downloads inside containers hang), and gives the socket
+        # to group 1000 so the terminal's user can use it without sudo.
+        - name: docker
+          image: docker:29.10.1-dind
+          command:
+            - sh
+            - -c
+            - |
+              mtu="$(cat /sys/class/net/eth0/mtu 2>/dev/null || echo 1450)"
+              rm -f /run/docker/docker.sock /var/run/docker.pid
+              exec dockerd-entrypoint.sh dockerd                 --host=unix:///run/docker/docker.sock --group=1000                 --mtu="$mtu" --default-network-opt="bridge=com.docker.network.driver.mtu=$mtu"                 --log-opt=max-size=10m --log-opt=max-file=3
+          env:
+            - name: DOCKER_TLS_CERTDIR           # socket only, so no TLS certificates needed
+              value: ""
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            runAsGroup: 0
+            runAsNonRoot: false
+          volumeMounts:
+            - {name: docker-sock, mountPath: /run/docker}
+            - {name: docker-data, mountPath: /var/lib/docker}
+            - {name: work, mountPath: /work}     # so bind mounts like -v ./site:/usr/share/nginx/html work
+          readinessProbe:
+            exec:
+              command: [docker, -H, unix:///run/docker/docker.sock, version]
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: [docker, -H, unix:///run/docker/docker.sock, version]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 4
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {memory: 2Gi}
       volumes:
         - name: work
           persistentVolumeClaim:
             claimName: work
+        - name: docker-sock
+          emptyDir: {}
+        # A plain folder on the Pi 5 (not a PVC) so Kubernetes never re-owns the image files.
+        - name: docker-data
+          hostPath:
+            path: /var/lib/sandbox-docker
+            type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
