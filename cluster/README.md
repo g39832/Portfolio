@@ -198,7 +198,7 @@ between the Pis). Run it on each Pi, then log out and back in once:
     cd ~/Portfolio && git pull && bash cluster/docker/setup-docker.sh
 
     ssh grayson@192.168.1.36
-    curl -fsSL https://raw.githubusercontent.com/g39832/Portfolio/main/cluster/docker/setup-docker.sh | bash
+    curl -fsSLo setup-docker.sh https://raw.githubusercontent.com/g39832/Portfolio/main/cluster/docker/setup-docker.sh && bash setup-docker.sh
 
 `bash setup-docker.sh --check` only runs the checks. The `pi` practice lab (SSH) then has full Docker on both Pis.
 

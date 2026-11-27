@@ -3,7 +3,7 @@
 #   ssh grayson@192.168.1.35   (Pi 5)   or   ssh grayson@192.168.1.36   (Pi 4)
 #   bash ~/Portfolio/cluster/docker/setup-docker.sh
 #   (on the Pi 4, which has no Portfolio clone:
-#    curl -fsSL https://raw.githubusercontent.com/g39832/Portfolio/main/cluster/docker/setup-docker.sh | bash)
+#    curl -fsSLo setup-docker.sh https://raw.githubusercontent.com/g39832/Portfolio/main/cluster/docker/setup-docker.sh && bash setup-docker.sh)
 # Only check, change nothing:   bash setup-docker.sh --check
 #
 # What you get: Docker Engine + CLI + containerd, docker compose, docker buildx, rootless extras,
@@ -19,6 +19,9 @@
 # it), it is kept and only topped up. Docker restarts once if its settings change; containers with
 # a restart policy come straight back.
 set -euo pipefail
+# Everything is inside { ... } so bash reads the whole script before running any of it
+# (that keeps `curl ... | bash` safe: nothing below can swallow the rest of the script).
+{
 
 me="${SUDO_USER:-$USER}"
 CHECK_ONLY=0; [ "${1:-}" = "--check" ] && CHECK_ONLY=1
@@ -27,6 +30,16 @@ bad()  { printf '  \033[31mFAIL\033[0m  %s\n' "$*"; FAILED=1; }
 step() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 FAILED=0
 SUDO=""; [ "$(id -u)" -ne 0 ] && SUDO="sudo"
+# apt that never stops to ask questions, shows its progress, and waits (with a message) while
+# the Pi's automatic updates are using apt.
+apt_() {
+  $SUDO env DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get -q -y \
+    -o DPkg::Lock::Timeout=1200 -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold "$@" </dev/null
+}
+if [ -n "$SUDO" ] && ! sudo -n true 2>/dev/null; then
+  echo "Type your Pi password for sudo (nothing shows while you type):"
+  sudo -v </dev/tty
+fi
 
 if [ "$CHECK_ONLY" = 0 ]; then
   . /etc/os-release
@@ -36,7 +49,7 @@ if [ "$CHECK_ONLY" = 0 ]; then
     # Debian's own docker.io package: keep it (swapping engines would stop your containers),
     # just add the plugins it lacks as standalone files.
     echo "  Docker came from Debian's docker.io package; keeping it and adding the plugins."
-    $SUDO apt-get update -qq
+    apt_ update
     plugdir=/usr/local/lib/docker/cli-plugins; $SUDO mkdir -p "$plugdir"
     case "$arch" in arm64) ga=arm64; ca=aarch64 ;; amd64) ga=amd64; ca=x86_64 ;; *) ga=$arch; ca=$arch ;; esac
     if ! docker compose version >/dev/null 2>&1; then
@@ -63,15 +76,17 @@ if [ "$CHECK_ONLY" = 0 ]; then
     done
     echo "deb [arch=$arch signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $suite stable" \
       | $SUDO tee /etc/apt/sources.list.d/docker.list >/dev/null
-    $SUDO apt-get update -qq
-    $SUDO apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin \
-      docker-compose-plugin docker-ce-rootless-extras >/dev/null
+    echo "  Downloading and installing (a few minutes on a Pi). If it says it's waiting for a lock, the"
+    echo "  Pi's automatic updates are running; it carries on by itself when they finish."
+    apt_ update
+    apt_ install docker-ce docker-ce-cli containerd.io docker-buildx-plugin \
+      docker-compose-plugin docker-ce-rootless-extras
   fi
   ok "Docker $(docker --version | sed 's/Docker version //')"
 
   step "2. Networking tools"
-  $SUDO apt-get install -y -qq bash-completion iproute2 iptables tcpdump conntrack dnsutils curl jq \
-    util-linux bridge-utils ethtool netcat-openbsd >/dev/null
+  apt_ install bash-completion iproute2 iptables tcpdump conntrack dnsutils curl jq \
+    util-linux bridge-utils ethtool netcat-openbsd
   ok "tcpdump, bridge, nsenter, conntrack, ip, dig, curl, jq"
 
   step "3. Settings (/etc/docker/daemon.json)"
@@ -156,3 +171,5 @@ else
   echo "Something above failed. Paste this output to Claude."
   exit 1
 fi
+
+}
