@@ -54,10 +54,15 @@ data:
         icon: mdi-chart-line
   services.yaml: |
     - Learning:
-        - Pi to DevOps Path:
+        # The course sits behind the Practice labs login, so there is no siteMonitor (it would read 401 as down).
+        - DevOps Path:
             icon: mdi-school
+            href: http://100.120.223.33:30410/
+            description: The course - lessons, quizzes, labs and your progress
+        - DevOps Links:
+            icon: mdi-bookshelf
             href: http://100.120.223.33:30402
-            description: Learning guide + Pomodoro timer
+            description: Old link guide + Pomodoro timer
             siteMonitor: http://study.study.svc.cluster.local
         - Network Labs:
             icon: mdi-lan
