@@ -54,6 +54,11 @@ data:
         icon: mdi-chart-line
   services.yaml: |
     - Learning:
+        - Study Room:
+            icon: mdi-fishbowl
+            href: http://100.120.223.33:30420
+            description: Pomodoro timer with a fish tank you design
+            siteMonitor: http://studyroom.studyroom.svc.cluster.local
         # The course sits behind the Practice labs login, so there is no siteMonitor (it would read 401 as down).
         - DevOps Path:
             icon: mdi-school
